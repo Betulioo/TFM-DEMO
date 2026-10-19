@@ -7,6 +7,14 @@ Es el caso práctico de un TFM: el código debe ser simple, verificable y reutil
 **Al empezar cada sesión** lee `docs/bitacora.md` (estado y decisiones) y `docs/plan.md` (diseño de los
 pasos pendientes). Se trabaja un paso cada vez; al terminar uno, actualiza la bitácora.
 
+### Bitácora (`docs/bitacora.md`)
+
+- **Estado** (casillas) y **Próximo paso**: foto vigente; se reemplazan, no se acumulan.
+- **Registro**: una entrada por fecha con *Progreso* (resultados concretos), *Decisiones* (qué y por qué),
+  *Aprendizajes* (hechos comprobados) y *Errores y correcciones* (intento → por qué falló → qué cambia).
+- El registro es historial y evidencia del TFM: no se poda ni se reescribe; solo se corrige lo que sea falso.
+- Distingue hechos de inferencias. No escribas motivos que la persona no ha dado. Nunca tokens ni datos de cliente.
+
 ## Arquitectura
 
 1. **Recogida (determinista, sin IA)** — `src/`: lee Azure DevOps y escribe `output/snapshot.json`.
@@ -27,6 +35,7 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
   la skill solo se ejecuta sobre el proyecto demo o fixtures.
 - **Nunca** imprimir, registrar ni commitear tokens. Las credenciales viven solo en `.env`.
 - `output/` no se sube ni se copia a `docs/`.
+- **No hagas commit ni push.** Los hace siempre la persona; tú deja los cambios sin commitear.
 - El informe separa **Hechos** (siempre con ID: `PR #12`, `WI #345`) de **Sugerencias**.
   Si falta un dato, escribe "sin datos"; no lo deduce.
 
