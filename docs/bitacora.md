@@ -12,7 +12,7 @@ Las normas de cada sección están en `CLAUDE.md`.
 - [x] 3. Glosario (`docs/glosario.md`), casos sembrados (`fixtures/expected.json`) y seed
 - [x] 4. Puerto, adaptador falso y adaptador Azure DevOps: PRs donde el usuario es revisor
 - [x] 4.5. Seguridad y calidad: capas hexagonales, lint, pre-push y salvaguardas
-- [ ] 5. Work items de la iteración actual
+- [x] 5. Work items de la iteración actual
 - [ ] 6. Vinculación work item ↔ rama ↔ PR, `output/snapshot.json` y tests unitarios
 - [ ] 7. Skill de informe diario (Hechos / Sugerencias)
 - [ ] 8. Verificador y eval: skill frente a prompt plano, mismo snapshot, chats nuevos
@@ -26,7 +26,7 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Paso 5 implementado y verificado por el agente; falta la confirmación de la persona.
+Antes del paso 6: check de arquitectura, skill `tests-semanticos` y revisión de `revisar-tfm`.
 Después, paso 6 — Vinculación, snapshot y tests.
 
 ## Registro
@@ -61,6 +61,9 @@ Después, paso 6 — Vinculación, snapshot y tests.
 - Paso 5: tipos `Iteration` y `WorkItem`, métodos `currentIteration` y `workItemsInIteration` en el puerto y
   en los dos adaptadores, regla `myTasks` en `src/domain/rules.ts` y `npm run list:tasks`. 29 tests, lint y
   typecheck en verde. Contra la demo: A–G en mis tareas; H, I y J fuera; D–G enlazan sus PRs (#2–#5).
+- Antes del paso 6: `test/architecture.test.ts` (3 reglas de la sección "Arquitectura" de `CLAUDE.md`, con un
+  control por regla; probado además rompiendo `rules.ts` a propósito), skill `tests-semanticos` y sección A de
+  `revisar-tfm` actualizada para ejecutar el check y revisar los tests con esa skill. 36 tests en verde.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -128,6 +131,10 @@ Después, paso 6 — Vinculación, snapshot y tests.
 - Skill de proyecto `testing` (`.claude/skills/testing/SKILL.md`), adaptada de una skill de tests unitarios
   con Jest: mismas ideas (tipos de test, datos explícitos, entrada de la API frente a dominio, AAA) con las
   herramientas y los dobles reales del repo (`node:test`, lector falso, `FixtureSource`, cliente falso del seed).
+- Las reglas de arquitectura se comprueban con un test automático y no con una skill: una regla comprobable
+  debe comprobarse con código. Las skills quedan para lo que necesita criterio (`tests-semanticos`: si un test
+  protege un comportamiento con significado). Las reglas se escriben una sola vez, en `CLAUDE.md`; el test y la
+  skill `revisar-tfm` remiten a ellas.
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de

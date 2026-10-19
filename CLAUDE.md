@@ -20,14 +20,21 @@ pasos pendientes). Se trabaja un paso cada vez; al terminar uno, actualiza la bi
 1. **Recogida (determinista, sin IA)** — `src/`: lee Azure DevOps y escribe `output/snapshot.json`.
    Sigue arquitectura hexagonal: un puerto (interfaz) con dos adaptadores, uno real para la API de
    Azure DevOps y otro falso que lee fixtures. La lógica de vinculación no conoce el adaptador.
-   Capas: `src/domain` (no importa nada de fuera), `src/ports` (solo `domain`), `src/application`
-   (paso 6), `src/adapters/azdo` y `src/adapters/fixtures`. `src/` nunca importa `scripts/` y solo
-   `adapters/azdo/read-only-client.ts` llama a `fetch`.
+   Capas: `src/domain`, `src/ports` (solo importa `domain`), `src/application` (paso 6),
+   `src/adapters/azdo` y `src/adapters/fixtures`.
 2. **Síntesis (IA)** — skill en `.claude/skills/`: lee `output/snapshot.json` y redacta el informe.
 3. **Verificación** — `scripts/` y tests: compara el informe con `fixtures/expected.json`.
 
 Mantén esta separación: la IA nunca llama a la API directamente; solo interpreta el snapshot.
 Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/glosario.md`; úsalos tal cual.
+
+### Reglas de arquitectura (comprobadas)
+
+- `src/domain` no importa nada de `src/adapters` (ni del antiguo `src/azdo`), ni `node:fs`, ni llama a `fetch`.
+- En `src/` solo `src/adapters/azdo/read-only-client.ts` hace peticiones a Azure DevOps (`fetch`), y solo GET.
+- Nada en `src/` importa de `scripts/` (ahí está el cliente con escritura).
+
+`test/architecture.test.ts` comprueba estas reglas en cada `npm test` (y por tanto en el pre-push).
 
 ## Reglas
 
