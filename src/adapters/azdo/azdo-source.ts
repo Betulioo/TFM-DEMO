@@ -1,10 +1,14 @@
 // Adaptador real: lee Azure DevOps con un cliente que solo tiene GET.
 import { AzdoHttpError, type AzdoReader } from "./read-only-client.js";
 import { getAuthenticatedUser } from "./identity.js";
-import type { PullRequest, PullRequestStatus, User, Vote } from "../../domain/types.js";
+import type { Iteration, PullRequest, PullRequestStatus, StateCategory, User, Vote, WorkItem } from "../../domain/types.js";
 import type { DevOpsSource } from "../../ports/devops-source.js";
 
 const PAGE_SIZE = 100;
+/** Máximo de IDs por llamada a `_apis/wit/workitems`. */
+const WORK_ITEMS_BATCH = 200;
+/** Enlace a PR: `vstfs:///Git/PullRequestId/{proyecto}%2F{repo}%2F{id}` (la API lo devuelve con `%2f`). */
+const PR_LINK = /^vstfs:\/\/\/Git\/PullRequestId\/[^/]+%2f[^/]+%2f(\d+)$/i;
 
 /** Forma de una PR en la API 7.1 (solo los campos que usamos). */
 export interface ApiPullRequest {
@@ -18,8 +22,30 @@ export interface ApiPullRequest {
   reviewers?: { id: string; displayName: string; vote: number }[];
 }
 
+/** Forma de un work item con `$expand=relations` (solo los campos que usamos). */
+export interface ApiWorkItem {
+  id: number;
+  fields: {
+    "System.Title": string;
+    "System.WorkItemType": string;
+    "System.State": string;
+    "System.ChangedDate": string;
+    "System.AssignedTo"?: { id: string; displayName: string };
+  };
+  relations?: { rel: string; url: string; attributes?: { name?: string } }[];
+}
+
+interface ApiIteration {
+  id: string;
+  name: string;
+  attributes?: { startDate?: string | null; finishDate?: string | null };
+}
+
 export class AzdoSource implements DevOpsSource {
   private user?: User;
+  private team?: string;
+  /** Categoría de cada estado, por tipo de work item: tipo → estado → categoría. */
+  private readonly categories = new Map<string, Map<string, StateCategory>>();
 
   constructor(
     private readonly reader: AzdoReader,
@@ -53,6 +79,58 @@ export class AzdoSource implements DevOpsSource {
     }
   }
 
+  async currentIteration(): Promise<Iteration | undefined> {
+    const result = await this.reader.get<{ value: ApiIteration[] }>(`${this.p}/${await this.teamPath()}/_apis/work/teamsettings/iterations`, {
+      $timeframe: "current",
+    });
+    const it = result.value[0];
+    if (!it) return undefined;
+    return { id: it.id, name: it.name, startDate: it.attributes?.startDate ?? undefined, finishDate: it.attributes?.finishDate ?? undefined };
+  }
+
+  async workItemsInIteration(iterationId: string): Promise<WorkItem[]> {
+    const links = await this.reader.get<{ workItemRelations: { target?: { id: number } }[] }>(
+      `${this.p}/${await this.teamPath()}/_apis/work/teamsettings/iterations/${iterationId}/workitems`,
+    );
+    const ids = [...new Set(links.workItemRelations.flatMap((r) => (r.target ? [r.target.id] : [])))];
+
+    const result: WorkItem[] = [];
+    for (let i = 0; i < ids.length; i += WORK_ITEMS_BATCH) {
+      // `$expand` no se puede combinar con `fields` (la API responde 400): se piden los work items completos.
+      const batch = await this.reader.get<{ value: ApiWorkItem[] }>(`${this.p}/_apis/wit/workitems`, {
+        ids: ids.slice(i, i + WORK_ITEMS_BATCH).join(","),
+        $expand: "relations",
+      });
+      for (const api of batch.value) result.push(toWorkItem(api, await this.stateCategory(api)));
+    }
+    return result;
+  }
+
+  /** La categoría depende del tipo (en Agile, "Resolved" es InProgress en User Story y Resolved en Bug). */
+  private async stateCategory(api: ApiWorkItem): Promise<StateCategory> {
+    const type = api.fields["System.WorkItemType"];
+    let states = this.categories.get(type);
+    if (!states) {
+      const result = await this.reader.get<{ value: { name: string; category: string }[] }>(
+        `${this.p}/_apis/wit/workitemtypes/${encodeURIComponent(type)}/states`,
+      );
+      states = new Map(result.value.map((s) => [s.name, s.category as StateCategory]));
+      this.categories.set(type, states);
+    }
+    const category = states.get(api.fields["System.State"]);
+    if (!category) throw new Error(`Estado "${api.fields["System.State"]}" sin categoría en el tipo "${type}" (WI #${api.id}).`);
+    return category;
+  }
+
+  private async teamPath(): Promise<string> {
+    if (!this.team) {
+      const project = await this.reader.get<{ defaultTeam?: { name?: string } }>(`_apis/projects/${this.p}`);
+      if (!project.defaultTeam?.name) throw new Error(`El proyecto ${this.project} no tiene equipo por defecto.`);
+      this.team = project.defaultTeam.name;
+    }
+    return encodeURIComponent(this.team);
+  }
+
   private get p(): string {
     return encodeURIComponent(this.project);
   }
@@ -83,5 +161,23 @@ export function toPullRequest(api: ApiPullRequest): PullRequest {
     createdAt: api.creationDate,
     sourceBranch: api.sourceRefName.replace(/^refs\/heads\//, ""),
     reviewers: (api.reviewers ?? []).map((r) => ({ id: r.id, displayName: r.displayName, vote: r.vote as Vote })),
+  };
+}
+
+export function toWorkItem(api: ApiWorkItem, stateCategory: StateCategory): WorkItem {
+  const f = api.fields;
+  const assigned = f["System.AssignedTo"];
+  return {
+    id: api.id,
+    title: f["System.Title"],
+    type: f["System.WorkItemType"],
+    state: f["System.State"],
+    stateCategory,
+    assignedTo: assigned ? { id: assigned.id, displayName: assigned.displayName } : undefined,
+    changedAt: f["System.ChangedDate"],
+    pullRequestIds: (api.relations ?? []).flatMap((r) => {
+      const match = r.rel === "ArtifactLink" ? PR_LINK.exec(r.url) : null;
+      return match?.[1] ? [Number(match[1])] : [];
+    }),
   };
 }

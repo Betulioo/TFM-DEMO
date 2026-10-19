@@ -1,9 +1,9 @@
-import type { PullRequest, User } from "../domain/types.js";
+import type { Iteration, PullRequest, User, WorkItem } from "../domain/types.js";
 
 /**
  * Puerto de lectura: lo que la recogida necesita de Azure DevOps.
  * Implementaciones: adapters/azdo/azdo-source.ts (API real) y adapters/fixtures/fixture-source.ts (datos falsos).
- * Los work items y las ramas se añaden en los pasos 5 y 6.
+ * Las ramas se añaden en el paso 6.
  */
 export interface DevOpsSource {
   /** El usuario del token. */
@@ -14,4 +14,8 @@ export interface DevOpsSource {
   myPullRequests(): Promise<PullRequest[]>;
   /** Una PR por ID en cualquier estado, o `undefined` si no existe. */
   pullRequestById(id: number): Promise<PullRequest | undefined>;
+  /** Iteración actual del equipo por defecto, o `undefined` si hoy no hay ninguna. */
+  currentIteration(): Promise<Iteration | undefined>;
+  /** Todos los work items de una iteración, de cualquier tipo, asignados o no. Filtrar es cosa del dominio. */
+  workItemsInIteration(iterationId: string): Promise<WorkItem[]>;
 }

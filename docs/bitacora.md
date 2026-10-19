@@ -11,11 +11,13 @@ Las normas de cada sección están en `CLAUDE.md`.
 - [x] 2. Organización demo en Azure DevOps, tokens y `check:conn`
 - [x] 3. Glosario (`docs/glosario.md`), casos sembrados (`fixtures/expected.json`) y seed
 - [x] 4. Puerto, adaptador falso y adaptador Azure DevOps: PRs donde el usuario es revisor
-- [ ] 4.5. Seguridad y calidad: capas hexagonales, lint, pre-push y salvaguardas
+- [x] 4.5. Seguridad y calidad: capas hexagonales, lint, pre-push y salvaguardas
 - [ ] 5. Work items de la iteración actual
 - [ ] 6. Vinculación work item ↔ rama ↔ PR, `output/snapshot.json` y tests unitarios
 - [ ] 7. Skill de informe diario (Hechos / Sugerencias)
 - [ ] 8. Verificador y eval: skill frente a prompt plano, mismo snapshot, chats nuevos
+- [ ] 8b. (Opcional) CLI `npm run brief` con `claude -p`
+- [ ] 8c. (Opcional) Integración con Obsidian por archivos
 - [ ] 9. Medición del uso de la herramienta en la demo
 - [ ] 10. CI (GitHub Actions), ADR, README final y tag `v1.0`
 - [ ] 11. Cálculo de negocio (medido frente a estimado)
@@ -24,7 +26,8 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Confirmar el bloque D y cerrar el paso 4.5. Después, paso 5 — Work items de la iteración actual.
+Paso 5 implementado y verificado por el agente; falta la confirmación de la persona.
+Después, paso 6 — Vinculación, snapshot y tests.
 
 ## Registro
 
@@ -55,6 +58,9 @@ Confirmar el bloque D y cerrar el paso 4.5. Después, paso 5 — Work items de l
   lógica pasa a `scripts/lib/seed.ts` con clientes inyectados y `test/seed.test.ts` cubre las salvaguardas:
   confirmación incorrecta (0 peticiones), misma cuenta, compañero sin repos, proyecto sin repo y proyecto con
   work items (0 escrituras), más un control que sí llega a escribir. 18 tests, lint y typecheck en verde.
+- Paso 5: tipos `Iteration` y `WorkItem`, métodos `currentIteration` y `workItemsInIteration` en el puerto y
+  en los dos adaptadores, regla `myTasks` en `src/domain/rules.ts` y `npm run list:tasks`. 29 tests, lint y
+  typecheck en verde. Contra la demo: A–G en mis tareas; H, I y J fuera; D–G enlazan sus PRs (#2–#5).
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -109,6 +115,16 @@ Confirmar el bloque D y cerrar el paso 4.5. Después, paso 5 — Work items de l
 - La regla `Read(./.env)` no se ha probado a propósito: si no estuviera activa, la prueba leería los tokens.
 - El seed se separa en entrada (`scripts/seed-demo.ts`: `.env`, terminal, archivo) y lógica
   (`scripts/lib/seed.ts`), igual que la recogida separa adaptadores y dominio, para probarlo sin red.
+- Añadidos al plan dos pasos opcionales tras el paso 8, sin implementar todavía: 8b, CLI `npm run brief`
+  (recogida + `claude -p` con la skill + guardado), y 8c, integración con Obsidian por archivos
+  (`OBSIDIAN_VAULT_PATH`, notas por tarea y PR con sección Contexto que entra en el snapshot). Se descarta el
+  MCP de Obsidian: dependencia de terceros, riesgo de seguridad y menos verificable, cuando el vault es una
+  carpeta de Markdown.
+- El adaptador devuelve todos los work items de la iteración; "Mis tareas" se filtra en el dominio
+  (`myTasks`), por asignado (id) y categoría de estado, nunca por tipo.
+- Las categorías de estado se leen de la API por tipo y se cachean; el adaptador falso usa las de Agile.
+  Un estado sin categoría es un error explícito, no se adivina.
+- El adaptador ya extrae los IDs de PR de los enlaces del work item (`pullRequestIds`), que usará el paso 6.
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de
@@ -127,6 +143,10 @@ Confirmar el bloque D y cerrar el paso 4.5. Después, paso 5 — Work items de l
   (p. ej. `cat .env`) no queda cubierto por `Read(./.env)`. Son una capa más, no una garantía.
 - La bitácora decía que las salvaguardas del seed se habían probado con un servidor falso, pero esa prueba
   no estaba en el repo. Ahora sí: `test/seed.test.ts`.
+- API real, paso 5 (2026-10-19): el `id` de `connectionData` coincide con `System.AssignedTo.id`;
+  `$expand=relations` no se puede combinar con `fields` (400); el endpoint de estados devuelve `category`, que
+  **depende del tipo** (Agile: `Resolved` es InProgress en User Story y Resolved en Bug; Bug no tiene
+  `Removed`); el enlace a PR usa `%2f` en minúscula. Todo lo demás coincide con `docs/plan.md`.
 
 **Errores y correcciones**
 - Vinculación rama ↔ tarea con "el nombre contiene el número": daba falsos positivos con ramas como

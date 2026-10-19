@@ -57,6 +57,7 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
   `typecheck`, `lint` y `npm test` deben pasar antes de dar un paso por terminado.
 - `npm test` — tests con `node:test` (sin red).
 - `npm run list:prs` — lista las PRs de la demo y las compara con `fixtures/demo-ids.json` (`-- --fixtures` usa el adaptador falso).
+- `npm run list:tasks` — lista los work items de la iteración actual, marca "Mis tareas" y compara con `demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run check:conn` — comprueba la conexión con Azure DevOps usando `.env` (solo lectura).
 - `npm run seed:demo` — siembra el proyecto demo con los casos de `fixtures/expected.json`. Solo para la demo:
   pide confirmar organización y proyecto, y se niega si el proyecto ya tiene work items o el compañero no

@@ -28,7 +28,7 @@ no I; en Repos → Pull requests aparecen D, E y F activas y G completada; exist
 
 **Hecho si:** un script de prueba lista las PRs de la demo y coinciden con la web y con `demo-ids.json`.
 
-## Paso 4.5 — Seguridad y calidad del repo (propuesto, pendiente de aprobación)
+## Paso 4.5 — Seguridad y calidad del repo (hecho)
 
 Motivo: hoy las reglas de `CLAUDE.md` (solo lectura, capas, sin commits del agente) se cumplen por
 convención; este paso las convierte en comprobaciones que fallan solas. Se hace en cuatro bloques, cada
@@ -108,7 +108,8 @@ Reglas: `src/` nunca importa `scripts/`; `domain/` no importa `node:*` ni adapta
   bloqueada, aprobada, envejecida, tarea estancada, rama de una tarea, siguiente paso). Reciben `now` y
   los umbrales como parámetros.
 - PR de una tarea: relación `ArtifactLink` con nombre "Pull Request" y URL
-  `vstfs:///Git/PullRequestId/{projectId}%2F{repoId}%2F{prId}`.
+  `vstfs:///Git/PullRequestId/{projectId}%2F{repoId}%2F{prId}` (la API real lo devuelve con `%2f` en
+  minúscula; ya se extrae en el paso 5 como `WorkItem.pullRequestIds`).
 - Ramas: `GET {project}/_apis/git/repositories/{repoId}/refs?filter=heads/` + `BRANCH_ID_PATTERN`.
 - `npm run collect` → `output/snapshot.json` con: fecha, umbrales, usuario, iteración, mis tareas (con
   rama, PR, siguiente paso y si está estancada), PRs pendientes de mi revisión y mis PRs.
@@ -135,6 +136,36 @@ Reglas: `src/` nunca importa `scripts/`; `domain/` no importa `node:*` ni adapta
 - Eval (concepto del track): mismo snapshot, chats nuevos e independientes, 3 ejecuciones de cada:
   (a) con la skill, (b) con un prompt plano ("resume mi día a partir de output/snapshot.json").
   Medir aciertos, omisiones, inventados, tiempo y tokens. Resultados en `docs/eval.md`.
+
+## Paso 8b — CLI `npm run brief` (opcional)
+
+Un solo comando: recogida (`npm run collect`) + llamada a `claude -p` usando la skill del paso 7 + guardado del
+informe en `output/brief-AAAA-MM-DD.md`.
+
+- Verificar que la skill funciona en modo no interactivo y qué permisos necesita (lectura de
+  `output/snapshot.json`, escritura del informe). Las reglas `deny` de `.claude/settings.json` siguen
+  aplicando.
+- Igual que la skill: solo sobre el proyecto demo o fixtures (las cuentas de IA son personales).
+
+**Hecho si:** `npm run brief` sobre la demo genera el informe sin intervención y el verificador del paso 8
+da el mismo resultado que con la skill en modo interactivo.
+
+## Paso 8c — Integración con Obsidian por archivos (opcional)
+
+Sin MCP: el vault es una carpeta de Markdown. Ruta en `OBSIDIAN_VAULT_PATH`.
+
+- Guarda el informe en `Daily Brief/AAAA-MM-DD.md`.
+- Crea `Tareas/WI-<id>.md` y `PRs/PR-<id>.md` con plantilla (título, enlace, sección `## Contexto`) si no
+  existen. Nunca sobrescribe una nota existente.
+- Lee la sección Contexto de cada nota y la incluye en el snapshot; la skill la resume junto a cada tarea o PR.
+- Solo escribe en el vault; Azure DevOps sigue en solo lectura.
+- Arquitectura: un puerto propio para el vault (leer contexto, crear nota, guardar informe) con adaptador de
+  archivos y adaptador falso para tests; el dominio no conoce rutas.
+- Riesgo a vigilar: el texto de Contexto lo escribe la persona y pasa por la IA. Con cuentas personales, el
+  vault usado debe contener solo notas de la demo (misma regla que el snapshot: ningún dato de cliente).
+
+**Hecho si:** con un vault de prueba, una ejecución crea las notas que faltan sin tocar las existentes, el
+contexto escrito a mano aparece en el snapshot y en el informe, y los tests cubren el adaptador de archivos.
 
 ## Paso 9 — Medición con la herramienta
 

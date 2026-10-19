@@ -14,7 +14,8 @@
     "test": "tsx --test test/*.test.ts",
     "list:prs": "tsx scripts/list-prs.ts",
     "lint": "eslint .",
-    "prepare": "git config core.hooksPath .githooks"
+    "prepare": "git config core.hooksPath .githooks",
+    "list:tasks": "tsx scripts/list-tasks.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

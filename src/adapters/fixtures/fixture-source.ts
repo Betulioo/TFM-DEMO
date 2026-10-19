@@ -1,8 +1,8 @@
 // Adaptador falso: construye los datos a partir de los casos de fixtures/expected.json,
 // con fechas relativas a `now`. Así hay una sola lista de casos (la misma que usa el seed)
 // y se pueden probar los casos de fechas (M, N) que la demo real no permite crear.
-import type { PullRequest, User } from "../../domain/types.js";
-import { loadCases, type Case } from "./cases.js";
+import type { Iteration, PullRequest, StateCategory, User, WorkItem } from "../../domain/types.js";
+import { loadCases, type Case, type WorkItemSetup } from "./cases.js";
 import type { DevOpsSource } from "../../ports/devops-source.js";
 
 const DAY_MS = 86_400_000;
@@ -18,14 +18,37 @@ export function fixtureWorkItemId(index: number): number {
   return index + 101;
 }
 
+export const FIXTURE_ITERATIONS: Record<WorkItemSetup["iteration"], Iteration> = {
+  current: { id: "fixture-current", name: "Sprint actual" },
+  previous: { id: "fixture-previous", name: "Sprint anterior" },
+};
+
+/**
+ * Categorías del proceso Agile para los estados que usan los casos. El adaptador real no las fija:
+ * las lee de la API, porque cambian según el proceso y el tipo de work item.
+ */
+const AGILE_CATEGORIES: Record<string, StateCategory> = {
+  New: "Proposed",
+  Active: "InProgress",
+  Resolved: "Resolved",
+  Closed: "Completed",
+  Removed: "Removed",
+};
+
 export class FixtureSource implements DevOpsSource {
   private readonly pullRequests: PullRequest[];
+  private readonly workItems: { iterationId: string; workItem: WorkItem }[];
 
   constructor(cases: Case[], now: Date) {
     this.pullRequests = cases.flatMap((c, index) => {
       const pr = toPullRequest(c, index, now);
       return pr ? [pr] : [];
     });
+    this.workItems = cases.flatMap((c, index) =>
+      c.setup.entity === "workItem"
+        ? [{ iterationId: FIXTURE_ITERATIONS[c.setup.iteration].id, workItem: toWorkItem(c.setup, index, now) }]
+        : [],
+    );
   }
 
   static fromFile(now: Date, path?: string): FixtureSource {
@@ -47,6 +70,29 @@ export class FixtureSource implements DevOpsSource {
   async pullRequestById(id: number): Promise<PullRequest | undefined> {
     return this.pullRequests.find((pr) => pr.id === id);
   }
+
+  async currentIteration(): Promise<Iteration | undefined> {
+    return FIXTURE_ITERATIONS.current;
+  }
+
+  async workItemsInIteration(iterationId: string): Promise<WorkItem[]> {
+    return this.workItems.filter((w) => w.iterationId === iterationId).map((w) => w.workItem);
+  }
+}
+
+function toWorkItem(s: WorkItemSetup, index: number, now: Date): WorkItem {
+  const category = AGILE_CATEGORIES[s.state];
+  if (!category) throw new Error(`Estado "${s.state}" sin categoría en el adaptador falso.`);
+  return {
+    id: fixtureWorkItemId(index),
+    title: s.title,
+    type: s.type,
+    state: s.state,
+    stateCategory: category,
+    assignedTo: s.assignedToMe ? FIXTURE_ME : undefined,
+    changedAt: new Date(now.getTime() - (s.changedDaysAgo ?? 0) * DAY_MS).toISOString(),
+    pullRequestIds: s.pr ? [fixturePullRequestId(index)] : [],
+  };
 }
 
 function toPullRequest(c: Case, index: number, now: Date): PullRequest | undefined {
