@@ -26,9 +26,28 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Paso 6 — Vinculación, snapshot y tests (diseño en `docs/plan.md`). Clean code terminado (reglas en `error`);
-pendiente de confirmación y commit de la persona.
-Después, paso 6 — Vinculación, snapshot y tests.
+**Estado al traspaso (2026-10-19):** pasos 1–5 y 4.5 hechos y verificados; clean code terminado (reglas de nombres
+en `error`). Todo commiteado (último commit `f2a266e`). `npm run typecheck`, `npm run lint` y `npm test` (38/38) en
+verde. El paso 6 no se ha empezado.
+
+**Seguir por:** paso 6 (diseño en `docs/plan.md`), empezando por `src/domain/rules.ts`: añadir, como funciones
+puras que reciben `now` y los umbrales, "PR pendiente de mi revisión", "bloqueada", "aprobada" y "envejecida"
+(`docs/glosario.md`), con sus tests en `test/rules.test.ts`. Después: ramas en el puerto
+(`GET {project}/_apis/git/repositories/{repoId}/refs?filter=heads/`, comprobar la respuesta real antes),
+"siguiente paso" y "tarea estancada", `src/application/collect-snapshot.ts` y `npm run collect`.
+
+**Decisiones pendientes**
+- Si las comprobaciones usadas al renombrar (textos literales sin cambios y regresión de peticiones del seed) pasan
+  a ser un script del repo (`scripts/check-rename.ts`). Propuesto, no hecho.
+- Si se añaden al `CLAUDE.md` las instrucciones de trabajo dadas solo en el chat (ver propuesta del traspaso).
+
+**Problemas abiertos** (detectados, sin corregir; ninguno rompe los checks)
+- Las skills `testing` y `tests-semanticos` se solapan: `testing` aún contiene reglas de "qué" (nombres con
+  términos del glosario, fechas fijas, comparar IDs).
+- `test/architecture.test.ts` no detecta `fetch` usado sin llamar directamente (`const f = fetch`) ni un `method`
+  pasado en una variable; el lint sí marca cualquier uso de `fetch`. Límite no documentado en el test.
+- `azdo-source.ts` convierte `status`, `vote` y `category` de la API con `as`, sin validar el valor.
+- El paso 0 (medir la rutina manual en el cliente) sigue pendiente y lo hace la persona.
 
 ## Registro
 
