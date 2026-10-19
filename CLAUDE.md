@@ -51,7 +51,9 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
 ## Comandos
 
 - `npm install` — instala dependencias.
-- `npm run typecheck` — comprueba tipos. Ejecutar antes de dar un paso por terminado.
+- `npm run typecheck` — comprueba tipos.
+- `npm run lint` — ESLint con las reglas de capas y de solo lectura (`eslint.config.js`).
+  `typecheck`, `lint` y `npm test` deben pasar antes de dar un paso por terminado.
 - `npm test` — tests con `node:test` (sin red).
 - `npm run list:prs` — lista las PRs de la demo y las compara con `fixtures/demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run check:conn` — comprueba la conexión con Azure DevOps usando `.env` (solo lectura).

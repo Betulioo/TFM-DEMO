@@ -24,8 +24,8 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Paso 4.5, bloque B — Lint (diseño en `docs/plan.md`). Bloque A hecho, pendiente de confirmación.
-Después: bloques C y D, y luego el paso 5.
+Paso 4.5, bloque C — Hook pre-push (diseño en `docs/plan.md`). Bloque B hecho, pendiente de confirmación.
+Después: bloque D y luego el paso 5.
 
 ## Registro
 
@@ -43,6 +43,10 @@ Después: bloques C y D, y luego el paso 5.
 - Paso 4.5, bloque A: estructura hexagonal. `src/azdo/*` y `azdo-source.ts` → `src/adapters/azdo/`;
   `fixture-source.ts` y `cases.ts` → `src/adapters/fixtures/`. Solo rutas de import; typecheck, 10 tests,
   `list:prs` y `check:conn` siguen pasando. Reglas de capas comprobadas con grep (el lint las fijará en B).
+- Paso 4.5, bloque B: ESLint 10 + typescript-eslint 8 (`recommendedTypeChecked`) y `npm run lint`. Reglas
+  propias: capas con `no-restricted-imports` y `fetch` prohibido en `src/` salvo el cliente de solo lectura.
+  Probado con archivos temporales: las 6 violaciones (domain → adapters, domain → `node:fs`, ports →
+  adapters, src → scripts y dos `fetch`) fallan; el import permitido dentro de `domain/` pasa.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -88,6 +92,10 @@ Después: bloques C y D, y luego el paso 5.
 - `src/application/` no se crea hasta el paso 6, cuando tenga el caso de uso `collect-snapshot`.
 - El cliente de solo lectura puede importar el tipo `AzdoConfig` de `src/config.ts`; nada más de `src/`
   depende de `config.ts`.
+- `no-floating-promises` desactivada solo en `test/`: `node:test` gestiona las promesas de `test()`.
+- `require-await` desactivada solo en `src/adapters/fixtures/` y `test/`: allí `async` sin `await` es
+  intencionado (datos en memoria). Primero se cambió a `Promise.resolve(...)` para cumplir la regla, pero se
+  revirtió a petición de la persona porque `async` se lee mejor. En el resto del código la regla sigue activa.
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de
@@ -100,6 +108,8 @@ Después: bloques C y D, y luego el paso 5.
   `searchCriteria.reviewerId` / `searchCriteria.creatorId` + `searchCriteria.status=active`, y
   `{project}/_apis/git/pullrequests/{id}` para una PR completada. No se ha probado la paginación real
   (`$top`/`$skip`): la demo tiene menos de 100 PRs; solo está cubierta por un test con lector falso.
+- Límites del lint (no cubiertos): `globalThis.fetch` o módulos como `node:https` en un adaptador saltarían
+  la regla de `fetch`. La garantía principal de solo lectura sigue siendo que el cliente solo tiene `get`.
 
 **Errores y correcciones**
 - Vinculación rama ↔ tarea con "el nombre contiene el número": daba falsos positivos con ramas como

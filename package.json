@@ -12,11 +12,15 @@
     "check:conn": "tsx scripts/check-connection.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "test": "tsx --test test/*.test.ts",
-    "list:prs": "tsx scripts/list-prs.ts"
+    "list:prs": "tsx scripts/list-prs.ts",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
+    "eslint": "^10.13.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.71.2"
   }
 }
