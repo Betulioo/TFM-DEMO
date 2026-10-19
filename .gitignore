@@ -1,0 +1,10 @@
+node_modules/
+dist/
+
+# Credenciales: nunca se suben
+.env
+.env.*
+!.env.example
+
+# Salidas generadas (pueden contener datos reales del cliente)
+output/

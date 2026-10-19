@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "description": "Casos sembrados y resultado esperado del informe. Términos según docs/glosario.md. 'setup' lo usa el seed; 'expected' lo usa el verificador.",
+  "verifiedIn": {
+    "demo": "Se crea en el proyecto demo con AZDO_PAT_SEED.",
+    "demo-teammate": "Se crea en el proyecto demo solo si existe AZDO_PAT_TEAMMATE (segunda cuenta).",
+    "fixtures": "Solo con el adaptador falso: Azure DevOps no permite crear datos con fechas pasadas."
+  },
+  "cases": [
+    {
+      "key": "A",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "User Story", "title": "[A] Filtro de fechas en el buscador", "state": "New", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null },
+      "expected": { "inMyTasks": true, "nextStep": "Empezar" }
+    },
+    {
+      "key": "B",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[B] Carrusel de tarifas", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null },
+      "expected": { "inMyTasks": true, "nextStep": "Crear rama" }
+    },
+    {
+      "key": "C",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[C] Modal accesible de reserva", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": true, "pr": null },
+      "expected": { "inMyTasks": true, "nextStep": "Abrir PR" }
+    },
+    {
+      "key": "D",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[D] Header responsive en mobile", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": true, "pr": { "status": "active", "vote": null } },
+      "expected": { "inMyTasks": true, "nextStep": "Esperar revisión", "prIsMine": true, "pendingMyReview": false }
+    },
+    {
+      "key": "E",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Bug", "title": "[E] Precio con decimales mal redondeado", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": true, "pr": { "status": "active", "vote": -5 } },
+      "expected": { "inMyTasks": true, "nextStep": "Atender cambios solicitados", "prIsMine": true, "prBlocked": true, "pendingMyReview": false }
+    },
+    {
+      "key": "F",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[F] Tests del buscador", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": true, "pr": { "status": "active", "vote": 10 } },
+      "expected": { "inMyTasks": true, "nextStep": "Completar la PR", "prIsMine": true, "prApproved": true, "pendingMyReview": false }
+    },
+    {
+      "key": "G",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[G] Refactor de estilos de tarjetas", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": true, "pr": { "status": "completed", "vote": null } },
+      "expected": { "inMyTasks": true, "nextStep": "Cerrar la tarea" }
+    },
+    {
+      "key": "H",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[H] Documentar componentes", "state": "Closed", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null },
+      "expected": { "inMyTasks": false }
+    },
+    {
+      "key": "I",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[I] Migrar iconos (sprint anterior)", "state": "Active", "iteration": "previous", "assignedToMe": true, "branch": false, "pr": null },
+      "expected": { "inMyTasks": false }
+    },
+    {
+      "key": "J",
+      "verifiedIn": "demo",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[J] Revisar traducciones (sin asignar)", "state": "New", "iteration": "current", "assignedToMe": false, "branch": false, "pr": null },
+      "expected": { "inMyTasks": false }
+    },
+    {
+      "key": "K",
+      "verifiedIn": "demo-teammate",
+      "setup": { "entity": "pullRequest", "author": "teammate", "title": "[K] Paginación del listado de hoteles", "myVote": 0 },
+      "expected": { "pendingMyReview": true }
+    },
+    {
+      "key": "L",
+      "verifiedIn": "demo-teammate",
+      "setup": { "entity": "pullRequest", "author": "teammate", "title": "[L] Ajuste de colores del footer", "myVote": 10 },
+      "expected": { "pendingMyReview": false }
+    },
+    {
+      "key": "M",
+      "verifiedIn": "fixtures",
+      "setup": { "entity": "pullRequest", "author": "teammate", "title": "[M] Cache de resultados de búsqueda", "myVote": 0, "createdDaysAgo": 5 },
+      "expected": { "pendingMyReview": true, "aged": true }
+    },
+    {
+      "key": "N",
+      "verifiedIn": "fixtures",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[N] Skeleton de carga", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null, "changedDaysAgo": 4 },
+      "expected": { "inMyTasks": true, "nextStep": "Crear rama", "stale": true }
+    }
+  ]
+}

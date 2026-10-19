@@ -1,0 +1,20 @@
+{
+  "name": "azdo-daily-brief",
+  "version": "0.1.0",
+  "description": "Informe diario asistido por IA a partir de PRs y work items de Azure DevOps",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "check:conn": "tsx scripts/check-connection.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
