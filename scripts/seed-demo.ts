@@ -6,30 +6,29 @@ import { loadConfig, optionalEnv } from "../src/config.js";
 import { loadCases } from "../src/adapters/fixtures/cases.js";
 import { AzdoWriteClient } from "./lib/write-client.js";
 import { runSeed } from "./lib/seed.js";
-
-const DEMO_IDS_PATH = "fixtures/demo-ids.json";
+import { DEMO_IDS_PATH } from "./lib/demo.js";
 
 async function main(): Promise<void> {
   const config = loadConfig("AZDO_PAT_SEED");
   const teammatePat = optionalEnv("AZDO_PAT_TEAMMATE");
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const terminal = createInterface({ input: process.stdin, output: process.stdout });
 
   try {
     await runSeed({
       orgUrl: config.orgUrl,
       project: config.project,
       cases: loadCases(),
-      me: new AzdoWriteClient(config.orgUrl, config.pat),
-      mate: teammatePat ? new AzdoWriteClient(config.orgUrl, teammatePat) : undefined,
+      currentUserClient: new AzdoWriteClient(config.orgUrl, config.pat),
+      teammateClient: teammatePat ? new AzdoWriteClient(config.orgUrl, teammatePat) : undefined,
       userEmail: optionalEnv("AZDO_USER_EMAIL"),
-      ask: (question) => rl.question(question),
+      ask: (question) => terminal.question(question),
       saveDemoIds: (data) => {
         writeFileSync(DEMO_IDS_PATH, `${JSON.stringify(data, null, 2)}\n`);
         console.log(`IDs guardados en ${DEMO_IDS_PATH}`);
       },
     });
   } finally {
-    rl.close();
+    terminal.close();
   }
 }
 

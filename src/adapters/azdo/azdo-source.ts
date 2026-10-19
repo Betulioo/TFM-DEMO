@@ -72,7 +72,7 @@ export class AzdoSource implements DevOpsSource {
 
   async pullRequestById(id: number): Promise<PullRequest | undefined> {
     try {
-      return toPullRequest(await this.reader.get<ApiPullRequest>(`${this.p}/_apis/git/pullrequests/${id}`));
+      return toPullRequest(await this.reader.get<ApiPullRequest>(`${this.encodedProject}/_apis/git/pullrequests/${id}`));
     } catch (error) {
       if (error instanceof AzdoHttpError && error.status === 404) return undefined;
       throw error;
@@ -80,24 +80,29 @@ export class AzdoSource implements DevOpsSource {
   }
 
   async currentIteration(): Promise<Iteration | undefined> {
-    const result = await this.reader.get<{ value: ApiIteration[] }>(`${this.p}/${await this.teamPath()}/_apis/work/teamsettings/iterations`, {
+    const result = await this.reader.get<{ value: ApiIteration[] }>(`${this.encodedProject}/${await this.teamPath()}/_apis/work/teamsettings/iterations`, {
       $timeframe: "current",
     });
-    const it = result.value[0];
-    if (!it) return undefined;
-    return { id: it.id, name: it.name, startDate: it.attributes?.startDate ?? undefined, finishDate: it.attributes?.finishDate ?? undefined };
+    const iteration = result.value[0];
+    if (!iteration) return undefined;
+    return {
+      id: iteration.id,
+      name: iteration.name,
+      startDate: iteration.attributes?.startDate ?? undefined,
+      finishDate: iteration.attributes?.finishDate ?? undefined,
+    };
   }
 
   async workItemsInIteration(iterationId: string): Promise<WorkItem[]> {
     const links = await this.reader.get<{ workItemRelations: { target?: { id: number } }[] }>(
-      `${this.p}/${await this.teamPath()}/_apis/work/teamsettings/iterations/${iterationId}/workitems`,
+      `${this.encodedProject}/${await this.teamPath()}/_apis/work/teamsettings/iterations/${iterationId}/workitems`,
     );
-    const ids = [...new Set(links.workItemRelations.flatMap((r) => (r.target ? [r.target.id] : [])))];
+    const ids = [...new Set(links.workItemRelations.flatMap((relation) => (relation.target ? [relation.target.id] : [])))];
 
     const result: WorkItem[] = [];
     for (let i = 0; i < ids.length; i += WORK_ITEMS_BATCH) {
       // `$expand` no se puede combinar con `fields` (la API responde 400): se piden los work items completos.
-      const batch = await this.reader.get<{ value: ApiWorkItem[] }>(`${this.p}/_apis/wit/workitems`, {
+      const batch = await this.reader.get<{ value: ApiWorkItem[] }>(`${this.encodedProject}/_apis/wit/workitems`, {
         ids: ids.slice(i, i + WORK_ITEMS_BATCH).join(","),
         $expand: "relations",
       });
@@ -112,9 +117,9 @@ export class AzdoSource implements DevOpsSource {
     let states = this.categories.get(type);
     if (!states) {
       const result = await this.reader.get<{ value: { name: string; category: string }[] }>(
-        `${this.p}/_apis/wit/workitemtypes/${encodeURIComponent(type)}/states`,
+        `${this.encodedProject}/_apis/wit/workitemtypes/${encodeURIComponent(type)}/states`,
       );
-      states = new Map(result.value.map((s) => [s.name, s.category as StateCategory]));
+      states = new Map(result.value.map((state) => [state.name, state.category as StateCategory]));
       this.categories.set(type, states);
     }
     const category = states.get(api.fields["System.State"]);
@@ -124,14 +129,14 @@ export class AzdoSource implements DevOpsSource {
 
   private async teamPath(): Promise<string> {
     if (!this.team) {
-      const project = await this.reader.get<{ defaultTeam?: { name?: string } }>(`_apis/projects/${this.p}`);
+      const project = await this.reader.get<{ defaultTeam?: { name?: string } }>(`_apis/projects/${this.encodedProject}`);
       if (!project.defaultTeam?.name) throw new Error(`El proyecto ${this.project} no tiene equipo por defecto.`);
       this.team = project.defaultTeam.name;
     }
     return encodeURIComponent(this.team);
   }
 
-  private get p(): string {
+  private get encodedProject(): string {
     return encodeURIComponent(this.project);
   }
 
@@ -139,7 +144,7 @@ export class AzdoSource implements DevOpsSource {
   private async listActive(criteria: Record<string, string>): Promise<PullRequest[]> {
     const result: PullRequest[] = [];
     for (let skip = 0; ; skip += PAGE_SIZE) {
-      const page = await this.reader.get<{ value: ApiPullRequest[] }>(`${this.p}/_apis/git/pullrequests`, {
+      const page = await this.reader.get<{ value: ApiPullRequest[] }>(`${this.encodedProject}/_apis/git/pullrequests`, {
         ...criteria,
         "searchCriteria.status": "active",
         $top: String(PAGE_SIZE),
@@ -160,23 +165,23 @@ export function toPullRequest(api: ApiPullRequest): PullRequest {
     author: { id: api.createdBy.id, displayName: api.createdBy.displayName },
     createdAt: api.creationDate,
     sourceBranch: api.sourceRefName.replace(/^refs\/heads\//, ""),
-    reviewers: (api.reviewers ?? []).map((r) => ({ id: r.id, displayName: r.displayName, vote: r.vote as Vote })),
+    reviewers: (api.reviewers ?? []).map((reviewer) => ({ id: reviewer.id, displayName: reviewer.displayName, vote: reviewer.vote as Vote })),
   };
 }
 
 export function toWorkItem(api: ApiWorkItem, stateCategory: StateCategory): WorkItem {
-  const f = api.fields;
-  const assigned = f["System.AssignedTo"];
+  const fields = api.fields;
+  const assigned = fields["System.AssignedTo"];
   return {
     id: api.id,
-    title: f["System.Title"],
-    type: f["System.WorkItemType"],
-    state: f["System.State"],
+    title: fields["System.Title"],
+    type: fields["System.WorkItemType"],
+    state: fields["System.State"],
     stateCategory,
     assignedTo: assigned ? { id: assigned.id, displayName: assigned.displayName } : undefined,
-    changedAt: f["System.ChangedDate"],
-    pullRequestIds: (api.relations ?? []).flatMap((r) => {
-      const match = r.rel === "ArtifactLink" ? PR_LINK.exec(r.url) : null;
+    changedAt: fields["System.ChangedDate"],
+    pullRequestIds: (api.relations ?? []).flatMap((relation) => {
+      const match = relation.rel === "ArtifactLink" ? PR_LINK.exec(relation.url) : null;
       return match?.[1] ? [Number(match[1])] : [];
     }),
   };

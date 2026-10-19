@@ -40,13 +40,13 @@ export class FixtureSource implements DevOpsSource {
   private readonly workItems: { iterationId: string; workItem: WorkItem }[];
 
   constructor(cases: Case[], now: Date) {
-    this.pullRequests = cases.flatMap((c, index) => {
-      const pr = toPullRequest(c, index, now);
-      return pr ? [pr] : [];
+    this.pullRequests = cases.flatMap((testCase, index) => {
+      const pullRequest = toPullRequest(testCase, index, now);
+      return pullRequest ? [pullRequest] : [];
     });
-    this.workItems = cases.flatMap((c, index) =>
-      c.setup.entity === "workItem"
-        ? [{ iterationId: FIXTURE_ITERATIONS[c.setup.iteration].id, workItem: toWorkItem(c.setup, index, now) }]
+    this.workItems = cases.flatMap((testCase, index) =>
+      testCase.setup.entity === "workItem"
+        ? [{ iterationId: FIXTURE_ITERATIONS[testCase.setup.iteration].id, workItem: toWorkItem(testCase.setup, index, now) }]
         : [],
     );
   }
@@ -60,15 +60,17 @@ export class FixtureSource implements DevOpsSource {
   }
 
   async pullRequestsToReview(): Promise<PullRequest[]> {
-    return this.pullRequests.filter((pr) => pr.status === "active" && pr.reviewers.some((r) => r.id === FIXTURE_ME.id));
+    return this.pullRequests.filter(
+      (pullRequest) => pullRequest.status === "active" && pullRequest.reviewers.some((reviewer) => reviewer.id === FIXTURE_ME.id),
+    );
   }
 
   async myPullRequests(): Promise<PullRequest[]> {
-    return this.pullRequests.filter((pr) => pr.status === "active" && pr.author.id === FIXTURE_ME.id);
+    return this.pullRequests.filter((pullRequest) => pullRequest.status === "active" && pullRequest.author.id === FIXTURE_ME.id);
   }
 
   async pullRequestById(id: number): Promise<PullRequest | undefined> {
-    return this.pullRequests.find((pr) => pr.id === id);
+    return this.pullRequests.find((pullRequest) => pullRequest.id === id);
   }
 
   async currentIteration(): Promise<Iteration | undefined> {
@@ -76,53 +78,58 @@ export class FixtureSource implements DevOpsSource {
   }
 
   async workItemsInIteration(iterationId: string): Promise<WorkItem[]> {
-    return this.workItems.filter((w) => w.iterationId === iterationId).map((w) => w.workItem);
+    return this.workItems.filter((entry) => entry.iterationId === iterationId).map((entry) => entry.workItem);
   }
 }
 
-function toWorkItem(s: WorkItemSetup, index: number, now: Date): WorkItem {
-  const category = AGILE_CATEGORIES[s.state];
-  if (!category) throw new Error(`Estado "${s.state}" sin categoría en el adaptador falso.`);
+function toWorkItem(setup: WorkItemSetup, index: number, now: Date): WorkItem {
+  const category = AGILE_CATEGORIES[setup.state];
+  if (!category) throw new Error(`Estado "${setup.state}" sin categoría en el adaptador falso.`);
   return {
     id: fixtureWorkItemId(index),
-    title: s.title,
-    type: s.type,
-    state: s.state,
+    title: setup.title,
+    type: setup.type,
+    state: setup.state,
     stateCategory: category,
-    assignedTo: s.assignedToMe ? FIXTURE_ME : undefined,
-    changedAt: new Date(now.getTime() - (s.changedDaysAgo ?? 0) * DAY_MS).toISOString(),
-    pullRequestIds: s.pr ? [fixturePullRequestId(index)] : [],
+    assignedTo: setup.assignedToMe ? FIXTURE_ME : undefined,
+    changedAt: daysBefore(now, setup.changedDaysAgo ?? 0),
+    pullRequestIds: setup.pr ? [fixturePullRequestId(index)] : [],
   };
 }
 
-function toPullRequest(c: Case, index: number, now: Date): PullRequest | undefined {
-  const s = c.setup;
+function toPullRequest(testCase: Case, index: number, now: Date): PullRequest | undefined {
+  const setup = testCase.setup;
   const id = fixturePullRequestId(index);
 
-  if (s.entity === "pullRequest") {
+  if (setup.entity === "pullRequest") {
     // PR de un compañero en la que el usuario es revisor.
     return {
       id,
-      title: s.title,
+      title: setup.title,
       status: "active",
       isDraft: false,
       author: FIXTURE_TEAMMATE,
-      createdAt: new Date(now.getTime() - (s.createdDaysAgo ?? 0) * DAY_MS).toISOString(),
-      sourceBranch: `feat/revision-${c.key.toLowerCase()}`,
-      reviewers: [{ ...FIXTURE_ME, vote: s.myVote }],
+      createdAt: daysBefore(now, setup.createdDaysAgo ?? 0),
+      sourceBranch: `feat/revision-${testCase.key.toLowerCase()}`,
+      reviewers: [{ ...FIXTURE_ME, vote: setup.myVote }],
     };
   }
 
-  if (!s.pr) return undefined;
+  if (!setup.pr) return undefined;
   // PR propia de una tarea; el revisor es el compañero (si hay voto).
   return {
     id,
-    title: s.title,
-    status: s.pr.status,
+    title: setup.title,
+    status: setup.pr.status,
     isDraft: false,
     author: FIXTURE_ME,
     createdAt: now.toISOString(),
-    sourceBranch: `feat/${fixtureWorkItemId(index)}_${c.key.toLowerCase()}`,
-    reviewers: s.pr.vote === null ? [] : [{ ...FIXTURE_TEAMMATE, vote: s.pr.vote }],
+    sourceBranch: `feat/${fixtureWorkItemId(index)}_${testCase.key.toLowerCase()}`,
+    reviewers: setup.pr.vote === null ? [] : [{ ...FIXTURE_TEAMMATE, vote: setup.pr.vote }],
   };
+}
+
+/** Fecha ISO `days` días naturales antes de `now`. */
+function daysBefore(now: Date, days: number): string {
+  return new Date(now.getTime() - days * DAY_MS).toISOString();
 }

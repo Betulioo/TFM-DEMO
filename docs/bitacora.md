@@ -26,8 +26,8 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Clean code: renombrar por bloques (`src` → `scripts` + DRY en `scripts/lib/demo.ts` → `test`) y pasar las
-reglas de nombres a `error`. Bloque de reglas y lint hecho, pendiente de confirmación.
+Clean code: bloque `test` y pasar las reglas de nombres a `error` (incluido el import `js` de
+`eslint.config.js`). Bloques de reglas, `src` y `scripts` hechos.
 Después, paso 6 — Vinculación, snapshot y tests.
 
 ## Registro
@@ -73,6 +73,15 @@ Después, paso 6 — Vinculación, snapshot y tests.
 - Clean code, bloque de reglas: `CLAUDE.md` → "Código limpio" y `id-length` / `id-denylist` en `eslint.config.js`
   (warn). Línea base: 176 avisos (99 `id-length`, 77 `id-denylist`): `src` 21, `scripts` 90, `test` 64 y
   `eslint.config.js` 1.
+- Clean code, bloque `src`: 21 avisos → 0 (`azdo-source.ts`, `fixture-source.ts`, `cases.ts`, `rules.ts`). Solo
+  nombres internos; las interfaces exportadas no cambian. DRY: `daysBefore(now, days)` en el adaptador falso en
+  vez de repetir el cálculo. Lint, typecheck, 38 tests, `list:prs` y `list:tasks` contra la demo en verde.
+- Clean code, bloque `scripts`: 90 avisos → 0. DRY: `scripts/lib/demo.ts` (`DEMO_IDS_PATH`, tipo `DemoIds`,
+  elegir adaptador por `--fixtures`, leer `demo-ids.json`, líneas OK/FALLO, resumen y `runScript`), usado por
+  `list-prs`, `list-tasks` y `seed-demo`. En `seed.ts`: `SeedDeps` → `SeedDependencies`, `Ctx` → `SeedContext`,
+  `me`/`mate` → `currentUserClient`/`teammateClient`… (en `test/seed.test.ts` solo esos nombres, para compilar).
+  Verificado: lint, typecheck, 38 tests, `list:prs` y `list:tasks` contra la demo, y una regresión sin red que
+  ejecuta el `runSeed` anterior y el nuevo con el mismo cliente falso: 54 peticiones idénticas.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -206,3 +215,8 @@ Después, paso 6 — Vinculación, snapshot y tests.
   Patrón común: **no comprobar contra lo que ya existe** (`grep`, `git diff`) y **cerrar sin lista de
   comprobación**. Mejora aplicada: sección "Forma de trabajar" en `CLAUDE.md` (antes de implementar + lista de
   cierre de 5 puntos).
+- Renombrado de `refs` → `references` en `seed.ts` con una expresión regular: cambió también texto de la API
+  (`"refs/heads/main"` y el endpoint `/refs`). Ningún test lo detectaba (el control del seed para en la primera
+  escritura). Se vio al revisar el diff. Corrección: restaurar los literales y comprobar dos cosas en cada
+  renombrado: (1) que los textos literales del archivo no cambian y (2) una regresión antes/después de las
+  peticiones del seed con un cliente falso. Lección: un renombrado automático nunca debe tocar cadenas.

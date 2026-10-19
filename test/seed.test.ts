@@ -1,7 +1,7 @@
 // Salvaguardas del seed: si alguna falla, no se hace ninguna escritura. Sin red: clientes falsos.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { organizationName, runSeed, type SeedDeps } from "../scripts/lib/seed.js";
+import { organizationName, runSeed, type SeedDependencies } from "../scripts/lib/seed.js";
 import type { Method, SeedClient } from "../scripts/lib/write-client.js";
 import { loadCases } from "../src/adapters/fixtures/cases.js";
 
@@ -53,12 +53,12 @@ interface Scenario {
 function setup({ answers = ["TFM-Demo", "TFM Demo"], me = {}, mate = {} }: Scenario) {
   const calls: Call[] = [];
   const pending = [...answers];
-  const deps: SeedDeps = {
+  const deps: SeedDependencies = {
     orgUrl: "https://dev.azure.com/TFM-Demo",
     project: "TFM Demo",
     cases: loadCases(),
-    me: fakeClient({ userId: "me", repos: 1, ...me }, calls),
-    mate: mate === null ? undefined : fakeClient({ userId: "mate", repos: 1, ...mate }, calls),
+    currentUserClient: fakeClient({ userId: "me", repos: 1, ...me }, calls),
+    teammateClient: mate === null ? undefined : fakeClient({ userId: "mate", repos: 1, ...mate }, calls),
     async ask() {
       return pending.shift() ?? "";
     },

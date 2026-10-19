@@ -10,17 +10,18 @@
 // Si falla a medias, lo más rápido es borrar el proyecto demo, crearlo de nuevo y repetir.
 import { getAuthenticatedUser, type AuthenticatedUser } from "../../src/adapters/azdo/identity.js";
 import type { SeedClient } from "./write-client.js";
+import type { DemoIds } from "./demo.js";
 import type { Case, PullRequestSetup, WorkItemSetup } from "../../src/adapters/fixtures/cases.js";
 
 const SEED_TAG = "tfm-seed";
 const ZERO_SHA = "0".repeat(40);
 
-export interface SeedDeps {
+export interface SeedDependencies {
   orgUrl: string;
   project: string;
   cases: Case[];
-  me: SeedClient;
-  mate?: SeedClient;
+  currentUserClient: SeedClient;
+  teammateClient?: SeedClient;
   /** Correo del usuario si Azure DevOps no lo devuelve (AZDO_USER_EMAIL). */
   userEmail?: string;
   /** Hace una pregunta a la persona y devuelve su respuesta. */
@@ -29,97 +30,90 @@ export interface SeedDeps {
   saveDemoIds(data: DemoIds): void;
 }
 
-export interface DemoIds {
-  generatedAt: string;
-  project: string;
-  workItems: Record<string, number>;
-  pullRequests: Record<string, number>;
-  skipped: string[];
-}
-
-interface Ctx {
-  me: SeedClient;
-  mate?: SeedClient;
-  meUser: AuthenticatedUser;
-  mateUser?: AuthenticatedUser;
+interface SeedContext {
+  currentUserClient: SeedClient;
+  teammateClient?: SeedClient;
+  currentUser: AuthenticatedUser;
+  teammate?: AuthenticatedUser;
   myEmail: string;
   project: string;
-  p: string; // nombre del proyecto codificado para URLs
-  repoId: string;
+  /** Nombre del proyecto codificado para URLs. */
+  encodedProject: string;
+  repositoryId: string;
   mainSha: string;
   iterationPaths: Record<"current" | "previous", string>;
 }
 
-interface PullRequest {
+interface CreatedPullRequest {
   pullRequestId: number;
   lastMergeSourceCommit?: { commitId?: string };
 }
 
-export async function runSeed(deps: SeedDeps): Promise<DemoIds> {
-  const { me, mate, project, cases } = deps;
-  await confirm(deps);
+export async function runSeed(dependencies: SeedDependencies): Promise<DemoIds> {
+  const { currentUserClient, teammateClient, project, cases } = dependencies;
+  await confirm(dependencies);
 
-  const p = encodeURIComponent(project);
+  const encodedProject = encodeURIComponent(project);
 
-  const meUser = await getAuthenticatedUser(me);
-  const mateUser = mate ? await getAuthenticatedUser(mate) : undefined;
-  if (mateUser && mateUser.id === meUser.id) {
+  const currentUser = await getAuthenticatedUser(currentUserClient);
+  const teammate = teammateClient ? await getAuthenticatedUser(teammateClient) : undefined;
+  if (teammate && teammate.id === currentUser.id) {
     throw new Error("AZDO_PAT_TEAMMATE pertenece a tu misma cuenta. Debe ser el token de una segunda cuenta.");
   }
-  const myEmail = meUser.email ?? deps.userEmail;
+  const myEmail = currentUser.email ?? dependencies.userEmail;
   if (!myEmail) throw new Error("No se pudo averiguar tu correo. Añade AZDO_USER_EMAIL en .env.");
 
-  console.log(`Tú:         ${meUser.displayName}`);
-  console.log(`Compañero:  ${mateUser?.displayName ?? "no configurado (se omiten los casos K y L)"}`);
+  console.log(`Tú:         ${currentUser.displayName}`);
+  console.log(`Compañero:  ${teammate?.displayName ?? "no configurado (se omiten los casos K y L)"}`);
 
-  if (mate) await ensureTeammateSeesRepos(me, mate, p);
-  await ensureProjectIsEmpty(me, p);
+  if (teammateClient) await ensureTeammateSeesRepos(currentUserClient, teammateClient, encodedProject);
+  await ensureProjectIsEmpty(currentUserClient, encodedProject);
 
   log("Creando iteraciones");
-  const iterationPaths = await createIterations(me, project, p);
+  const iterationPaths = await createIterations(currentUserClient, project, encodedProject);
 
   log("Preparando el repositorio");
-  const { repoId, mainSha } = await ensureMainBranch(me, project, p);
+  const { repositoryId, mainSha } = await ensureMainBranch(currentUserClient, project, encodedProject);
 
-  const ctx: Ctx = { me, mate, meUser, mateUser, myEmail, project, p, repoId, mainSha, iterationPaths };
+  const context: SeedContext = { currentUserClient, teammateClient, currentUser, teammate, myEmail, project, encodedProject, repositoryId, mainSha, iterationPaths };
   const workItems: Record<string, number> = {};
   const pullRequests: Record<string, number> = {};
   const skipped: string[] = [];
 
-  for (const c of cases) {
-    if (c.verifiedIn === "fixtures") continue;
-    if (c.verifiedIn === "demo-teammate" && !mate) {
-      skipped.push(c.key);
+  for (const testCase of cases) {
+    if (testCase.verifiedIn === "fixtures") continue;
+    if (testCase.verifiedIn === "demo-teammate" && !teammateClient) {
+      skipped.push(testCase.key);
       continue;
     }
 
-    if (c.setup.entity === "workItem") {
-      const result = await seedWorkItemCase(ctx, c, c.setup);
-      workItems[c.key] = result.workItemId;
-      if (result.pullRequestId) pullRequests[c.key] = result.pullRequestId;
+    if (testCase.setup.entity === "workItem") {
+      const result = await seedWorkItemCase(context, testCase, testCase.setup);
+      workItems[testCase.key] = result.workItemId;
+      if (result.pullRequestId) pullRequests[testCase.key] = result.pullRequestId;
     } else {
-      pullRequests[c.key] = await seedTeammatePrCase(ctx, c, c.setup);
+      pullRequests[testCase.key] = await seedTeammatePrCase(context, testCase, testCase.setup);
     }
   }
 
   const demoIds: DemoIds = { generatedAt: new Date().toISOString(), project, workItems, pullRequests, skipped };
-  deps.saveDemoIds(demoIds);
+  dependencies.saveDemoIds(demoIds);
 
   console.log("\nSeed completado.");
-  console.log(`Work items: ${Object.entries(workItems).map(([k, id]) => `${k}=#${id}`).join(", ")}`);
-  console.log(`PRs:        ${Object.entries(pullRequests).map(([k, id]) => `${k}=!${id}`).join(", ") || "ninguna"}`);
+  console.log(`Work items: ${Object.entries(workItems).map(([caseKey, id]) => `${caseKey}=#${id}`).join(", ")}`);
+  console.log(`PRs:        ${Object.entries(pullRequests).map(([caseKey, id]) => `${caseKey}=!${id}`).join(", ") || "ninguna"}`);
   if (skipped.length) console.log(`Omitidos:   ${skipped.join(", ")} (falta AZDO_PAT_TEAMMATE)`);
   return demoIds;
 }
 
 // --- Salvaguardas --------------------------------------------------------------
 
-async function confirm(deps: SeedDeps): Promise<void> {
-  const org = organizationName(deps.orgUrl);
-  console.log(`Vas a crear datos de prueba en:\n  ${deps.orgUrl}\n  Proyecto: ${deps.project}\n`);
-  const answerOrg = (await deps.ask("Escribe el nombre de la organización para confirmar: ")).trim();
-  const answerProject = (await deps.ask("Escribe el nombre del proyecto para confirmar: ")).trim();
-  if (answerOrg !== org || answerProject !== deps.project) {
+async function confirm(dependencies: SeedDependencies): Promise<void> {
+  const organization = organizationName(dependencies.orgUrl);
+  console.log(`Vas a crear datos de prueba en:\n  ${dependencies.orgUrl}\n  Proyecto: ${dependencies.project}\n`);
+  const organizationAnswer = (await dependencies.ask("Escribe el nombre de la organización para confirmar: ")).trim();
+  const projectAnswer = (await dependencies.ask("Escribe el nombre del proyecto para confirmar: ")).trim();
+  if (organizationAnswer !== organization || projectAnswer !== dependencies.project) {
     throw new Error("Confirmación incorrecta. No se ha creado nada.");
   }
 }
@@ -130,8 +124,8 @@ export function organizationName(orgUrl: string): string {
   return url.pathname.split("/").find(Boolean) ?? url.hostname.split(".")[0] ?? orgUrl;
 }
 
-async function ensureProjectIsEmpty(me: SeedClient, p: string): Promise<void> {
-  const result = await me.request<{ workItems?: { id: number }[] }>("POST", `${p}/_apis/wit/wiql`, {
+async function ensureProjectIsEmpty(currentUserClient: SeedClient, encodedProject: string): Promise<void> {
+  const result = await currentUserClient.request<{ workItems?: { id: number }[] }>("POST", `${encodedProject}/_apis/wit/wiql`, {
     body: { query: "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project" },
   });
   const count = result.workItems?.length ?? 0;
@@ -143,13 +137,16 @@ async function ensureProjectIsEmpty(me: SeedClient, p: string): Promise<void> {
 // Con acceso Stakeholder la cuenta ve el proyecto pero no los repositorios, y el seed fallaría a medias
 // al añadirla como revisora. Se compara con lo que ves tú para distinguir "sin permisos" de "sin repositorio".
 // Se comprueba antes de escribir nada.
-async function ensureTeammateSeesRepos(me: SeedClient, mate: SeedClient, p: string): Promise<void> {
-  const path = `${p}/_apis/git/repositories`;
-  const [mine, theirs] = await Promise.all([me.get<{ value: unknown[] }>(path), mate.get<{ value: unknown[] }>(path)]);
-  if (mine.value.length === 0) {
+async function ensureTeammateSeesRepos(currentUserClient: SeedClient, teammateClient: SeedClient, encodedProject: string): Promise<void> {
+  const path = `${encodedProject}/_apis/git/repositories`;
+  const [ownRepositories, teammateRepositories] = await Promise.all([
+    currentUserClient.get<{ value: unknown[] }>(path),
+    teammateClient.get<{ value: unknown[] }>(path),
+  ]);
+  if (ownRepositories.value.length === 0) {
     throw new Error("El proyecto no tiene ningún repositorio Git. Crea uno en Repos. No se ha creado nada.");
   }
-  if (theirs.value.length === 0) {
+  if (teammateRepositories.value.length === 0) {
     throw new Error(
       "El compañero no ve ningún repositorio del proyecto. Dale nivel de acceso Basic (no Stakeholder) " +
         "y añádelo a Contributors. No se ha creado nada.",
@@ -159,8 +156,8 @@ async function ensureTeammateSeesRepos(me: SeedClient, mate: SeedClient, p: stri
 
 // --- Iteraciones ---------------------------------------------------------------
 
-async function createIterations(me: SeedClient, project: string, p: string): Promise<Ctx["iterationPaths"]> {
-  const team = (await me.get<{ defaultTeam?: { name?: string } }>(`_apis/projects/${p}`)).defaultTeam?.name;
+async function createIterations(currentUserClient: SeedClient, project: string, encodedProject: string): Promise<SeedContext["iterationPaths"]> {
+  const team = (await currentUserClient.get<{ defaultTeam?: { name?: string } }>(`_apis/projects/${encodedProject}`)).defaultTeam?.name;
   if (!team) throw new Error("El proyecto no tiene equipo por defecto.");
 
   const today = startOfDay(new Date());
@@ -170,11 +167,11 @@ async function createIterations(me: SeedClient, project: string, p: string): Pro
   };
 
   for (const sprint of Object.values(sprints)) {
-    const node = await me.request<{ identifier: string }>("POST", `${p}/_apis/wit/classificationnodes/Iterations`, {
+    const node = await currentUserClient.request<{ identifier: string }>("POST", `${encodedProject}/_apis/wit/classificationnodes/Iterations`, {
       body: { name: sprint.name, attributes: { startDate: sprint.start.toISOString(), finishDate: sprint.finish.toISOString() } },
     });
     // La iteración solo cuenta como "actual" si el equipo la tiene seleccionada.
-    await me.request("POST", `${p}/${encodeURIComponent(team)}/_apis/work/teamsettings/iterations`, {
+    await currentUserClient.request("POST", `${encodedProject}/${encodeURIComponent(team)}/_apis/work/teamsettings/iterations`, {
       body: { id: node.identifier },
     });
   }
@@ -187,19 +184,19 @@ async function createIterations(me: SeedClient, project: string, p: string): Pro
 
 // --- Repositorio ---------------------------------------------------------------
 
-async function ensureMainBranch(me: SeedClient, project: string, p: string): Promise<{ repoId: string; mainSha: string }> {
-  const repos = await me.get<{ value: { id: string; name: string; defaultBranch?: string }[] }>(`${p}/_apis/git/repositories`);
-  const repo = repos.value.find((r) => r.name === project) ?? repos.value[0];
-  if (!repo) throw new Error("El proyecto no tiene repositorio Git.");
+async function ensureMainBranch(currentUserClient: SeedClient, project: string, encodedProject: string): Promise<{ repositoryId: string; mainSha: string }> {
+  const repositories = await currentUserClient.get<{ value: { id: string; name: string; defaultBranch?: string }[] }>(`${encodedProject}/_apis/git/repositories`);
+  const repository = repositories.value.find((repository) => repository.name === project) ?? repositories.value[0];
+  if (!repository) throw new Error("El proyecto no tiene repositorio Git.");
 
-  const refs = await me.get<{ value: { name: string; objectId: string }[] }>(`${p}/_apis/git/repositories/${repo.id}/refs`, {
+  const references = await currentUserClient.get<{ value: { name: string; objectId: string }[] }>(`${encodedProject}/_apis/git/repositories/${repository.id}/refs`, {
     filter: "heads/main",
   });
-  const main = refs.value.find((r) => r.name === "refs/heads/main");
-  if (main) return { repoId: repo.id, mainSha: main.objectId };
+  const main = references.value.find((reference) => reference.name === "refs/heads/main");
+  if (main) return { repositoryId: repository.id, mainSha: main.objectId };
 
   // Repositorio vacío: primer commit en main.
-  const push = await me.request<{ refUpdates: { newObjectId: string }[] }>("POST", `${p}/_apis/git/repositories/${repo.id}/pushes`, {
+  const push = await currentUserClient.request<{ refUpdates: { newObjectId: string }[] }>("POST", `${encodedProject}/_apis/git/repositories/${repository.id}/pushes`, {
     body: {
       refUpdates: [{ name: "refs/heads/main", oldObjectId: ZERO_SHA }],
       commits: [{ comment: "Inicio del proyecto demo", changes: [addFile("/README.md", "# TFM Demo\n\nProyecto de datos ficticios.\n")] }],
@@ -207,18 +204,18 @@ async function ensureMainBranch(me: SeedClient, project: string, p: string): Pro
   });
   const sha = push.refUpdates[0]?.newObjectId;
   if (!sha) throw new Error("No se pudo crear la rama main.");
-  return { repoId: repo.id, mainSha: sha };
+  return { repositoryId: repository.id, mainSha: sha };
 }
 
-async function createBranch(client: SeedClient, ctx: Ctx, branch: string, fileName: string): Promise<void> {
+async function createBranch(client: SeedClient, context: SeedContext, branch: string, fileName: string): Promise<void> {
   const ref = `refs/heads/${branch}`;
-  await client.request("POST", `${ctx.p}/_apis/git/repositories/${ctx.repoId}/refs`, {
-    body: [{ name: ref, oldObjectId: ZERO_SHA, newObjectId: ctx.mainSha }],
+  await client.request("POST", `${context.encodedProject}/_apis/git/repositories/${context.repositoryId}/refs`, {
+    body: [{ name: ref, oldObjectId: ZERO_SHA, newObjectId: context.mainSha }],
   });
   // Un commit propio para que la PR tenga cambios.
-  await client.request("POST", `${ctx.p}/_apis/git/repositories/${ctx.repoId}/pushes`, {
+  await client.request("POST", `${context.encodedProject}/_apis/git/repositories/${context.repositoryId}/pushes`, {
     body: {
-      refUpdates: [{ name: ref, oldObjectId: ctx.mainSha }],
+      refUpdates: [{ name: ref, oldObjectId: context.mainSha }],
       commits: [{ comment: `Trabajo en ${branch}`, changes: [addFile(`/src/${fileName}.txt`, `Cambio ficticio para ${branch}\n`)] }],
     },
   });
@@ -230,92 +227,92 @@ function addFile(path: string, content: string) {
 
 // --- Casos ---------------------------------------------------------------------
 
-async function seedWorkItemCase(ctx: Ctx, c: Case, s: WorkItemSetup): Promise<{ workItemId: number; pullRequestId?: number }> {
-  log(`Caso ${c.key}: ${s.type} "${s.title}"`);
+async function seedWorkItemCase(context: SeedContext, testCase: Case, setup: WorkItemSetup): Promise<{ workItemId: number; pullRequestId?: number }> {
+  log(`Caso ${testCase.key}: ${setup.type} "${setup.title}"`);
 
   const fields: [string, string][] = [
-    ["System.Title", s.title],
-    ["System.IterationPath", ctx.iterationPaths[s.iteration]],
+    ["System.Title", setup.title],
+    ["System.IterationPath", context.iterationPaths[setup.iteration]],
     ["System.Tags", SEED_TAG],
   ];
-  if (s.assignedToMe) fields.push(["System.AssignedTo", ctx.myEmail]);
+  if (setup.assignedToMe) fields.push(["System.AssignedTo", context.myEmail]);
 
-  const workItem = await ctx.me.request<{ id: number }>("POST", `${ctx.p}/_apis/wit/workitems/$${encodeURIComponent(s.type)}`, {
+  const workItem = await context.currentUserClient.request<{ id: number }>("POST", `${context.encodedProject}/_apis/wit/workitems/$${encodeURIComponent(setup.type)}`, {
     contentType: "application/json-patch+json",
     body: fields.map(([field, value]) => ({ op: "add", path: `/fields/${field}`, value })),
   });
 
   // Se crea en el estado inicial y después se mueve al estado del caso.
-  if (s.state !== "New") {
-    await ctx.me.request("PATCH", `${ctx.p}/_apis/wit/workitems/${workItem.id}`, {
+  if (setup.state !== "New") {
+    await context.currentUserClient.request("PATCH", `${context.encodedProject}/_apis/wit/workitems/${workItem.id}`, {
       contentType: "application/json-patch+json",
-      body: [{ op: "add", path: "/fields/System.State", value: s.state }],
+      body: [{ op: "add", path: "/fields/System.State", value: setup.state }],
     });
   }
 
-  if (!s.branch) return { workItemId: workItem.id };
+  if (!setup.branch) return { workItemId: workItem.id };
 
-  const branch = `feat/${workItem.id}_${slug(s.title)}`;
-  await createBranch(ctx.me, ctx, branch, slug(s.title));
-  if (!s.pr) return { workItemId: workItem.id };
+  const branch = `feat/${workItem.id}_${slug(setup.title)}`;
+  await createBranch(context.currentUserClient, context, branch, slug(setup.title));
+  if (!setup.pr) return { workItemId: workItem.id };
 
   // Revisor: el compañero si existe; si no, tú mismo.
-  const reviewer = s.pr.vote === null ? undefined : ctx.mateUser ? { client: ctx.mate!, user: ctx.mateUser } : { client: ctx.me, user: ctx.meUser };
+  const reviewer = setup.pr.vote === null ? undefined : context.teammate ? { client: context.teammateClient!, user: context.teammate } : { client: context.currentUserClient, user: context.currentUser };
 
-  const pr = await ctx.me.request<PullRequest>("POST", `${ctx.p}/_apis/git/repositories/${ctx.repoId}/pullrequests`, {
+  const pullRequest = await context.currentUserClient.request<CreatedPullRequest>("POST", `${context.encodedProject}/_apis/git/repositories/${context.repositoryId}/pullrequests`, {
     body: {
       sourceRefName: `refs/heads/${branch}`,
       targetRefName: "refs/heads/main",
-      title: s.title,
+      title: setup.title,
       description: "PR ficticia del proyecto demo.",
       reviewers: reviewer ? [{ id: reviewer.user.id }] : [],
       workItemRefs: [{ id: String(workItem.id) }],
     },
   });
 
-  if (reviewer && s.pr.vote !== null) await vote(reviewer.client, ctx, pr.pullRequestId, reviewer.user.id, s.pr.vote);
-  if (s.pr.status === "completed") await completePullRequest(ctx, pr);
+  if (reviewer && setup.pr.vote !== null) await vote(reviewer.client, context, pullRequest.pullRequestId, reviewer.user.id, setup.pr.vote);
+  if (setup.pr.status === "completed") await completePullRequest(context, pullRequest);
 
-  return { workItemId: workItem.id, pullRequestId: pr.pullRequestId };
+  return { workItemId: workItem.id, pullRequestId: pullRequest.pullRequestId };
 }
 
-async function seedTeammatePrCase(ctx: Ctx, c: Case, s: PullRequestSetup): Promise<number> {
-  log(`Caso ${c.key}: PR del compañero "${s.title}"`);
-  const mate = ctx.mate!;
+async function seedTeammatePrCase(context: SeedContext, testCase: Case, setup: PullRequestSetup): Promise<number> {
+  log(`Caso ${testCase.key}: PR del compañero "${setup.title}"`);
+  const teammateClient = context.teammateClient!;
   // Sin ID en la rama: no está vinculada a ninguna de tus tareas.
-  const branch = `feat/revision-${c.key.toLowerCase()}_${slug(s.title)}`;
-  await createBranch(mate, ctx, branch, slug(s.title));
+  const branch = `feat/revision-${testCase.key.toLowerCase()}_${slug(setup.title)}`;
+  await createBranch(teammateClient, context, branch, slug(setup.title));
 
-  const pr = await mate.request<PullRequest>("POST", `${ctx.p}/_apis/git/repositories/${ctx.repoId}/pullrequests`, {
+  const pullRequest = await teammateClient.request<CreatedPullRequest>("POST", `${context.encodedProject}/_apis/git/repositories/${context.repositoryId}/pullrequests`, {
     body: {
       sourceRefName: `refs/heads/${branch}`,
       targetRefName: "refs/heads/main",
-      title: s.title,
+      title: setup.title,
       description: "PR ficticia de un compañero.",
-      reviewers: [{ id: ctx.meUser.id }],
+      reviewers: [{ id: context.currentUser.id }],
     },
   });
-  if (s.myVote !== 0) await vote(ctx.me, ctx, pr.pullRequestId, ctx.meUser.id, s.myVote);
-  return pr.pullRequestId;
+  if (setup.myVote !== 0) await vote(context.currentUserClient, context, pullRequest.pullRequestId, context.currentUser.id, setup.myVote);
+  return pullRequest.pullRequestId;
 }
 
-async function vote(client: SeedClient, ctx: Ctx, prId: number, reviewerId: string, value: number): Promise<void> {
+async function vote(client: SeedClient, context: SeedContext, pullRequestId: number, reviewerId: string, value: number): Promise<void> {
   // Cada usuario solo puede emitir su propio voto: por eso se usa el cliente del revisor.
-  await client.request("PUT", `${ctx.p}/_apis/git/repositories/${ctx.repoId}/pullrequests/${prId}/reviewers/${reviewerId}`, {
+  await client.request("PUT", `${context.encodedProject}/_apis/git/repositories/${context.repositoryId}/pullrequests/${pullRequestId}/reviewers/${reviewerId}`, {
     body: { vote: value },
   });
 }
 
-async function completePullRequest(ctx: Ctx, pr: PullRequest): Promise<void> {
-  let commitId = pr.lastMergeSourceCommit?.commitId;
+async function completePullRequest(context: SeedContext, pullRequest: CreatedPullRequest): Promise<void> {
+  let commitId = pullRequest.lastMergeSourceCommit?.commitId;
   for (let attempt = 0; !commitId && attempt < 10; attempt++) {
     await sleep(1000);
-    const fresh = await ctx.me.get<PullRequest>(`${ctx.p}/_apis/git/repositories/${ctx.repoId}/pullrequests/${pr.pullRequestId}`);
+    const fresh = await context.currentUserClient.get<CreatedPullRequest>(`${context.encodedProject}/_apis/git/repositories/${context.repositoryId}/pullrequests/${pullRequest.pullRequestId}`);
     commitId = fresh.lastMergeSourceCommit?.commitId;
   }
-  if (!commitId) throw new Error(`La PR ${pr.pullRequestId} no tiene commit de origen; no se puede completar.`);
+  if (!commitId) throw new Error(`La PR ${pullRequest.pullRequestId} no tiene commit de origen; no se puede completar.`);
 
-  await ctx.me.request("PATCH", `${ctx.p}/_apis/git/repositories/${ctx.repoId}/pullrequests/${pr.pullRequestId}`, {
+  await context.currentUserClient.request("PATCH", `${context.encodedProject}/_apis/git/repositories/${context.repositoryId}/pullrequests/${pullRequest.pullRequestId}`, {
     body: {
       status: "completed",
       lastMergeSourceCommit: { commitId },
@@ -346,8 +343,8 @@ function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 86_400_000);
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function log(message: string): void {

@@ -33,9 +33,9 @@ export function loadCases(path = "fixtures/expected.json"): Case[] {
   const data = JSON.parse(readFileSync(path, "utf8")) as { cases?: Case[] };
   if (!Array.isArray(data.cases)) throw new Error(`${path} no tiene una lista "cases".`);
 
-  for (const c of data.cases) {
-    if (c.setup.entity === "workItem" && c.setup.pr && !c.setup.branch) {
-      throw new Error(`Caso ${c.key}: una PR necesita rama ("branch": true).`);
+  for (const testCase of data.cases) {
+    if (testCase.setup.entity === "workItem" && testCase.setup.pr && !testCase.setup.branch) {
+      throw new Error(`Caso ${testCase.key}: una PR necesita rama ("branch": true).`);
     }
   }
   return data.cases;

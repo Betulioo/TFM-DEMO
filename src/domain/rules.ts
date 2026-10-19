@@ -8,5 +8,7 @@ const CLOSED_CATEGORIES: ReadonlySet<StateCategory> = new Set(["Completed", "Rem
  * de estado no es Completed ni Removed. Recibe ya los work items de la iteración actual.
  */
 export function myTasks(iterationWorkItems: WorkItem[], user: User): WorkItem[] {
-  return iterationWorkItems.filter((w) => w.assignedTo?.id === user.id && !CLOSED_CATEGORIES.has(w.stateCategory));
+  return iterationWorkItems.filter(
+    (workItem) => workItem.assignedTo?.id === user.id && !CLOSED_CATEGORIES.has(workItem.stateCategory),
+  );
 }
