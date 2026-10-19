@@ -1,8 +1,8 @@
 // Paso 2: comprueba que la configuración de .env permite leer el proyecto de Azure DevOps.
 // Solo hace peticiones GET y no imprime el token.
 import { loadConfig } from "../src/config.js";
-import { AzdoHttpError, AzdoReadOnlyClient } from "../src/azdo/read-only-client.js";
-import { getAuthenticatedUser } from "../src/azdo/identity.js";
+import { AzdoHttpError, AzdoReadOnlyClient } from "../src/adapters/azdo/read-only-client.js";
+import { getAuthenticatedUser } from "../src/adapters/azdo/identity.js";
 
 interface ProjectResponse {
   id: string;

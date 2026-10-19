@@ -1,4 +1,4 @@
-import type { AzdoConfig } from "../config.js";
+import type { AzdoConfig } from "../../config.js";
 import { AzdoHttpError, basicAuthHeader, errorDetail } from "./errors.js";
 
 export { AzdoHttpError } from "./errors.js";

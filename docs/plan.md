@@ -28,6 +28,69 @@ no I; en Repos → Pull requests aparecen D, E y F activas y G completada; exist
 
 **Hecho si:** un script de prueba lista las PRs de la demo y coinciden con la web y con `demo-ids.json`.
 
+## Paso 4.5 — Seguridad y calidad del repo (propuesto, pendiente de aprobación)
+
+Motivo: hoy las reglas de `CLAUDE.md` (solo lectura, capas, sin commits del agente) se cumplen por
+convención; este paso las convierte en comprobaciones que fallan solas. Se hace en cuatro bloques, cada
+uno verificable por separado.
+
+### A. Arquitectura hexagonal: estructura y dirección de dependencias
+
+Estructura objetivo (solo mover archivos y ajustar imports; sin cambiar comportamiento):
+
+```
+src/
+  domain/        types.ts, rules.ts (paso 6)       → no importa nada fuera de domain/
+  ports/         devops-source.ts                  → solo importa domain/
+  application/   collect-snapshot.ts (paso 6)      → domain/ + ports/
+  adapters/
+    azdo/        read-only-client.ts, errors.ts, identity.ts, azdo-source.ts
+    fixtures/    fixture-source.ts, cases.ts
+  config.ts                                         → lo usan scripts/; adapters/ solo su tipo AzdoConfig
+scripts/         CLI y seed: componen adaptadores; pueden importar src/
+test/
+```
+
+Reglas: `src/` nunca importa `scripts/`; `domain/` no importa `node:*` ni adaptadores; solo
+`adapters/azdo/read-only-client.ts` llama a `fetch`.
+**Hecho si:** typecheck y tests pasan sin cambios en los tests salvo rutas de import.
+
+### B. Lint (ESLint + typescript-eslint)
+
+- Dependencias de desarrollo: `eslint`, `@eslint/js`, `typescript-eslint` (justificación: las reglas de
+  capas y de solo lectura no se pueden comprobar con `tsc`).
+- `eslint.config.js` (flat config):
+  - `recommendedTypeChecked` de typescript-eslint (detecta promesas sin `await`, `any` inseguros…).
+  - `no-restricted-imports` por carpeta para las reglas de capas del bloque A.
+  - `no-restricted-globals` / `no-restricted-syntax`: `fetch` prohibido en `src/` salvo en el cliente de
+    solo lectura.
+- `npm run lint`. Se arreglan los avisos que salgan en el código actual.
+
+**Hecho si:** `npm run lint` pasa, y un import prohibido de prueba (p. ej. `domain/` → `adapters/`) o un
+`fetch` en `src/domain` hace fallar el lint.
+
+### C. Hook pre-push sin dependencias
+
+- `.githooks/pre-push` versionado: ejecuta `npm run typecheck && npm run lint && npm test`; si falla, no
+  hay push.
+- Script `"prepare": "git config core.hooksPath .githooks"` para que `npm install` lo active. Sin husky.
+- Limitación: se salta con `git push --no-verify`. La comprobación que no se puede saltar es la CI del
+  paso 10 (mismos comandos).
+
+**Hecho si:** con un test roto a propósito, `git push` se detiene; con todo en verde, continúa.
+
+### D. Salvaguardas extra
+
+- `.claude/settings.json` del proyecto con reglas `deny` para el agente: `git commit`, `git push`, y leer
+  `.env` / `.env.*`. Así la regla de `CLAUDE.md` la aplica la herramienta, no solo la instrucción.
+- Seed: la confirmación pide escribir organización **y** proyecto (hoy solo el proyecto; la organización
+  cambió una vez sin que se notara hasta leer la salida).
+- Test del seed: que con confirmación incorrecta, proyecto no vacío o compañero sin acceso no se hace
+  ninguna petición de escritura (cliente falso que registra métodos). La bitácora dice que se probó con un
+  servidor falso, pero esa prueba no está en el repo.
+
+**Hecho si:** los tests nuevos pasan y el agente recibe un rechazo al intentar `git commit`.
+
 ## Paso 5 — Work items de la iteración actual
 
 - Iteración actual: `GET {project}/{team}/_apis/work/teamsettings/iterations?$timeframe=current`

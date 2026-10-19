@@ -20,6 +20,9 @@ pasos pendientes). Se trabaja un paso cada vez; al terminar uno, actualiza la bi
 1. **Recogida (determinista, sin IA)** — `src/`: lee Azure DevOps y escribe `output/snapshot.json`.
    Sigue arquitectura hexagonal: un puerto (interfaz) con dos adaptadores, uno real para la API de
    Azure DevOps y otro falso que lee fixtures. La lógica de vinculación no conoce el adaptador.
+   Capas: `src/domain` (no importa nada de fuera), `src/ports` (solo `domain`), `src/application`
+   (paso 6), `src/adapters/azdo` y `src/adapters/fixtures`. `src/` nunca importa `scripts/` y solo
+   `adapters/azdo/read-only-client.ts` llama a `fetch`.
 2. **Síntesis (IA)** — skill en `.claude/skills/`: lee `output/snapshot.json` y redacta el informe.
 3. **Verificación** — `scripts/` y tests: compara el informe con `fixtures/expected.json`.
 

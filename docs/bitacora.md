@@ -11,6 +11,7 @@ Las normas de cada sección están en `CLAUDE.md`.
 - [x] 2. Organización demo en Azure DevOps, tokens y `check:conn`
 - [x] 3. Glosario (`docs/glosario.md`), casos sembrados (`fixtures/expected.json`) y seed
 - [x] 4. Puerto, adaptador falso y adaptador Azure DevOps: PRs donde el usuario es revisor
+- [ ] 4.5. Seguridad y calidad: capas hexagonales, lint, pre-push y salvaguardas
 - [ ] 5. Work items de la iteración actual
 - [ ] 6. Vinculación work item ↔ rama ↔ PR, `output/snapshot.json` y tests unitarios
 - [ ] 7. Skill de informe diario (Hechos / Sugerencias)
@@ -23,8 +24,8 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Paso 5 — Work items de la iteración actual (diseño en `docs/plan.md`). Pendiente antes: la persona
-commitea los cambios del paso 4.
+Paso 4.5, bloque B — Lint (diseño en `docs/plan.md`). Bloque A hecho, pendiente de confirmación.
+Después: bloques C y D, y luego el paso 5.
 
 ## Registro
 
@@ -39,6 +40,9 @@ commitea los cambios del paso 4.
 - Paso 4: tipos de dominio (`src/domain/types.ts`), puerto `DevOpsSource`, adaptador real (`AzdoSource`,
   solo GET) y falso (`FixtureSource`), `npm run list:prs` y `npm test` (10 tests, sin red). Contra la demo:
   revisor en K y L, mías D, E y F, G completada por ID; coincide con `fixtures/demo-ids.json`.
+- Paso 4.5, bloque A: estructura hexagonal. `src/azdo/*` y `azdo-source.ts` → `src/adapters/azdo/`;
+  `fixture-source.ts` y `cases.ts` → `src/adapters/fixtures/`. Solo rutas de import; typecheck, 10 tests,
+  `list:prs` y `check:conn` siguen pasando. Reglas de capas comprobadas con grep (el lint las fijará en B).
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -79,6 +83,11 @@ commitea los cambios del paso 4.
   porque ahora lo usa `src/`.
 - Los adaptadores devuelven también los borradores (`isDraft`); excluirlos es una regla del glosario y se
   aplica en el dominio (paso 6).
+- Paso 4.5 (seguridad y calidad) aprobado antes del paso 5: capas hexagonales, lint con reglas de capas y
+  de solo lectura, hook pre-push y salvaguardas extra (diseño en `docs/plan.md`).
+- `src/application/` no se crea hasta el paso 6, cuando tenga el caso de uso `collect-snapshot`.
+- El cliente de solo lectura puede importar el tipo `AzdoConfig` de `src/config.ts`; nada más de `src/`
+  depende de `config.ts`.
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de

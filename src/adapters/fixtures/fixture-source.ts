@@ -1,9 +1,9 @@
 // Adaptador falso: construye los datos a partir de los casos de fixtures/expected.json,
 // con fechas relativas a `now`. Así hay una sola lista de casos (la misma que usa el seed)
 // y se pueden probar los casos de fechas (M, N) que la demo real no permite crear.
-import type { PullRequest, User } from "../domain/types.js";
-import { loadCases, type Case } from "../fixtures/cases.js";
-import type { DevOpsSource } from "../ports/devops-source.js";
+import type { PullRequest, User } from "../../domain/types.js";
+import { loadCases, type Case } from "./cases.js";
+import type { DevOpsSource } from "../../ports/devops-source.js";
 
 const DAY_MS = 86_400_000;
 

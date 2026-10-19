@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { FixtureSource } from "../src/adapters/fixture-source.js";
-import { loadCases } from "../src/fixtures/cases.js";
+import { FixtureSource } from "../src/adapters/fixtures/fixture-source.js";
+import { loadCases } from "../src/adapters/fixtures/cases.js";
 
 const NOW = new Date("2026-10-19T09:00:00Z");
 const cases = loadCases();

@@ -2,7 +2,7 @@ import type { PullRequest, User } from "../domain/types.js";
 
 /**
  * Puerto de lectura: lo que la recogida necesita de Azure DevOps.
- * Implementaciones: adapters/azdo-source.ts (API real) y adapters/fixture-source.ts (datos falsos).
+ * Implementaciones: adapters/azdo/azdo-source.ts (API real) y adapters/fixtures/fixture-source.ts (datos falsos).
  * Los work items y las ramas se añaden en los pasos 5 y 6.
  */
 export interface DevOpsSource {

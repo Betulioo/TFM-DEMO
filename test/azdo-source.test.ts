@@ -1,8 +1,8 @@
 // Prueba el adaptador real con un lector falso: sin red y sin token.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AzdoSource, type ApiPullRequest } from "../src/adapters/azdo-source.js";
-import { AzdoHttpError, type AzdoReader } from "../src/azdo/read-only-client.js";
+import { AzdoSource, type ApiPullRequest } from "../src/adapters/azdo/azdo-source.js";
+import { AzdoHttpError, type AzdoReader } from "../src/adapters/azdo/read-only-client.js";
 
 interface Call {
   path: string;

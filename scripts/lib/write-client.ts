@@ -1,7 +1,7 @@
 // Cliente con ESCRITURA. Solo lo usan los scripts que siembran el proyecto demo.
 // Vive en scripts/ a propósito: el código de src/ nunca debe poder escribir en Azure DevOps.
-import { API_VERSION, type AzdoReader } from "../../src/azdo/read-only-client.js";
-import { AzdoHttpError, basicAuthHeader, errorDetail } from "../../src/azdo/errors.js";
+import { API_VERSION, type AzdoReader } from "../../src/adapters/azdo/read-only-client.js";
+import { AzdoHttpError, basicAuthHeader, errorDetail } from "../../src/adapters/azdo/errors.js";
 
 type Method = "GET" | "POST" | "PATCH" | "PUT";
 

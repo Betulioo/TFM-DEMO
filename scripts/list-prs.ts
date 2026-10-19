@@ -3,10 +3,10 @@
 //   npm run list:prs -- --fixtures → adaptador falso
 import { existsSync, readFileSync } from "node:fs";
 import { loadConfig } from "../src/config.js";
-import { AzdoReadOnlyClient } from "../src/azdo/read-only-client.js";
-import { AzdoSource } from "../src/adapters/azdo-source.js";
-import { FixtureSource } from "../src/adapters/fixture-source.js";
-import { loadCases } from "../src/fixtures/cases.js";
+import { AzdoReadOnlyClient } from "../src/adapters/azdo/read-only-client.js";
+import { AzdoSource } from "../src/adapters/azdo/azdo-source.js";
+import { FixtureSource } from "../src/adapters/fixtures/fixture-source.js";
+import { loadCases } from "../src/adapters/fixtures/cases.js";
 import type { PullRequest } from "../src/domain/types.js";
 import type { DevOpsSource } from "../src/ports/devops-source.js";
 

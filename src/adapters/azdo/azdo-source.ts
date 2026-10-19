@@ -1,8 +1,8 @@
 // Adaptador real: lee Azure DevOps con un cliente que solo tiene GET.
-import { AzdoHttpError, type AzdoReader } from "../azdo/read-only-client.js";
-import { getAuthenticatedUser } from "../azdo/identity.js";
-import type { PullRequest, PullRequestStatus, User, Vote } from "../domain/types.js";
-import type { DevOpsSource } from "../ports/devops-source.js";
+import { AzdoHttpError, type AzdoReader } from "./read-only-client.js";
+import { getAuthenticatedUser } from "./identity.js";
+import type { PullRequest, PullRequestStatus, User, Vote } from "../../domain/types.js";
+import type { DevOpsSource } from "../../ports/devops-source.js";
 
 const PAGE_SIZE = 100;
 
