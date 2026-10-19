@@ -57,6 +57,7 @@ async function main(): Promise<void> {
   console.log(`Tú:         ${meUser.displayName}`);
   console.log(`Compañero:  ${mateUser?.displayName ?? "no configurado (se omiten los casos K y L)"}`);
 
+  if (mate) await ensureTeammateSeesRepos(me, mate, p);
   await ensureProjectIsEmpty(me, p);
 
   log("Creando iteraciones");
@@ -115,6 +116,23 @@ async function ensureProjectIsEmpty(me: AzdoWriteClient, p: string): Promise<voi
   const count = result.workItems?.length ?? 0;
   if (count > 0) {
     throw new Error(`El proyecto ya tiene ${count} work items. El seed solo se ejecuta sobre un proyecto vacío.`);
+  }
+}
+
+// Con acceso Stakeholder la cuenta ve el proyecto pero no los repositorios, y el seed fallaría a medias
+// al añadirla como revisora. Se compara con lo que ves tú para distinguir "sin permisos" de "sin repositorio".
+// Se comprueba antes de escribir nada.
+async function ensureTeammateSeesRepos(me: AzdoWriteClient, mate: AzdoWriteClient, p: string): Promise<void> {
+  const path = `${p}/_apis/git/repositories`;
+  const [mine, theirs] = await Promise.all([me.get<{ value: unknown[] }>(path), mate.get<{ value: unknown[] }>(path)]);
+  if (mine.value.length === 0) {
+    throw new Error("El proyecto no tiene ningún repositorio Git. Crea uno en Repos. No se ha creado nada.");
+  }
+  if (theirs.value.length === 0) {
+    throw new Error(
+      "El compañero no ve ningún repositorio del proyecto. Dale nivel de acceso Basic (no Stakeholder) " +
+        "y añádelo a Contributors. No se ha creado nada.",
+    );
   }
 }
 

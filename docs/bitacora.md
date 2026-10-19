@@ -8,7 +8,7 @@ Sirve como contexto para el agente y como evidencia para el documento del TFM.
 - [ ] 0. Medir la rutina manual en el cliente (tiempos y volúmenes, sin datos)
 - [x] 1. Estructura del repo, `CLAUDE.md`, README esqueleto
 - [x] 2. Organización demo en Azure DevOps, tokens y `check:conn`
-- [ ] 3. Glosario (`docs/glosario.md`), casos sembrados (`fixtures/expected.json`) y seed
+- [x] 3. Glosario (`docs/glosario.md`), casos sembrados (`fixtures/expected.json`) y seed
 - [ ] 4. Puerto, adaptador falso y adaptador Azure DevOps: PRs donde el usuario es revisor
 - [ ] 5. Work items de la iteración actual
 - [ ] 6. Vinculación work item ↔ rama ↔ PR, `output/snapshot.json` y tests unitarios
@@ -60,3 +60,16 @@ Sirve como contexto para el agente y como evidencia para el documento del TFM.
 - La opción de proceso solo aparece al crear el proyecto (desplegable *Advanced*).
 - `_apis/connectionData` devolvía 400: es un endpoint en preview y exige `api-version=7.1-preview`.
   El cliente ahora muestra el mensaje de error de Azure DevOps para diagnosticar sin adivinar.
+- Primera ejecución real del seed: falló en el caso E con `400 The reviewer '…' does not have permission
+  to view this pull request`. La segunda cuenta veía el proyecto pero 0 repositorios: tenía acceso
+  *Stakeholder*, que en proyectos privados no incluye Repos. Solución: acceso *Basic* + grupo Contributors.
+  El fallo dejó el proyecto a medias (A–E creados), así que hay que recrearlo. El seed ahora comprueba,
+  antes de escribir nada, que el compañero ve algún repositorio.
+- La comprobación del compañero compara con los repositorios que ves tú: si tú tampoco ves ninguno, el
+  problema es que el proyecto no tiene repositorio, no de permisos.
+- Seed completado en la organización demo `TFM-Jakala` (creada para el TFM, sin datos de cliente; sustituye
+  a `TFM-Demo`). IDs en `fixtures/demo-ids.json`. Verificado con el token de lectura: en "Sprint actual"
+  están A–H y J, I queda fuera; PRs D, E, F, K y L activas con los votos esperados y G completada.
+- Endpoints del paso 5 probados ya contra la API real y coinciden con `docs/plan.md`:
+  `teamsettings/iterations?$timeframe=current` devuelve el sprint actual; `iterations/{id}/workitems`
+  devuelve los IDs en `workItemRelations[].target.id` (el plan no indicaba la forma de la respuesta).
