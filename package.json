@@ -13,7 +13,8 @@
     "seed:demo": "tsx scripts/seed-demo.ts",
     "test": "tsx --test test/*.test.ts",
     "list:prs": "tsx scripts/list-prs.ts",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -24,8 +24,8 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Paso 4.5, bloque C — Hook pre-push (diseño en `docs/plan.md`). Bloque B hecho, pendiente de confirmación.
-Después: bloque D y luego el paso 5.
+Paso 4.5, bloque D — Salvaguardas extra (diseño en `docs/plan.md`). Bloque C hecho, pendiente de que la
+persona pruebe un `git push` real. Después, el paso 5.
 
 ## Registro
 
@@ -47,6 +47,9 @@ Después: bloque D y luego el paso 5.
   propias: capas con `no-restricted-imports` y `fetch` prohibido en `src/` salvo el cliente de solo lectura.
   Probado con archivos temporales: las 6 violaciones (domain → adapters, domain → `node:fs`, ports →
   adapters, src → scripts y dos `fetch`) fallan; el import permitido dentro de `domain/` pasa.
+- Paso 4.5, bloque C: `.githooks/pre-push` (typecheck + lint + tests) activado por el script `prepare`
+  (`git config core.hooksPath .githooks`). Probado ejecutando el hook: en verde sale con 0; con un test roto
+  temporal sale con 1. El `git push` real lo prueba la persona.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -96,6 +99,8 @@ Después: bloque D y luego el paso 5.
 - `require-await` desactivada solo en `src/adapters/fixtures/` y `test/`: allí `async` sin `await` es
   intencionado (datos en memoria). Primero se cambió a `Promise.resolve(...)` para cumplir la regla, pero se
   revirtió a petición de la persona porque `async` se lee mejor. En el resto del código la regla sigue activa.
+- Hook con `core.hooksPath` en vez de husky: sin dependencias nuevas. Se puede saltar con
+  `git push --no-verify`; la comprobación obligatoria será la CI del paso 10.
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de

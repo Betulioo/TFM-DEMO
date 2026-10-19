@@ -50,7 +50,7 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
 
 ## Comandos
 
-- `npm install` — instala dependencias.
+- `npm install` — instala dependencias y activa el hook `.githooks/pre-push` (typecheck + lint + tests).
 - `npm run typecheck` — comprueba tipos.
 - `npm run lint` — ESLint con las reglas de capas y de solo lectura (`eslint.config.js`).
   `typecheck`, `lint` y `npm test` deben pasar antes de dar un paso por terminado.
