@@ -11,7 +11,7 @@ import { createInterface } from "node:readline/promises";
 import { loadConfig, optionalEnv } from "../src/config.js";
 import { getAuthenticatedUser, type AuthenticatedUser } from "../src/azdo/identity.js";
 import { AzdoWriteClient } from "./lib/write-client.js";
-import { loadCases, type Case, type PullRequestSetup, type WorkItemSetup } from "./lib/cases.js";
+import { loadCases, type Case, type PullRequestSetup, type WorkItemSetup } from "../src/fixtures/cases.js";
 
 const SEED_TAG = "tfm-seed";
 const ZERO_SHA = "0".repeat(40);

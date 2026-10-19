@@ -10,7 +10,7 @@ Las normas de cada sección están en `CLAUDE.md`.
 - [x] 1. Estructura del repo, `CLAUDE.md`, README esqueleto
 - [x] 2. Organización demo en Azure DevOps, tokens y `check:conn`
 - [x] 3. Glosario (`docs/glosario.md`), casos sembrados (`fixtures/expected.json`) y seed
-- [ ] 4. Puerto, adaptador falso y adaptador Azure DevOps: PRs donde el usuario es revisor
+- [x] 4. Puerto, adaptador falso y adaptador Azure DevOps: PRs donde el usuario es revisor
 - [ ] 5. Work items de la iteración actual
 - [ ] 6. Vinculación work item ↔ rama ↔ PR, `output/snapshot.json` y tests unitarios
 - [ ] 7. Skill de informe diario (Hechos / Sugerencias)
@@ -23,8 +23,8 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Paso 4 — Puerto, adaptadores y PRs (diseño en `docs/plan.md`). Pendiente antes: la persona commitea los
-cambios de `CLAUDE.md` y esta bitácora.
+Paso 5 — Work items de la iteración actual (diseño en `docs/plan.md`). Pendiente antes: la persona
+commitea los cambios del paso 4.
 
 ## Registro
 
@@ -36,6 +36,9 @@ cambios de `CLAUDE.md` y esta bitácora.
   `TFM-Jakala` (creada para el TFM, sin datos de cliente; sustituye a `TFM-Demo`). IDs en
   `fixtures/demo-ids.json`. Verificado con el token de lectura: en "Sprint actual" están A–H y J, I queda
   fuera; PRs D, E, F, K y L activas con los votos esperados y G completada.
+- Paso 4: tipos de dominio (`src/domain/types.ts`), puerto `DevOpsSource`, adaptador real (`AzdoSource`,
+  solo GET) y falso (`FixtureSource`), `npm run list:prs` y `npm test` (10 tests, sin red). Contra la demo:
+  revisor en K y L, mías D, E y F, G completada por ID; coincide con `fixtures/demo-ids.json`.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -69,6 +72,13 @@ cambios de `CLAUDE.md` y esta bitácora.
 - Formato de la bitácora: se adaptan ideas de la skill `mantener-bitacora-sesion` del track (próximo paso
   vigente, errores aparte, hechos frente a inferencias) sin instalarla: está pensada para una sesión y
   pide podar, y esta bitácora cubre todo el proyecto y es evidencia del TFM.
+- El puerto crece por pasos: en el paso 4 solo tiene usuario y PRs; work items y ramas se añaden en 5 y 6
+  para no definir métodos que aún no se pueden probar.
+- El adaptador falso no lee un JSON propio: genera los datos desde `fixtures/expected.json` con fechas
+  relativas a `now`, para no duplicar la lista de casos. `cases.ts` pasa de `scripts/lib/` a `src/fixtures/`
+  porque ahora lo usa `src/`.
+- Los adaptadores devuelven también los borradores (`isDraft`); excluirlos es una regla del glosario y se
+  aplica en el dominio (paso 6).
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de
@@ -77,6 +87,10 @@ cambios de `CLAUDE.md` y esta bitácora.
 - Endpoints del paso 5 probados ya contra la API real y coinciden con `docs/plan.md`:
   `teamsettings/iterations?$timeframe=current` devuelve el sprint actual; `iterations/{id}/workitems`
   devuelve los IDs en `workItemRelations[].target.id` (el plan no indicaba la forma de la respuesta).
+- Endpoints del paso 4 probados contra la API real y coinciden con `docs/plan.md`: listado de PRs con
+  `searchCriteria.reviewerId` / `searchCriteria.creatorId` + `searchCriteria.status=active`, y
+  `{project}/_apis/git/pullrequests/{id}` para una PR completada. No se ha probado la paginación real
+  (`$top`/`$skip`): la demo tiene menos de 100 PRs; solo está cubierta por un test con lector falso.
 
 **Errores y correcciones**
 - Vinculación rama ↔ tarea con "el nombre contiene el número": daba falsos positivos con ramas como

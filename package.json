@@ -10,7 +10,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "check:conn": "tsx scripts/check-connection.ts",
-    "seed:demo": "tsx scripts/seed-demo.ts"
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "test": "tsx --test test/*.test.ts",
+    "list:prs": "tsx scripts/list-prs.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
