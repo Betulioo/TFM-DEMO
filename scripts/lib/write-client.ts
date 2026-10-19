@@ -3,15 +3,20 @@
 import { API_VERSION, type AzdoReader } from "../../src/adapters/azdo/read-only-client.js";
 import { AzdoHttpError, basicAuthHeader, errorDetail } from "../../src/adapters/azdo/errors.js";
 
-type Method = "GET" | "POST" | "PATCH" | "PUT";
+export type Method = "GET" | "POST" | "PATCH" | "PUT";
 
-interface RequestOptions {
+export interface RequestOptions {
   body?: unknown;
   params?: Record<string, string>;
   contentType?: string;
 }
 
-export class AzdoWriteClient implements AzdoReader {
+/** Lo que usa el seed: leer y escribir. Los tests lo implementan con un cliente falso. */
+export interface SeedClient extends AzdoReader {
+  request<T>(method: Method, path: string, options?: RequestOptions): Promise<T>;
+}
+
+export class AzdoWriteClient implements SeedClient {
   private readonly authHeader: string;
 
   constructor(

@@ -39,6 +39,7 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
 - **Nunca** imprimir, registrar ni commitear tokens. Las credenciales viven solo en `.env`.
 - `output/` no se sube ni se copia a `docs/`.
 - **No hagas commit ni push.** Los hace siempre la persona; tú deja los cambios sin commitear.
+  `.claude/settings.json` lo bloquea (`deny` de `git commit`, `git push` y leer `.env`).
 - El informe separa **Hechos** (siempre con ID: `PR #12`, `WI #345`) de **Sugerencias**.
   Si falta un dato, escribe "sin datos"; no lo deduce.
 
@@ -58,7 +59,8 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
 - `npm run list:prs` — lista las PRs de la demo y las compara con `fixtures/demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run check:conn` — comprueba la conexión con Azure DevOps usando `.env` (solo lectura).
 - `npm run seed:demo` — siembra el proyecto demo con los casos de `fixtures/expected.json`. Solo para la demo:
-  pide confirmación y se niega si el proyecto ya tiene work items.
+  pide confirmar organización y proyecto, y se niega si el proyecto ya tiene work items o el compañero no
+  ve el repositorio. Lógica en `scripts/lib/seed.ts` (probada en `test/seed.test.ts`).
 
 ## Casos de prueba
 

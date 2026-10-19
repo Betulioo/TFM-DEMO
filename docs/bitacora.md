@@ -24,8 +24,7 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Paso 4.5, bloque D — Salvaguardas extra (diseño en `docs/plan.md`). Bloque C hecho, pendiente de que la
-persona pruebe un `git push` real. Después, el paso 5.
+Confirmar el bloque D y cerrar el paso 4.5. Después, paso 5 — Work items de la iteración actual.
 
 ## Registro
 
@@ -49,7 +48,13 @@ persona pruebe un `git push` real. Después, el paso 5.
   adapters, src → scripts y dos `fetch`) fallan; el import permitido dentro de `domain/` pasa.
 - Paso 4.5, bloque C: `.githooks/pre-push` (typecheck + lint + tests) activado por el script `prepare`
   (`git config core.hooksPath .githooks`). Probado ejecutando el hook: en verde sale con 0; con un test roto
-  temporal sale con 1. El `git push` real lo prueba la persona.
+  temporal sale con 1. La persona hizo un `git push` real con todo en verde y pasó. El caso de push
+  bloqueado solo se ha probado ejecutando el hook a mano.
+- Paso 4.5, bloque D: `.claude/settings.json` con `deny` de `git commit`, `git push` y `Read(./.env)`
+  (probado: `git commit --dry-run` queda denegado). El seed pide confirmar organización y proyecto. Su
+  lógica pasa a `scripts/lib/seed.ts` con clientes inyectados y `test/seed.test.ts` cubre las salvaguardas:
+  confirmación incorrecta (0 peticiones), misma cuenta, compañero sin repos, proyecto sin repo y proyecto con
+  work items (0 escrituras), más un control que sí llega a escribir. 18 tests, lint y typecheck en verde.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -101,6 +106,9 @@ persona pruebe un `git push` real. Después, el paso 5.
   revirtió a petición de la persona porque `async` se lee mejor. En el resto del código la regla sigue activa.
 - Hook con `core.hooksPath` en vez de husky: sin dependencias nuevas. Se puede saltar con
   `git push --no-verify`; la comprobación obligatoria será la CI del paso 10.
+- La regla `Read(./.env)` no se ha probado a propósito: si no estuviera activa, la prueba leería los tokens.
+- El seed se separa en entrada (`scripts/seed-demo.ts`: `.env`, terminal, archivo) y lógica
+  (`scripts/lib/seed.ts`), igual que la recogida separa adaptadores y dominio, para probarlo sin red.
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de
@@ -115,6 +123,10 @@ persona pruebe un `git push` real. Después, el paso 5.
   (`$top`/`$skip`): la demo tiene menos de 100 PRs; solo está cubierta por un test con lector falso.
 - Límites del lint (no cubiertos): `globalThis.fetch` o módulos como `node:https` en un adaptador saltarían
   la regla de `fetch`. La garantía principal de solo lectura sigue siendo que el cliente solo tiene `get`.
+- Límites de las reglas `deny`: bloquean las herramientas del agente, pero un comando de shell distinto
+  (p. ej. `cat .env`) no queda cubierto por `Read(./.env)`. Son una capa más, no una garantía.
+- La bitácora decía que las salvaguardas del seed se habían probado con un servidor falso, pero esa prueba
+  no estaba en el repo. Ahora sí: `test/seed.test.ts`.
 
 **Errores y correcciones**
 - Vinculación rama ↔ tarea con "el nombre contiene el número": daba falsos positivos con ramas como
