@@ -17,11 +17,11 @@ interface SourceFile {
   text: string;
 }
 
-function sourceFiles(dir = "src"): SourceFile[] {
-  return readdirSync(join(ROOT, dir), { recursive: true, encoding: "utf8" })
-    .filter((f) => f.endsWith(".ts"))
-    .map((f) => {
-      const path = join(dir, f).split("\\").join("/");
+function sourceFiles(directory = "src"): SourceFile[] {
+  return readdirSync(join(ROOT, directory), { recursive: true, encoding: "utf8" })
+    .filter((fileName) => fileName.endsWith(".ts"))
+    .map((fileName) => {
+      const path = join(directory, fileName).split("\\").join("/");
       return { path, text: readFileSync(join(ROOT, path), "utf8") };
     });
 }
@@ -29,33 +29,33 @@ function sourceFiles(dir = "src"): SourceFile[] {
 /** Módulos importados (import/export … from, import "x", import("x")), resueltos a ruta del repo si son relativos. */
 function imports(file: SourceFile): string[] {
   const pattern = /(?:import|export)\s[^;]*?from\s*["']([^"']+)["']|import\s*\(?\s*["']([^"']+)["']/g;
-  return [...file.text.matchAll(pattern)].map((m) => {
-    const spec = (m[1] ?? m[2])!;
-    if (!spec.startsWith(".")) return spec;
-    return relative(ROOT, resolve(ROOT, dirname(file.path), spec)).split("\\").join("/");
+  return [...file.text.matchAll(pattern)].map((match) => {
+    const specifier = (match[1] ?? match[2])!;
+    if (!specifier.startsWith(".")) return specifier;
+    return relative(ROOT, resolve(ROOT, dirname(file.path), specifier)).split("\\").join("/");
   });
 }
 
-const callsFetch = (f: SourceFile) => /\bfetch\s*\(/.test(f.text);
-const isNodeModule = (spec: string) => spec.startsWith("node:") || isBuiltin(spec);
+const callsFetch = (file: SourceFile) => /\bfetch\s*\(/.test(file.text);
+const isNodeModule = (specifier: string) => specifier.startsWith("node:") || isBuiltin(specifier);
 
 // --- Reglas -------------------------------------------------------------------
 
 /** Imports de una capa que no salen de las carpetas permitidas (los módulos de Node nunca están permitidos). */
 function layerViolations(files: SourceFile[], layer: string, allowed: string[]): string[] {
   return files
-    .filter((f) => f.path.startsWith(layer))
-    .flatMap((f) =>
-      imports(f)
-        .filter((i) => isNodeModule(i) || !allowed.some((dir) => i.startsWith(dir)))
-        .map((i) => `${f.path} importa ${i}`),
+    .filter((file) => file.path.startsWith(layer))
+    .flatMap((file) =>
+      imports(file)
+        .filter((importPath) => isNodeModule(importPath) || !allowed.some((directory) => importPath.startsWith(directory)))
+        .map((importPath) => `${file.path} importa ${importPath}`),
     );
 }
 
 function domainViolations(files: SourceFile[]): string[] {
   return [
     ...layerViolations(files, "src/domain/", ["src/domain/"]),
-    ...files.filter((f) => f.path.startsWith("src/domain/") && callsFetch(f)).map((f) => `${f.path} llama a fetch`),
+    ...files.filter((file) => file.path.startsWith("src/domain/") && callsFetch(file)).map((file) => `${file.path} llama a fetch`),
   ];
 }
 
@@ -64,15 +64,15 @@ function portsViolations(files: SourceFile[]): string[] {
 }
 
 function nonGetViolations(files: SourceFile[]): string[] {
-  return files.flatMap((f) => {
+  return files.flatMap((file) => {
     const found: string[] = [];
-    if (f.path !== READ_ONLY_CLIENT && callsFetch(f)) found.push(`${f.path} llama a fetch (solo puede ${READ_ONLY_CLIENT})`);
-    for (const i of imports(f)) {
-      if (/^(node:)?https?$/.test(i)) found.push(`${f.path} importa ${i} (peticiones fuera del cliente de solo lectura)`);
+    if (file.path !== READ_ONLY_CLIENT && callsFetch(file)) found.push(`${file.path} llama a fetch (solo puede ${READ_ONLY_CLIENT})`);
+    for (const importPath of imports(file)) {
+      if (/^(node:)?https?$/.test(importPath)) found.push(`${file.path} importa ${importPath} (peticiones fuera del cliente de solo lectura)`);
     }
-    if (f.path === READ_ONLY_CLIENT) {
-      for (const m of f.text.matchAll(/method:\s*["'](\w+)["']/g)) {
-        if (m[1] !== "GET") found.push(`${f.path} usa el método ${m[1]}`);
+    if (file.path === READ_ONLY_CLIENT) {
+      for (const match of file.text.matchAll(/method:\s*["'](\w+)["']/g)) {
+        if (match[1] !== "GET") found.push(`${file.path} usa el método ${match[1]}`);
       }
     }
     return found;
@@ -80,7 +80,11 @@ function nonGetViolations(files: SourceFile[]): string[] {
 }
 
 function scriptsViolations(files: SourceFile[]): string[] {
-  return files.flatMap((f) => imports(f).filter((i) => i.startsWith("scripts/")).map((i) => `${f.path} importa ${i}`));
+  return files.flatMap((file) =>
+    imports(file)
+      .filter((importPath) => importPath.startsWith("scripts/"))
+      .map((importPath) => `${file.path} importa ${importPath}`),
+  );
 }
 
 // --- Sobre el código real -------------------------------------------------------
@@ -88,8 +92,8 @@ function scriptsViolations(files: SourceFile[]): string[] {
 const files = sourceFiles();
 
 test("arquitectura: hay archivos que comprobar (incluido el cliente de solo lectura)", () => {
-  assert.ok(files.some((f) => f.path.startsWith("src/domain/")));
-  assert.ok(files.some((f) => f.path === READ_ONLY_CLIENT));
+  assert.ok(files.some((file) => file.path.startsWith("src/domain/")));
+  assert.ok(files.some((file) => file.path === READ_ONLY_CLIENT));
 });
 
 test("arquitectura: src/domain solo importa de src/domain, sin node:* ni fetch", () => {

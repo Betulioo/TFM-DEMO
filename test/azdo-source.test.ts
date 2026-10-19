@@ -9,7 +9,7 @@ interface Call {
   params: Record<string, string>;
 }
 
-function apiPr(id: number, overrides: Partial<ApiPullRequest> = {}): ApiPullRequest {
+function buildApiPullRequest(id: number, overrides: Partial<ApiPullRequest> = {}): ApiPullRequest {
   return {
     pullRequestId: id,
     title: `PR ${id}`,
@@ -36,16 +36,19 @@ function fakeReader(respond: (call: Call) => unknown): { reader: AzdoReader; cal
   return { reader, calls };
 }
 
+/** Lista de `count` elementos, numerados desde `first`. */
+const numbersFrom = (first: number, count: number) => Array.from({ length: count }, (_value, index) => first + index);
+
 test("PRs donde soy revisor: filtra por mi ID y por activas, y traduce al dominio", async () => {
-  const { reader, calls } = fakeReader(() => ({ value: [apiPr(7, { isDraft: true })] }));
-  const prs = await new AzdoSource(reader, "TFM Demo").pullRequestsToReview();
+  const { reader, calls } = fakeReader(() => ({ value: [buildApiPullRequest(7, { isDraft: true })] }));
 
-  const list = calls.find((c) => c.path.endsWith("/_apis/git/pullrequests"));
-  assert.equal(list?.path, "TFM%20Demo/_apis/git/pullrequests");
-  assert.equal(list?.params["searchCriteria.reviewerId"], "me-id");
-  assert.equal(list?.params["searchCriteria.status"], "active");
+  const pullRequests = await new AzdoSource(reader, "TFM Demo").pullRequestsToReview();
 
-  assert.deepEqual(prs, [
+  const listCall = calls.find((call) => call.path.endsWith("/_apis/git/pullrequests"));
+  assert.equal(listCall?.path, "TFM%20Demo/_apis/git/pullrequests");
+  assert.equal(listCall?.params["searchCriteria.reviewerId"], "me-id");
+  assert.equal(listCall?.params["searchCriteria.status"], "active");
+  assert.deepEqual(pullRequests, [
     {
       id: 7,
       title: "PR 7",
@@ -61,25 +64,30 @@ test("PRs donde soy revisor: filtra por mi ID y por activas, y traduce al domini
 
 test("mis PRs: filtra por creador", async () => {
   const { reader, calls } = fakeReader(() => ({ value: [] }));
+
   await new AzdoSource(reader, "TFM Demo").myPullRequests();
+
   assert.equal(calls.at(-1)?.params["searchCriteria.creatorId"], "me-id");
 });
 
 test("pide páginas hasta que una viene incompleta", async () => {
   const { reader, calls } = fakeReader(({ params }) => {
     const skip = Number(params.$skip);
-    const size = skip === 0 ? 100 : 3;
-    return { value: Array.from({ length: size }, (_, i) => apiPr(skip + i + 1)) };
+    const pageSize = skip === 0 ? 100 : 3;
+    return { value: numbersFrom(skip + 1, pageSize).map((id) => buildApiPullRequest(id)) };
   });
-  const prs = await new AzdoSource(reader, "P").myPullRequests();
-  assert.equal(prs.length, 103);
-  assert.deepEqual(calls.filter((c) => c.path.endsWith("pullrequests")).map((c) => c.params.$skip), ["0", "100"]);
+
+  const pullRequests = await new AzdoSource(reader, "P").myPullRequests();
+
+  assert.equal(pullRequests.length, 103);
+  assert.deepEqual(calls.filter((call) => call.path.endsWith("pullrequests")).map((call) => call.params.$skip), ["0", "100"]);
 });
 
 test("PR por ID: devuelve undefined si no existe (404)", async () => {
   const { reader } = fakeReader(() => {
     throw new AzdoHttpError(404, "/x", "no existe");
   });
+
   assert.equal(await new AzdoSource(reader, "P").pullRequestById(99), undefined);
 });
 
@@ -87,12 +95,13 @@ test("PR por ID: otros errores se propagan", async () => {
   const { reader } = fakeReader(() => {
     throw new AzdoHttpError(401, "/x", "sin permisos");
   });
+
   await assert.rejects(new AzdoSource(reader, "P").pullRequestById(1), AzdoHttpError);
 });
 
 // --- Work items (paso 5) ---------------------------------------------------------
 
-function apiWi(id: number, type: string, state: string, overrides: Partial<ApiWorkItem> = {}): ApiWorkItem {
+function buildApiWorkItem(id: number, type: string, state: string, overrides: Partial<ApiWorkItem> = {}): ApiWorkItem {
   return {
     id,
     fields: { "System.Title": `WI ${id}`, "System.WorkItemType": type, "System.State": state, "System.ChangedDate": "2026-10-19T13:49:41Z" },
@@ -101,7 +110,7 @@ function apiWi(id: number, type: string, state: string, overrides: Partial<ApiWo
 }
 
 /** Respuestas con la forma real de la API (probada contra la demo el 2026-10-19). */
-function iterationReader(workItemIds: number[], items: (ids: number[]) => ApiWorkItem[]) {
+function iterationReader(workItemIds: number[], workItemsFor: (ids: number[]) => ApiWorkItem[]) {
   return fakeReader(({ path, params }) => {
     if (path === "_apis/projects/TFM%20Demo") return { defaultTeam: { name: "TFM Demo Team" } };
     if (path.endsWith("/_apis/work/teamsettings/iterations")) {
@@ -111,7 +120,7 @@ function iterationReader(workItemIds: number[], items: (ids: number[]) => ApiWor
       // Un mismo WI puede aparecer varias veces (relaciones padre-hijo): se deduplica.
       return { workItemRelations: [...workItemIds, workItemIds[0]].map((id) => ({ target: { id } })) };
     }
-    if (path.endsWith("/_apis/wit/workitems")) return { value: items(params.ids!.split(",").map(Number)) };
+    if (path.endsWith("/_apis/wit/workitems")) return { value: workItemsFor(params.ids!.split(",").map(Number)) };
     if (path.endsWith("/User%20Story/states")) return { value: [{ name: "New", category: "Proposed" }, { name: "Resolved", category: "InProgress" }] };
     if (path.endsWith("/Bug/states")) return { value: [{ name: "Resolved", category: "Resolved" }] };
     throw new Error(`ruta inesperada: ${path}`);
@@ -120,44 +129,52 @@ function iterationReader(workItemIds: number[], items: (ids: number[]) => ApiWor
 
 test("iteración actual: equipo por defecto y $timeframe=current", async () => {
   const { reader, calls } = iterationReader([], () => []);
-  const it = await new AzdoSource(reader, "TFM Demo").currentIteration();
-  assert.deepEqual(it, { id: "it-1", name: "Sprint actual", startDate: "2026-10-12T00:00:00Z", finishDate: "2026-10-26T00:00:00Z" });
-  const call = calls.find((c) => c.path.endsWith("/iterations"));
-  assert.equal(call?.path, "TFM%20Demo/TFM%20Demo%20Team/_apis/work/teamsettings/iterations");
-  assert.equal(call?.params.$timeframe, "current");
+
+  const iteration = await new AzdoSource(reader, "TFM Demo").currentIteration();
+
+  assert.deepEqual(iteration, { id: "it-1", name: "Sprint actual", startDate: "2026-10-12T00:00:00Z", finishDate: "2026-10-26T00:00:00Z" });
+  const iterationCall = calls.find((call) => call.path.endsWith("/iterations"));
+  assert.equal(iterationCall?.path, "TFM%20Demo/TFM%20Demo%20Team/_apis/work/teamsettings/iterations");
+  assert.equal(iterationCall?.params.$timeframe, "current");
 });
 
 test("work items: la categoría sale de la API y depende del tipo", async () => {
-  const { reader } = iterationReader([1, 2], () => [apiWi(1, "User Story", "Resolved"), apiWi(2, "Bug", "Resolved")]);
-  const items = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
-  assert.deepEqual(items.map((w) => [w.id, w.stateCategory]), [[1, "InProgress"], [2, "Resolved"]]);
+  const { reader } = iterationReader([1, 2], () => [buildApiWorkItem(1, "User Story", "Resolved"), buildApiWorkItem(2, "Bug", "Resolved")]);
+
+  const workItems = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+
+  assert.deepEqual(workItems.map((workItem) => [workItem.id, workItem.stateCategory]), [[1, "InProgress"], [2, "Resolved"]]);
 });
 
 test("work items: pide relaciones sin `fields` y en lotes de 200", async () => {
-  const ids = Array.from({ length: 201 }, (_, i) => i + 1);
-  const { reader, calls } = iterationReader(ids, (batch) => batch.map((id) => apiWi(id, "Bug", "Resolved")));
-  const items = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
-  assert.equal(items.length, 201);
-  const detail = calls.filter((c) => c.path.endsWith("/_apis/wit/workitems"));
-  assert.deepEqual(detail.map((c) => c.params.ids!.split(",").length), [200, 1]);
-  assert.ok(detail.every((c) => c.params.$expand === "relations" && c.params.fields === undefined));
+  const { reader, calls } = iterationReader(numbersFrom(1, 201), (batch) => batch.map((id) => buildApiWorkItem(id, "Bug", "Resolved")));
+
+  const workItems = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+
+  assert.equal(workItems.length, 201);
+  const detailCalls = calls.filter((call) => call.path.endsWith("/_apis/wit/workitems"));
+  assert.deepEqual(detailCalls.map((call) => call.params.ids!.split(",").length), [200, 1]);
+  assert.ok(detailCalls.every((call) => call.params.$expand === "relations" && call.params.fields === undefined));
 });
 
 test("work items: asignación y PRs vinculadas (enlace real con %2f; otros enlaces se ignoran)", async () => {
-  const wi = apiWi(10, "Bug", "Resolved", {
+  const apiWorkItem = buildApiWorkItem(10, "Bug", "Resolved", {
     relations: [
       { rel: "ArtifactLink", url: "vstfs:///Git/PullRequestId/e0b10b96%2f46e352da%2f3", attributes: { name: "Pull Request" } },
       { rel: "ArtifactLink", url: "vstfs:///Git/Commit/e0b10b96%2f46e352da%2fe0d6c7eb", attributes: { name: "Fixed in Commit" } },
     ],
   });
-  wi.fields["System.AssignedTo"] = { id: "me-id", displayName: "Yo" };
-  const { reader } = iterationReader([10], () => [wi]);
-  const [item] = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
-  assert.deepEqual(item?.assignedTo, { id: "me-id", displayName: "Yo" });
-  assert.deepEqual(item?.pullRequestIds, [3]);
+  apiWorkItem.fields["System.AssignedTo"] = { id: "me-id", displayName: "Yo" };
+  const { reader } = iterationReader([10], () => [apiWorkItem]);
+
+  const [workItem] = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+
+  assert.deepEqual(workItem?.assignedTo, { id: "me-id", displayName: "Yo" });
+  assert.deepEqual(workItem?.pullRequestIds, [3]);
 });
 
 test("work items: un estado sin categoría es un error explícito", async () => {
-  const { reader } = iterationReader([5], () => [apiWi(5, "Bug", "Inventado")]);
+  const { reader } = iterationReader([5], () => [buildApiWorkItem(5, "Bug", "Inventado")]);
+
   await assert.rejects(new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1"), /sin categoría/);
 });

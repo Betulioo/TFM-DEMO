@@ -23,7 +23,7 @@ Antes de escribir uno, lee `docs/glosario.md` (definiciones) y el caso en `fixtu
   sí se compara el objeto completo con `assert.deepEqual`.
 - **Casos A–N:** salen de `fixtures/expected.json`. No copies la lista de casos en un test.
 - **Datos explícitos y mínimos:** cada test construye solo lo que importa para su regla con un helper local
-  (`wi(...)`, `apiPr(...)`, `apiWi(...)`). Si un helper se usa en 2+ archivos, muévelo a `test/helpers/`.
+  (`buildWorkItem(...)`, `buildApiPullRequest(...)`, `buildApiWorkItem(...)`). Si un helper se usa en 2+ archivos, muévelo a `test/helpers/`.
 - **Antes de dar el trabajo por terminado:** `npm run typecheck`, `npm run lint` y `npm test` en verde.
 
 ## 1. Dominio (`src/domain/rules.ts`)
@@ -32,16 +32,18 @@ Funciones puras: sin dobles, sin `async`, datos explícitos. Si la regla depende
 recibe `now` y el umbral como parámetros; el test los fija.
 
 ```typescript
-const ME = { id: "me", displayName: "Yo" };
+const CURRENT_USER = { id: "me", displayName: "Yo" };
 
-function wi(id: number, stateCategory: StateCategory, assignedTo = ME, type = "Task"): WorkItem {
+function buildWorkItem(id: number, stateCategory: StateCategory, assignedTo = CURRENT_USER, type = "Task"): WorkItem {
   return { id, title: `WI ${id}`, type, state: "x", stateCategory, assignedTo, changedAt: "2026-10-19T00:00:00Z", pullRequestIds: [] };
 }
 
-test("mis tareas: el tipo no filtra (procesos personalizados)", () => {
-  const items = [wi(8, "InProgress", ME, "Bug desarrollo"), wi(9, "InProgress", ME, "Epic")];
+const ids = (workItems: WorkItem[]) => workItems.map((workItem) => workItem.id);
 
-  assert.deepEqual(myTasks(items, ME).map((w) => w.id), [8, 9]);
+test("mis tareas: el tipo no filtra (procesos personalizados)", () => {
+  const workItems = [buildWorkItem(8, "InProgress", CURRENT_USER, "Bug desarrollo"), buildWorkItem(9, "InProgress", CURRENT_USER, "Epic")];
+
+  assert.deepEqual(ids(myTasks(workItems, CURRENT_USER)), [8, 9]);
 });
 ```
 
@@ -88,10 +90,10 @@ esperado, con los tipos de dominio (`PullRequest`, `WorkItem`). No mezcles los d
 
 ```typescript
 // ❌ MAL: un WorkItem de dominio disfrazado de respuesta de la API
-const api = { ...wi(10, "InProgress"), fields: {} } as unknown as ApiWorkItem;
+const apiWorkItem = { ...buildWorkItem(10, "InProgress"), fields: {} } as unknown as ApiWorkItem;
 
 // ✅ BIEN: respuesta de la API explícita y tipada
-function apiWi(id: number, type: string, state: string, overrides: Partial<ApiWorkItem> = {}): ApiWorkItem {
+function buildApiWorkItem(id: number, type: string, state: string, overrides: Partial<ApiWorkItem> = {}): ApiWorkItem {
   return {
     id,
     fields: { "System.Title": `WI ${id}`, "System.WorkItemType": type, "System.State": state, "System.ChangedDate": "2026-10-19T13:49:41Z" },
@@ -108,10 +110,11 @@ caso acaba donde dice `expected` y que los casos solo verificables con fixtures 
 ```typescript
 const NOW = new Date("2026-10-19T09:00:00Z");
 const source = new FixtureSource(loadCases(), NOW);
-const titles = (prs: { title: string }[]) => prs.map((pr) => pr.title.slice(1, 2)).sort();
+/** Los títulos de los casos empiezan por su clave: "[K] Paginación…" → "K". */
+const caseKeys = (items: { title: string }[]) => items.map((item) => item.title.slice(1, 2)).sort();
 
 test("mis PRs activas: D, E y F (G está completada)", async () => {
-  assert.deepEqual(titles(await source.myPullRequests()), ["D", "E", "F"]);
+  assert.deepEqual(caseKeys(await source.myPullRequests()), ["D", "E", "F"]);
 });
 ```
 
@@ -126,9 +129,9 @@ consulta WIQL, que es un POST de lectura).
 
 ```typescript
 test("proyecto con work items: no escribe", async () => {
-  const { deps, calls } = setup({ me: { workItems: 3 } });
+  const { dependencies, calls } = buildScenario({ currentUserAccount: { workItemCount: 3 } });
 
-  await assert.rejects(runSeed(deps), /ya tiene 3 work items/);
+  await assert.rejects(runSeed(dependencies), /ya tiene 3 work items/);
   assert.equal(calls.filter(isWrite).length, 0);
 });
 ```

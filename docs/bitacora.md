@@ -26,8 +26,8 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Clean code: bloque `test` y pasar las reglas de nombres a `error` (incluido el import `js` de
-`eslint.config.js`). Bloques de reglas, `src` y `scripts` hechos.
+Paso 6 — Vinculación, snapshot y tests (diseño en `docs/plan.md`). Clean code terminado (reglas en `error`);
+pendiente de confirmación y commit de la persona.
 Después, paso 6 — Vinculación, snapshot y tests.
 
 ## Registro
@@ -82,6 +82,12 @@ Después, paso 6 — Vinculación, snapshot y tests.
   `me`/`mate` → `currentUserClient`/`teammateClient`… (en `test/seed.test.ts` solo esos nombres, para compilar).
   Verificado: lint, typecheck, 38 tests, `list:prs` y `list:tasks` contra la demo, y una regresión sin red que
   ejecuta el `runSeed` anterior y el nuevo con el mismo cliente falso: 54 peticiones idénticas.
+- Clean code, bloque `test` y cierre: 64 avisos → 0 en `test/` (`buildWorkItem`, `buildApiPullRequest`,
+  `buildApiWorkItem`, `caseKeys`, `hasCaseKey`, `buildScenario`, `currentUserAccount`…; los nombres de los tests no
+  cambian). `id-length` e `id-denylist` pasan a `error` y `js` → `eslintJs` en `eslint.config.js`: `npm run lint`
+  sin problemas, y un archivo de prueba con `c` y `prs` falla. Mutaciones de control: quitar la comprobación de
+  proyecto vacío y tratar Completed como abierta hacen fallar 3 tests. Ejemplos de la skill `testing` actualizados
+  a los nombres nuevos.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -220,3 +226,7 @@ Después, paso 6 — Vinculación, snapshot y tests.
   escritura). Se vio al revisar el diff. Corrección: restaurar los literales y comprobar dos cosas en cada
   renombrado: (1) que los textos literales del archivo no cambian y (2) una regresión antes/después de las
   peticiones del seed con un cliente falso. Lección: un renombrado automático nunca debe tocar cadenas.
+- Bloque `test`: una sustitución con expresión regular no renombró `...wi(7` (el patrón excluía lo precedido de
+  punto); lo detectaron typecheck y tests. Desde ahí, los tests se reescribieron enteros en vez de sustituir.
+  Además, los ejemplos de la skill `testing` seguían con los nombres antiguos (los habría enseñado a pesar del
+  lint); se vio al buscar nombres antiguos en `docs/` y `.claude/skills/` (lista de cierre, "busca lo que existe").

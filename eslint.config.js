@@ -1,7 +1,7 @@
 // Lint: reglas generales de TypeScript + reglas propias del proyecto (capas hexagonales y solo lectura).
 // Las reglas de capas vienen de CLAUDE.md, "Reglas de arquitectura (comprobadas)" (única fuente);
 // test/architecture.test.ts comprueba las mismas.
-import js from "@eslint/js";
+import eslintJs from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 /** `src/` nunca puede importar `scripts/` (ahí vive el cliente con escritura). */
@@ -22,7 +22,7 @@ function layer(files, forbidden) {
 
 export default tseslint.config(
   { ignores: ["node_modules/", "dist/", "output/"] },
-  js.configs.recommended,
+  eslintJs.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
     languageOptions: {
@@ -32,13 +32,12 @@ export default tseslint.config(
   { files: ["eslint.config.js"], ...tseslint.configs.disableTypeChecked },
 
   // --- Nombres legibles (CLAUDE.md, "Código limpio") ---
-  // "warn" mientras se renombra por bloques; pasa a "error" al terminar.
   {
     rules: {
       // properties "never": los campos que impone la API externa se dejan como vienen.
-      "id-length": ["warn", { min: 3, exceptions: ["id", "i"], properties: "never" }],
+      "id-length": ["error", { min: 3, exceptions: ["id", "i"], properties: "never" }],
       // Abreviaturas de 3+ letras que id-length no detecta.
-      "id-denylist": ["warn", "prs", "ctx", "deps", "opts", "res", "req", "cfg", "tmp", "val", "obj", "arr", "str", "num", "idx", "cb"],
+      "id-denylist": ["error", "prs", "ctx", "deps", "opts", "res", "req", "cfg", "tmp", "val", "obj", "arr", "str", "num", "idx", "cb"],
     },
   },
 
