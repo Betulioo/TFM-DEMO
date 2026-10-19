@@ -7,6 +7,31 @@ Es el caso práctico de un TFM: el código debe ser simple, verificable y reutil
 **Al empezar cada sesión** lee `docs/bitacora.md` (estado y decisiones) y `docs/plan.md` (diseño de los
 pasos pendientes). Se trabaja un paso cada vez; al terminar uno, actualiza la bitácora.
 
+### Forma de trabajar
+
+**Al empezar una sesión**
+- Lee `docs/bitacora.md` y, de `docs/plan.md`, solo la sección del paso actual. Lee más solo si el paso lo necesita.
+
+**Antes de implementar**
+- Cuenta en 2-3 líneas qué vas a hacer, también cuando la persona ya te da la lista de tareas.
+- Busca lo que ya existe (`grep` en `CLAUDE.md`, `docs/`, `.claude/`, `eslint.config.js`, `src/`, `test/`) antes de
+  añadir una regla, una skill o un check. Si algo ya lo cubre, dilo y propón ampliarlo en vez de duplicarlo.
+- No amplíes el alcance sin avisar. Si algo extra parece útil, propónlo y no lo hagas.
+- No hagas commits: los hace la persona a mano.
+
+**Lista de cierre** (al terminar cada paso o bloque, antes de darlo por hecho)
+1. `npm run typecheck`, `npm run lint` y `npm test` en verde. Si algo falla, corrígelo antes de seguir.
+2. `git diff --stat` para listar los archivos cambiados. Si alguno no debería haberse tocado, revísalo y avisa.
+   La revisión línea a línea la hace la persona antes de su commit.
+3. Relee las instrucciones de la persona en ese turno y comprueba cada una; di cuál queda pendiente y por qué.
+4. Bitácora al día, con entradas cortas: Estado, **Próximo paso** (al terminar, no al empezar) y hechos comprobados.
+5. En el mensaje final, no solo en el resumen de cierre: archivos cambiados, cómo verificarlo la persona y lo que
+   haya pedido expresamente (por ejemplo, un mensaje de commit).
+
+**Contexto**
+- Se trabaja una sesión por paso. Si la persona avisa de que va a cambiar de sesión, deja la bitácora lista para
+  que otra sesión continúe sin esta conversación: qué está hecho, qué falta del paso actual y decisiones pendientes.
+  
 ### Bitácora (`docs/bitacora.md`)
 
 - **Estado** (casillas) y **Próximo paso**: foto vigente; se reemplazan, no se acumulan.
@@ -20,7 +45,7 @@ pasos pendientes). Se trabaja un paso cada vez; al terminar uno, actualiza la bi
 1. **Recogida (determinista, sin IA)** — `src/`: lee Azure DevOps y escribe `output/snapshot.json`.
    Sigue arquitectura hexagonal: un puerto (interfaz) con dos adaptadores, uno real para la API de
    Azure DevOps y otro falso que lee fixtures. La lógica de vinculación no conoce el adaptador.
-   Capas: `src/domain`, `src/ports` (solo importa `domain`), `src/application` (paso 6),
+   Capas: `src/domain`, `src/ports`, `src/application` (paso 6),
    `src/adapters/azdo` y `src/adapters/fixtures`.
 2. **Síntesis (IA)** — skill en `.claude/skills/`: lee `output/snapshot.json` y redacta el informe.
 3. **Verificación** — `scripts/` y tests: compara el informe con `fixtures/expected.json`.
@@ -30,11 +55,16 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
 
 ### Reglas de arquitectura (comprobadas)
 
-- `src/domain` no importa nada de `src/adapters` (ni del antiguo `src/azdo`), ni `node:fs`, ni llama a `fetch`.
-- En `src/` solo `src/adapters/azdo/read-only-client.ts` hace peticiones a Azure DevOps (`fetch`), y solo GET.
+Esta lista es la única fuente de las reglas de capas; el código que las comprueba remite aquí.
+
+- `src/domain` solo importa archivos de `src/domain` (nada de `src/adapters`, del antiguo `src/azdo` ni
+  `node:*`, incluido `node:fs`) y no llama a `fetch`.
+- `src/ports` solo importa de `src/domain` (y de otros archivos de `src/ports`), y no usa `node:*`.
+- En `src/` solo `src/adapters/azdo/read-only-client.ts` hace peticiones a Azure DevOps (`fetch`), y solo GET;
+  ningún archivo de `src/` importa `node:http` ni `node:https`.
 - Nada en `src/` importa de `scripts/` (ahí está el cliente con escritura).
 
-`test/architecture.test.ts` comprueba estas reglas en cada `npm test` (y por tanto en el pre-push).
+Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `eslint.config.js` (en `npm run lint`).
 
 ## Reglas
 
@@ -55,6 +85,17 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
 - TypeScript estricto, ESM, Node ≥ 20.12. Ejecutar con `tsx`.
 - `fetch` nativo, `process.loadEnvFile()` y `node:test`; no añadir dependencias sin necesidad clara.
 - Código y comentarios en español sencillo; nombres de variables en inglés.
+
+### Código limpio
+
+- **Nombres legibles:** palabras completas que digan qué es (`pullRequests`, `workItem`, `testCase`,
+  `currentUser`). Nada de letras sueltas ni abreviaturas (`c`, `w`, `pr`, `me`, `prs`, `ctx`, `deps`); únicas
+  excepciones: `id` y el índice `i` de un bucle `for`. Los campos que impone la API externa se dejan como vienen.
+- **DRY:** lo que se repite en 2 o más archivos se extrae a un módulo compartido (`scripts/lib/`, `test/helpers/`).
+  Dentro de un archivo, una constante o función con nombre en vez de repetir el literal.
+- **Funciones pequeñas con un solo propósito**, con nombre que diga qué hacen. Si necesitan un comentario
+  para explicar *qué* hacen, el nombre no es bueno; los comentarios explican el *porqué*.
+- Lo comprobable lo comprueba el lint (`id-length`, `id-denylist` en `eslint.config.js`).
 
 ## Comandos
 

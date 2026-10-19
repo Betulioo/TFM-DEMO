@@ -26,7 +26,8 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-Antes del paso 6: check de arquitectura, skill `tests-semanticos` y revisión de `revisar-tfm`.
+Clean code: renombrar por bloques (`src` → `scripts` + DRY en `scripts/lib/demo.ts` → `test`) y pasar las
+reglas de nombres a `error`. Bloque de reglas y lint hecho, pendiente de confirmación.
 Después, paso 6 — Vinculación, snapshot y tests.
 
 ## Registro
@@ -64,6 +65,14 @@ Después, paso 6 — Vinculación, snapshot y tests.
 - Antes del paso 6: `test/architecture.test.ts` (3 reglas de la sección "Arquitectura" de `CLAUDE.md`, con un
   control por regla; probado además rompiendo `rules.ts` a propósito), skill `tests-semanticos` y sección A de
   `revisar-tfm` actualizada para ejecutar el check y revisar los tests con esa skill. 36 tests en verde.
+- Correcciones tras una reflexión del agente: `CLAUDE.md` vuelve a decir que `src/domain` solo importa de
+  `src/domain` (se había perdido al reorganizar) y añade `ports` y `node:http(s)`; el test de arquitectura y el
+  lint comprueban ahora el mismo conjunto (probado con archivos temporales: ambos detectan las mismas
+  violaciones de imports). `tests-semanticos` acepta también reglas de `CLAUDE.md` como lo que protege un test
+  (si no, marcaría los tests del seed y de arquitectura) y ya no repite la regla de credenciales. 38 tests.
+- Clean code, bloque de reglas: `CLAUDE.md` → "Código limpio" y `id-length` / `id-denylist` en `eslint.config.js`
+  (warn). Línea base: 176 avisos (99 `id-length`, 77 `id-denylist`): `src` 21, `scripts` 90, `test` 64 y
+  `eslint.config.js` 1.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -133,8 +142,16 @@ Después, paso 6 — Vinculación, snapshot y tests.
   herramientas y los dobles reales del repo (`node:test`, lector falso, `FixtureSource`, cliente falso del seed).
 - Las reglas de arquitectura se comprueban con un test automático y no con una skill: una regla comprobable
   debe comprobarse con código. Las skills quedan para lo que necesita criterio (`tests-semanticos`: si un test
-  protege un comportamiento con significado). Las reglas se escriben una sola vez, en `CLAUDE.md`; el test y la
-  skill `revisar-tfm` remiten a ellas.
+  protege un comportamiento con significado). Las reglas de capas se escriben una sola vez, en `CLAUDE.md`
+  ("Reglas de arquitectura (comprobadas)"); el test, `eslint.config.js` y `revisar-tfm` remiten a ellas. El
+  bloque A de `docs/plan.md` es el diseño histórico, no la fuente vigente.
+- Prevención de los fallos del agente en `CLAUDE.md` ("Forma de trabajar") y no en una skill: es corta, aplica en
+  todas las sesiones y se carga siempre. Lo que se puede comprobar con código ya lo comprueban lint, tests y
+  pre-push; la lista cubre lo que no (releer instrucciones, revisar el diff, escribir el contenido en el mensaje).
+- Clean code (nombres legibles, DRY), aprobado: reglas en `CLAUDE.md` ("Código limpio"), lo comprobable en el
+  lint (`id-length` mínimo 3 con excepciones `id` e `i`; `id-denylist` para `prs`, `ctx`, `deps`…) y renombrado
+  por bloques. Las reglas entran como `warn` para no romper lint y pre-push durante el renombrado, y pasan a
+  `error` al terminar. `me` y `pr` también se renombran (`currentUser`, `pullRequest`): sin excepciones de dominio.
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de
@@ -169,3 +186,23 @@ Después, paso 6 — Vinculación, snapshot y tests.
   proyecto pero 0 repositorios: tenía acceso *Stakeholder*, que en proyectos privados no incluye Repos.
   Corrección: se pasó la cuenta a *Basic* y el seed terminó sin errores; además, el seed comprueba el
   acceso del compañero antes de escribir nada.
+- Lint de capas con `group: ["../*", "!../domain/**"]`: la negación no reincluye nada después de excluir
+  `../*` (semántica de `.gitignore`), así que `ports` → `domain` fallaba al aplicarla a `ports`; en `domain` no se
+  notaba porque importa con `./`. Corrección: patrones `regex` (`^\.\./(?!domain/)`).
+- Análisis de los fallos del agente detectados en su reflexión (antes del paso 6):
+
+  | Fallo | Causa |
+  |---|---|
+  | No dio archivos ni mensaje de commit por punto, ni cómo verificarlo | Cerró el turno con un resumen genérico sin releer las instrucciones concretas de ese turno. No hay lista de cierre. |
+  | Añadió un check de arquitectura sin avisar de que el lint ya lo hacía, y quedaron distintos | No buscó qué existía antes de añadir. |
+  | Al reorganizar `CLAUDE.md` se perdió "`src/domain` no importa nada de fuera" | Reescribió un párrafo sin revisar el `git diff`. |
+  | Decisión en la bitácora inexacta ("reglas en un solo sitio") | Escribió la intención, no el estado comprobado con `grep`. |
+  | "Próximo paso" desactualizado | Lo actualizó al empezar y no al terminar. |
+  | `tests-semanticos` repetía `CLAUDE.md` y su criterio 1 dejaba fuera los tests del seed y de arquitectura | Siguió la especificación al pie de la letra sin contrastarla con los tests existentes. |
+  | Amplió el alcance (tabla de tests en `revisar-tfm`) y no contó el plan antes | No aplicó la forma de trabajar al recibir una lista de tareas ya detallada. |
+
+  | En el turno siguiente anunció propuestas "abajo" que no escribió, ni la explicación de los tests | El contenido para la persona fue al resumen de cierre del turno y no al mensaje. Es la causa concreta del primer fallo. |
+
+  Patrón común: **no comprobar contra lo que ya existe** (`grep`, `git diff`) y **cerrar sin lista de
+  comprobación**. Mejora aplicada: sección "Forma de trabajar" en `CLAUDE.md` (antes de implementar + lista de
+  cierre de 5 puntos).

@@ -1,9 +1,11 @@
-// Check de arquitectura: las reglas de la sección "Arquitectura" de CLAUDE.md, comprobadas sobre el código.
+// Check de arquitectura: las reglas de "Reglas de arquitectura (comprobadas)" de CLAUDE.md (única fuente),
+// comprobadas sobre el código. eslint.config.js comprueba las mismas en `npm run lint`.
 // Lee los archivos de src/ como texto (sin dependencias nuevas). Cada regla tiene un test de control con
 // código de ejemplo, para que un fallo del propio check no haga pasar los tests sin comprobar nada.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
+import { isBuiltin } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -35,18 +37,30 @@ function imports(file: SourceFile): string[] {
 }
 
 const callsFetch = (f: SourceFile) => /\bfetch\s*\(/.test(f.text);
+const isNodeModule = (spec: string) => spec.startsWith("node:") || isBuiltin(spec);
 
 // --- Reglas -------------------------------------------------------------------
 
-function domainViolations(files: SourceFile[]): string[] {
+/** Imports de una capa que no salen de las carpetas permitidas (los módulos de Node nunca están permitidos). */
+function layerViolations(files: SourceFile[], layer: string, allowed: string[]): string[] {
   return files
-    .filter((f) => f.path.startsWith("src/domain/"))
-    .flatMap((f) => [
-      ...imports(f)
-        .filter((i) => i.startsWith("src/adapters/") || i.startsWith("src/azdo/") || i === "node:fs" || i === "fs" || i.startsWith("node:fs/"))
+    .filter((f) => f.path.startsWith(layer))
+    .flatMap((f) =>
+      imports(f)
+        .filter((i) => isNodeModule(i) || !allowed.some((dir) => i.startsWith(dir)))
         .map((i) => `${f.path} importa ${i}`),
-      ...(callsFetch(f) ? [`${f.path} llama a fetch`] : []),
-    ]);
+    );
+}
+
+function domainViolations(files: SourceFile[]): string[] {
+  return [
+    ...layerViolations(files, "src/domain/", ["src/domain/"]),
+    ...files.filter((f) => f.path.startsWith("src/domain/") && callsFetch(f)).map((f) => `${f.path} llama a fetch`),
+  ];
+}
+
+function portsViolations(files: SourceFile[]): string[] {
+  return layerViolations(files, "src/ports/", ["src/domain/", "src/ports/"]);
 }
 
 function nonGetViolations(files: SourceFile[]): string[] {
@@ -78,8 +92,12 @@ test("arquitectura: hay archivos que comprobar (incluido el cliente de solo lect
   assert.ok(files.some((f) => f.path === READ_ONLY_CLIENT));
 });
 
-test("arquitectura: src/domain no importa adaptadores ni node:fs, ni llama a fetch", () => {
+test("arquitectura: src/domain solo importa de src/domain, sin node:* ni fetch", () => {
   assert.deepEqual(domainViolations(files), []);
+});
+
+test("arquitectura: src/ports solo importa de src/domain", () => {
+  assert.deepEqual(portsViolations(files), []);
 });
 
 test("arquitectura: en src/ solo el cliente de solo lectura hace peticiones, y solo GET", () => {
@@ -92,12 +110,29 @@ test("arquitectura: src/ no importa nada de scripts/", () => {
 
 // --- Controles: el check detecta cada violación ----------------------------------
 
-test("control: detecta dominio que importa un adaptador, node:fs o llama a fetch", () => {
+test("control: detecta dominio que importa un adaptador, un puerto, node:fs o fs, o llama a fetch", () => {
   const bad: SourceFile = {
     path: "src/domain/malo.ts",
-    text: 'import { AzdoSource } from "../adapters/azdo/azdo-source.js";\nimport { readFileSync } from "node:fs";\nawait fetch(url);',
+    text: [
+      'import { AzdoSource } from "../adapters/azdo/azdo-source.js";',
+      'import type { DevOpsSource } from "../ports/devops-source.js";',
+      'import { readFileSync } from "node:fs";',
+      'import { readFile } from "fs";',
+      "await fetch(url);",
+    ].join("\n"),
   };
-  assert.equal(domainViolations([bad]).length, 3);
+  const good: SourceFile = { path: "src/domain/bueno.ts", text: 'import type { WorkItem } from "./types.js";' };
+
+  assert.equal(domainViolations([bad]).length, 5);
+  assert.deepEqual(domainViolations([good]), []);
+});
+
+test("control: detecta un puerto que importa un adaptador o node:*", () => {
+  const bad: SourceFile = {
+    path: "src/ports/malo.ts",
+    text: 'import { AzdoSource } from "../adapters/azdo/azdo-source.js";\nimport { readFileSync } from "node:fs";',
+  };
+  assert.equal(portsViolations([bad]).length, 2);
 });
 
 test("control: detecta fetch fuera del cliente, node:https y métodos que no son GET", () => {

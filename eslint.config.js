@@ -1,17 +1,21 @@
 // Lint: reglas generales de TypeScript + reglas propias del proyecto (capas hexagonales y solo lectura).
-// Las capas están descritas en CLAUDE.md (sección Arquitectura).
+// Las reglas de capas vienen de CLAUDE.md, "Reglas de arquitectura (comprobadas)" (única fuente);
+// test/architecture.test.ts comprueba las mismas.
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 /** `src/` nunca puede importar `scripts/` (ahí vive el cliente con escritura). */
 const NO_SCRIPTS = { group: ["**/scripts/**"], message: "src/ no puede importar scripts/: ahí está el cliente con escritura." };
 
-/** Regla de imports para una capa: siempre prohíbe scripts/ y además los grupos indicados. */
+/** Solo el cliente de solo lectura habla con la red, y lo hace con fetch: nada de node:http(s). */
+const NO_HTTP = { group: ["node:http", "node:https", "http", "https"], message: "Las peticiones solo las hace AzdoReadOnlyClient (fetch, solo GET)." };
+
+/** Regla de imports para una capa: siempre prohíbe scripts/ y node:http(s), y además los grupos indicados. */
 function layer(files, forbidden) {
   return {
     files,
     rules: {
-      "no-restricted-imports": ["error", { patterns: [NO_SCRIPTS, ...forbidden] }],
+      "no-restricted-imports": ["error", { patterns: [NO_SCRIPTS, NO_HTTP, ...forbidden] }],
     },
   };
 }
@@ -27,14 +31,26 @@ export default tseslint.config(
   },
   { files: ["eslint.config.js"], ...tseslint.configs.disableTypeChecked },
 
+  // --- Nombres legibles (CLAUDE.md, "Código limpio") ---
+  // "warn" mientras se renombra por bloques; pasa a "error" al terminar.
+  {
+    rules: {
+      // properties "never": los campos que impone la API externa se dejan como vienen.
+      "id-length": ["warn", { min: 3, exceptions: ["id", "i"], properties: "never" }],
+      // Abreviaturas de 3+ letras que id-length no detecta.
+      "id-denylist": ["warn", "prs", "ctx", "deps", "opts", "res", "req", "cfg", "tmp", "val", "obj", "arr", "str", "num", "idx", "cb"],
+    },
+  },
+
   // --- Capas (de la más interna a la más externa) ---
   layer(["src/**/*.ts"], []),
   layer(["src/domain/**/*.ts"], [
-    { group: ["../*", "!../domain/**"], message: "domain/ no importa nada fuera de domain/." },
+    // regex y no group: con group, "!../domain/**" no reincluye nada tras excluir "../*" (igual que .gitignore).
+    { regex: "^\\.\\./(?!domain/)", message: "domain/ no importa nada fuera de domain/." },
     { group: ["node:*"], message: "domain/ no usa APIs de Node: recibe los datos como parámetros." },
   ]),
   layer(["src/ports/**/*.ts"], [
-    { group: ["**/adapters/**", "**/application/**", "**/config.js"], message: "ports/ solo importa domain/." },
+    { regex: "^\\.\\./(?!domain/|ports/)", message: "ports/ solo importa domain/." },
     { group: ["node:*"], message: "ports/ no usa APIs de Node." },
   ]),
   layer(["src/application/**/*.ts"], [
