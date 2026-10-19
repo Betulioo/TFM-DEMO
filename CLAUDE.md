@@ -55,7 +55,7 @@ Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/g
 - `npm run typecheck` — comprueba tipos.
 - `npm run lint` — ESLint con las reglas de capas y de solo lectura (`eslint.config.js`).
   `typecheck`, `lint` y `npm test` deben pasar antes de dar un paso por terminado.
-- `npm test` — tests con `node:test` (sin red).
+- `npm test` — tests con `node:test` (sin red). Convenciones en la skill `.claude/skills/testing/`.
 - `npm run list:prs` — lista las PRs de la demo y las compara con `fixtures/demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run list:tasks` — lista los work items de la iteración actual, marca "Mis tareas" y compara con `demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run check:conn` — comprueba la conexión con Azure DevOps usando `.env` (solo lectura).

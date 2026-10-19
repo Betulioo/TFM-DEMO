@@ -125,6 +125,9 @@ Después, paso 6 — Vinculación, snapshot y tests.
 - Las categorías de estado se leen de la API por tipo y se cachean; el adaptador falso usa las de Agile.
   Un estado sin categoría es un error explícito, no se adivina.
 - El adaptador ya extrae los IDs de PR de los enlaces del work item (`pullRequestIds`), que usará el paso 6.
+- Skill de proyecto `testing` (`.claude/skills/testing/SKILL.md`), adaptada de una skill de tests unitarios
+  con Jest: mismas ideas (tipos de test, datos explícitos, entrada de la API frente a dominio, AAA) con las
+  herramientas y los dobles reales del repo (`node:test`, lector falso, `FixtureSource`, cliente falso del seed).
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de
