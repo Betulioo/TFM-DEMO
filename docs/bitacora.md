@@ -58,10 +58,15 @@ Reglas de uso:
 ## Próximo paso
 
 **Seguir por:** cerrar el paso 7. La persona revisa a mano `output/brief-2026-10-20.md` (IDs de A–L según
-`fixtures/demo-ids.json`) y anota aquí el resultado. Con eso, paso 8: `scripts/verify-brief.ts` lee los IDs por encabezado de la plantilla
+`fixtures/demo-ids.json`; el cruce del agente ya coincide en A–L) y anota aquí el resultado. Con eso, paso 8: `scripts/verify-brief.ts` lee los IDs por encabezado de la plantilla
 de la skill.
 
 **Decisiones pendientes**
+- Si "PR bloqueada" (de Mis PRs) va en la sección Riesgos del informe. El glosario solo define como señales de
+  riesgo "tarea estancada" y "PR envejecida pendiente de mi revisión"; el agente la añadió por el orden de
+  Sugerencias del plan, sin avisar. Afecta al verificador del paso 8, que cuenta los IDs por sección.
+- Fecha del informe: la skill usa `generatedAt` (UTC) para el nombre del archivo y para "es de hoy". Una
+  recogida entre las 00:00 y las 02:00 en España saldría con la fecha del día anterior. ¿UTC o hora local?
 - Nombre del siguiente paso para una PR en borrador: "PR en borrador" (frase de la persona, describe un estado)
   o una acción como los demás pasos ("Publicar la PR").
 - Dos extensiones del agente sin confirmar: con varias PRs vinculadas, si la de mayor ID no se encuentra cuenta la
@@ -555,6 +560,12 @@ Detectados, sin corregir; ninguno rompe los checks.
 - `npm run collect` contra la demo (lo ejecutó la persona, 27 comprobaciones A–L en `OK`) y skill `daily-brief` en
   la misma sesión: el informe tiene 1 PR pendiente de mi revisión (PR #6), 0 del equipo, 3 mías (PR #4 aprobada,
   #3 bloqueada, #2 sin votos), 7 tareas (WI #6–12) y 1 riesgo (PR #3). Revisión a mano de la persona pendiente.
+- Cruce del agente entre ese informe y `fixtures/demo-ids.json`: WI #6–12 son A–G y H, I, J (WI #13–15) no salen;
+  PR #6 (K) está pendiente de mi revisión y PR #7 (L) no sale; Mis PRs: PR #2 (D) sin votos, #3 (E) bloqueada,
+  #4 (F) aprobada; WI #12 (G) con "Cerrar la tarea" por su PR #5. Coincide con `expected.json` en A–L.
+- Correcciones del reflect del paso 7 (pedidas por la persona: "aplica"): quitada de la skill la regla "Mis PRs
+  con `isDraft` → PR en borrador", que contradecía al snapshot (Mis PRs ya excluye los borradores) y al glosario;
+  la plantilla usa marcadores `PR #<id>` / `WI #<id>` en vez de IDs de ejemplo, para que no se copien al informe.
 
 **Errores y correcciones**
 - Comentario `/** … src/**/tests/ … */` en `test/architecture.test.ts` → el `*/` de `**/` cerró el comentario y el
@@ -578,6 +589,13 @@ Detectados, sin corregir; ninguno rompe los checks.
 - El primer test de que la recogida usa los umbrales ponía una tarea de 4 días con `staleTaskDays: 2` → con un 3
   fijo en `isStale` la tarea seguía estancada y el test pasaba (mutación) → la tarea pasa a 2 días, que solo está
   estancada con el umbral 2.
+- Paso 7: la prueba con `npm run collect -- --fixtures` sobrescribió el `output/snapshot.json` de la demo, y luego
+  el informe de la demo sobrescribió el de fixtures (los dos son `brief-2026-10-20.md`); se avisó después, no
+  antes → se perdió el informe de fixtures (queda su resumen aquí) → antes de sobrescribir algo en `output/`, el
+  agente avisa. El snapshot no dice si viene de fixtures o de la demo (propuesto un campo `source`; opcional).
+- Paso 7: tras el `npm run collect` de la persona, el agente generó el informe de la demo sin contarlo antes
+  ("Antes de implementar", `CLAUDE.md`) y en contra de lo que había escrito ("en una sesión nueva"); la acción
+  admitía dos lecturas y había que preguntar (Criterios, "Ambigüedad"). Detectado en el reflect.
 
 **Aprendizajes**
 - Los errores recurrentes del agente se corrigen con límites que impone la herramienta (modo plan) y con criterios

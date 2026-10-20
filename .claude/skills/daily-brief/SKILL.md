@@ -43,8 +43,6 @@ el proyecto demo o sobre fixtures (práctica de datos de cliente de [`CLAUDE.md`
 | Mis tareas | `myTasks` | ID, título, estado; con PR: `PR #n` y su siguiente paso; sin PR: "sin PR" y "tarea estancada" si `stale` |
 | Riesgos | las tres anteriores | PR envejecida pendiente de mi revisión (`aged` en `pullRequestsPendingMyReview`), PRs de "Mis PRs" con `blocked` y tareas con `stale` |
 
-Una PR de "Mis PRs" con `isDraft: true` se marca "PR en borrador".
-
 **Orden de las Sugerencias** (de `docs/plan.md`, paso 7):
 1. Revisar cada PR envejecida pendiente de mi revisión.
 2. Atender cada PR propia bloqueada.
@@ -52,6 +50,8 @@ Una PR de "Mis PRs" con `isDraft: true` se marca "PR en borrador".
 4. El resto: otras PRs pendientes de mi revisión o del equipo y los siguientes pasos de mis tareas.
 
 ## Plantilla
+
+Los `<…>` son marcadores: se sustituyen por los datos del snapshot. Ningún ID del informe sale de la plantilla.
 
 ```markdown
 # Informe diario — AAAA-MM-DD
@@ -62,26 +62,26 @@ Umbrales: PR envejecida <agedPrDays> días · tarea estancada <staleTaskDays> d�
 ## Hechos
 
 ### PRs pendientes de mi revisión
-- PR #12 — <título> (autor: <nombre>) — PR envejecida
+- PR #<id> — <título> (autor: <nombre>) — PR envejecida
 
 ### PRs pendientes del equipo
 - Ninguna.
 
 ### Mis PRs
-- PR #5 — <título> — PR bloqueada
+- PR #<id> — <título> — PR bloqueada
 
 ### Mis tareas
-- WI #104 — <título> (<state>) — PR #4 — Siguiente paso: Esperar revisión
-- WI #103 — <título> (<state>) — sin PR — tarea estancada
+- WI #<id> — <título> (<state>) — PR #<id> — Siguiente paso: <nextStep>
+- WI #<id> — <título> (<state>) — sin PR — tarea estancada
 
 ### Riesgos
-- PR #12 — PR envejecida pendiente de mi revisión
-- PR #5 — PR bloqueada
-- WI #103 — tarea estancada
+- PR #<id> — PR envejecida pendiente de mi revisión
+- PR #<id> — PR bloqueada
+- WI #<id> — tarea estancada
 
 ## Sugerencias
 
-1. Revisar PR #12: es una PR envejecida pendiente de mi revisión.
-2. Atender los cambios solicitados en PR #5 (PR bloqueada).
-3. Actualizar WI #103: es una tarea estancada.
+1. Revisar PR #<id>: es una PR envejecida pendiente de mi revisión.
+2. Atender los cambios solicitados en PR #<id> (PR bloqueada).
+3. Actualizar WI #<id>: es una tarea estancada.
 ```
