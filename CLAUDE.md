@@ -67,7 +67,8 @@ Esta lista es la única fuente de las reglas de capas; el código que las compru
   ningún archivo de `src/` importa `node:http` ni `node:https`.
 - Nada en `src/` importa de `scripts/` (ahí está el cliente con escritura).
 - Los tests en carpetas `tests/` dentro de `src/` (p. ej. `src/domain/tests/`) no son código de la capa y quedan
-  fuera de estas reglas: necesitan `node:test` y `node:assert`.
+  fuera de estas reglas: necesitan `node:test` y `node:assert`. Por eso en `tests/` solo van tests y sus helpers.
+- Ningún archivo de `src/` fuera de `tests/` importa de una carpeta `tests/` ni de `#test-helpers/*`.
 
 Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `eslint.config.js` (en `npm run lint`).
 
@@ -112,7 +113,7 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 - `npm run verify` — typecheck, lint y tests seguidos; es el "terminado" de la lista de cierre.
 - `npm run typecheck` — comprueba tipos.
 - `npm run lint` — ESLint con las reglas de capas y de solo lectura (`eslint.config.js`).
-- `npm test` — tests con `node:test` (sin red): junto al código en carpetas `tests/` y, en `test/`, el check de arquitectura. Convenciones en la skill `.claude/skills/testing/`.
+- `npm test` — tests con `node:test` (sin red): junto al código en carpetas `tests/` y, en `test/`, los checks de arquitectura y de que `npm test` encuentra todos los tests. Convenciones en la skill `.claude/skills/testing/`.
 - `npm run list:prs` — lista las PRs de la demo y las compara con `fixtures/demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run list:tasks` — lista los work items de la iteración actual, marca "Mis tareas" y compara con `demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run check:conn` — comprueba la conexión con Azure DevOps usando `.env` (solo lectura).

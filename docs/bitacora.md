@@ -31,11 +31,13 @@ commiteado: reglas de PR en `src/domain/rules.ts`, días naturales en `src/domai
 `pullRequestsToReviewByTeam()` en el puerto y los dos adaptadores, caso O y arreglos de la auditoría del arnés.
 Hecho sin commitear: reglas `isStale` ("tarea estancada"), `nextStep` ("siguiente paso") con tipo `NextStep` y
 `taskPullRequestId` ("PR de una tarea": la de mayor ID). Todos los tests con `describe`/`it` y AAA, junto al
-código que prueban en carpetas `tests/`; en `test/` quedan `architecture.test.ts` y `helpers/`. `npm run verify`
-en verde (84/84 tests, 20 suites).
+código que prueban en carpetas `tests/`; en `test/` quedan los checks transversales (`architecture.test.ts`,
+`test-discovery.test.ts`) y `helpers/` (alias `#test-helpers/*`). Mejoras tras la reflexión hechas (ver Registro).
+Siguiente paso "PR en borrador" y PRs vinculadas no encontradas ignoradas (`taskPullRequest`), decididos por la
+persona. `npm run verify` en verde (99/99 tests).
 
-**Seguir por:** `src/application/collect-snapshot.ts` (traer cada "PR de una tarea" por ID con el puerto y
-aplicar `nextStep` e `isStale`) y `npm run collect`, que debe quitar duplicados si una PR sale a la vez
+**Seguir por:** `src/application/collect-snapshot.ts` (buscar por ID con el puerto todas las PRs vinculadas de cada
+tarea, elegir la suya con `taskPullRequest` y aplicar `nextStep` e `isStale`) y `npm run collect`, que debe quitar duplicados si una PR sale a la vez
 como mía y del equipo (ver Problemas abiertos).
 
 **Decisiones pendientes**
@@ -57,6 +59,10 @@ como mía y del equipo (ver Problemas abiertos).
   incluye las PRs de mis equipos (habría duplicados entre las dos listas). En la demo ninguna PR tiene un equipo
   como revisor.
 - `myTeams()` no pagina: la API devuelve 100 equipos por defecto (según la documentación; no comprobado).
+- `scripts/lib/seed.ts` escribe la duración de un día a mano (`86_400_000`) en vez de usar `MILLISECONDS_PER_DAY`
+  de `src/domain/dates.ts` (DRY). Detectado en la reflexión; fuera del alcance de esta ronda.
+- Lo que hay en una carpeta `tests/` de `src/` se salta las reglas de capas. Mitigado: el código de `src/` no puede
+  importar de `tests/` ni de `#test-helpers` (check y lint), así que nada de ahí llega a producción.
 
 ## Registro
 
@@ -357,7 +363,8 @@ como mía y del equipo (ver Problemas abiertos).
   se añaden hooks: `Stop` descartado por la persona; `PreToolUse` (para `.env` e ISSUE-13) queda para más adelante.
 - `nextStep` recibe la PR de la tarea ya elegida (o `undefined`), no el work item con todas sus PRs: elegir la
   PR es la vinculación, que va aparte. Decisión del agente; la persona puede revisarla.
-- Una PR en borrador cae en "Revisar estado": no es PR activa, así que no cumple las reglas 2–4.
+- Una PR en borrador cae en "Revisar estado": no es PR activa, así que no cumple las reglas 2–4. (Corregido en la
+  reflexión: es una decisión del agente, no confirmada; pasa a Decisiones pendientes.)
 - "PR de una tarea": si hay varias, la más reciente es la de **mayor ID** (decisión de la persona). Glosario
   actualizado; regla `taskPullRequestId` en `src/domain/rules.ts` con 3 tests.
 - Tests junto al código que prueban, en carpetas `tests/` (`src/domain/tests/rules.test.ts`), con `describe` por
@@ -367,9 +374,9 @@ como mía y del equipo (ver Problemas abiertos).
 - Consecuencia: las carpetas `tests/` de `src/` quedan fuera de las reglas de capas (necesitan `node:test` y
   `node:assert`). Cambiado en `CLAUDE.md`, `eslint.config.js` (`ignores` en `layer()` y `TEST_FILES` para las reglas
   de tests) y `test/architecture.test.ts` (`isTestFile`, con test de control). `npm test` añade
-  `src/*/tests/*.test.ts`, glob de la shell y no de Node, porque Node 20 no acepta globs en `--test` (según la documentación de Node; no
-  probado); solo llega a
-  un nivel bajo `src/` (p. ej. `src/adapters/azdo/tests/` no entraría).
+  `src/*/tests/*.test.ts`, glob de la shell y no de Node, porque Node 20 no acepta globs en `--test` (según la
+  documentación de Node; no probado); solo llega a un nivel bajo `src/` (p. ej. `src/adapters/azdo/tests/` no
+  entraría).
 - Los otros 5 archivos de test, al mismo estilo (pedido por la persona): `azdo-source` → `src/adapters/azdo/tests/`,
   `cases` y `fixture-source` → `src/adapters/fixtures/tests/`, `seed` → `scripts/lib/tests/`; `architecture.test.ts`
   se queda en `test/` porque comprueba todo `src/`, no un módulo. `npm test` añade `src/*/*/tests/` y
@@ -377,10 +384,48 @@ como mía y del equipo (ver Problemas abiertos).
   comportamientos (equipo como revisor en fixtures / en la demo, PR de G / PR inexistente, antigüedad de N / PR de
   G, import válido en el control de dominio): de 80 a 84 tests. `numbersFrom` (azdo-source) y `listOf` (seed)
   hacían lo mismo y `NOW` estaba repetido: pasan a `test/helpers/test-data.ts`.
+- Reflexión sobre la ronda (`/reflect`) y correcciones pedidas por la persona ("corrijamos, y apliquemos todas las
+  posibles mejoras"):
+  - Mutaciones de las reglas nuevas: `isStale` sin filtro *InProgress* o con umbral +1, `taskPullRequestId` con la
+    primera PR, `nextStep` sin la regla 1 o sin la 2 → cada una hace fallar al menos un test.
+  - Test nuevo con el adaptador falso: siguiente paso de mis tareas y tareas estancadas comparados con
+    `expected.json` (leído, no copiado). Detecta las mutaciones de `taskPullRequestId` y de `isStale`.
+  - AAA: la acción es la llamada que se prueba; los `find` sobre el resultado pasan a la comprobación. Partidos los
+    tests con dos comportamientos que quedaban (petición / traducción en PRs, iteración y equipos; asignación / PRs
+    vinculadas; lotes / parámetros de detalle; iteración / work items en el adaptador falso).
+  - `hasNoVotes` → `isActiveWithoutVotes`. `NOW` compartido → `NOW_ISO` y un `Date` por archivo
+    (`rules.test.ts` tenía aún su propio literal). Alias `#test-helpers/*` en `package.json` (`imports`) en vez de
+    `../../../../test/helpers`; `tsconfig.json` necesita `rootDir: "."` para resolverlo.
+  - `runSeed` recibe `print` como dependencia: los tests pasan `print() {}` y la salida de `npm test` queda limpia.
+  - Regla nueva de arquitectura: el código de `src/` no importa de carpetas `tests/` ni de `#test-helpers`
+    (`CLAUDE.md`, check con control y lint, probado con un archivo temporal ya borrado).
+  - `test/test-discovery.test.ts`: falla si algún `*.test.ts` del repo no entra en los patrones de `npm test`
+    (probado con un test temporal en `src/adapters/azdo/tmpdeep/tests/`, ya borrado).
+  - Riesgo de git (renombrados en el índice y `test/helpers/` sin seguimiento): resuelto, el commit `ab04ea8` de la
+    persona incluye `test/helpers/test-data.ts`.
+
+- Decisiones de la persona sobre el siguiente paso, tras explicarle las dos preguntas pendientes:
+  - "si una tarea tiene una PR en borrador, debería decir que la PR está en borrador": nuevo siguiente paso
+    **PR en borrador** (regla 2, después de "Cerrar la tarea"); nuevo término "PR en borrador" en el glosario y
+    "PR activa" ya no dice que el borrador no cuenta "para nada". Una PR abandonada que era borrador sigue en
+    "Revisar estado".
+  - "si una tarea con una PR vinculada no se encuentra, no debería decir ni aparecer nada, como si no tuviese PR
+    vinculada": la PR que no se encuentra se ignora. Extensión del agente para varias PRs: cuenta la de mayor ID
+    entre las que sí existen. `taskPullRequestId(workItem)` pasa a `taskPullRequest(linkedPullRequests)`, que recibe
+    las PRs ya buscadas (`undefined` si no se encontró), para que la regla esté en el dominio y tenga tests.
+  - 3 tests nuevos (borrador con y sin votos, no encontrada entre otras, ninguna encontrada) y el de abandonada
+    separado; el test con `expected.json` busca todas las PRs vinculadas. 99/99.
 
 **Aprendizajes**
-- Un comentario `/** … src/**/tests/ … */` se cierra en el `*/` de `**/`: el typecheck falló con decenas de errores
-  en `test/architecture.test.ts`. Se reescribió sin `**/`.
+- Mutante equivalente: quitar la condición de votos de `isActiveWithoutVotes` no hace fallar ningún test, y no
+  puede: una PR activa con algún voto distinto de 0 ya es aprobada o bloqueada (reglas 2 y 3). Se deja la condición
+  porque refleja la definición del glosario ("PR activa sin votos"); quitar la de `isActive` sí falla.
+- Mutante equivalente en `taskPullRequest`: sin el filtro de `undefined` los tests siguen pasando, porque
+  `Array.sort` coloca los `undefined` al final sin llamar al comparador. Se deja el filtro: hace explícita la regla.
+  Quitar la regla del borrador sí hace fallar su test.
+- En `no-restricted-imports`, un patrón `group` sigue la sintaxis de `.gitignore` y `#` empieza un comentario:
+  `"#test-helpers/*"` no prohibía nada (comprobado con un archivo temporal). Con `regex` sí.
+- TypeScript (NodeNext) resuelve el campo `imports` de `package.json` solo con `rootDir` (error TS2210 sin él).
 - Mutación de control: sin `isTestFile` en `sourceFiles`, el check de arquitectura falla con
   `src/domain/tests/rules.test.ts importa node:test` y `node:assert/strict`; con él, pasa.
 - La regla `no-restricted-syntax` con `NewExpression[callee.name='Date'][arguments.length=0]` marca `new Date()`
@@ -398,6 +443,13 @@ como mía y del equipo (ver Problemas abiertos).
   `sh -c "git commit"` (inferencia por la forma del patrón; no probado).
 
 **Errores y correcciones**
+- Comentario `/** … src/**/tests/ … */` en `test/architecture.test.ts` → el `*/` de `**/` cerró el comentario y el
+  typecheck falló con decenas de errores → reescrito sin `**/`. (Estaba en Aprendizajes; movido aquí en la reflexión.)
+- Al reordenar un test del adaptador falso en AAA, `iteration.id` dejó de compilar (antes lo acotaba el
+  `assert.equal` previo) → se usó `iteration!` → en la reflexión se parte el test y usa el helper
+  `currentIterationWorkItems`.
+- La regla de lint contra imports de tests usaba `group` con `#test-helpers/*` → no detectaba el alias (ver
+  Aprendizajes) → pasa a `regex`.
 - En la bitácora del 2026-10-19 se escribió como hecho que la persona ya tiene la rama en Obsidian; era una
   inferencia del agente. Se corrige el texto para marcarlo como observación. Además se había añadido una nota a
   una decisión anterior del registro ("Retirado después"), lo que reescribe historial; se quita (la retirada ya

@@ -15,17 +15,19 @@ aserciones, tiempo y negativos) está en la skill [`tests-semanticos`](../tests-
   Un `describe` por término del glosario o por comportamiento del módulo; cada `it` nombra el caso.
 - **Ubicación:** junto al código que prueban, en una carpeta `tests/`: `src/domain/rules.ts` →
   `src/domain/tests/rules.test.ts`, `scripts/lib/seed.ts` → `scripts/lib/tests/seed.test.ts`. Las carpetas
-  `tests/` de `src/` quedan fuera de las reglas de capas (`CLAUDE.md`). En `test/` solo queda lo que no prueba
-  un módulo concreto (`architecture.test.ts`) y los helpers compartidos.
-  `npm test` busca en `test/*.test.ts`, `src/*/tests/`, `src/*/*/tests/` y `scripts/*/tests/` (globs de la shell:
-  una carpeta `tests/` a otra profundidad necesita su patrón en `package.json`).
-- **Helpers:** locales en el archivo. Si tests de carpetas distintas comparten un helper, va a `test/helpers/`
-  (`NOW` y `listOf` en `test/helpers/test-data.ts`).
+  `tests/` de `src/` quedan fuera de las reglas de capas (`CLAUDE.md`): en ellas solo van tests y sus helpers.
+  En `test/` queda lo que no prueba un módulo concreto (`architecture.test.ts`, `test-discovery.test.ts`) y los
+  helpers compartidos. `npm test` busca en `test/*.test.ts`, `src/*/tests/`, `src/*/*/tests/` y `scripts/*/tests/`
+  (globs de la shell): una carpeta `tests/` a otra profundidad necesita su patrón en `package.json`, y
+  `test/test-discovery.test.ts` falla si falta.
+- **Helpers:** locales en el archivo. Si tests de carpetas distintas comparten un helper, va a `test/helpers/` y se
+  importa con el alias `#test-helpers/…` (campo `imports` de `package.json`), no con rutas `../../../`.
 - **Sin red, sin `.env`, sin tokens.** Ningún test crea `AzdoReadOnlyClient` ni `AzdoWriteClient`: se les pasa
   un doble que implementa la interfaz real (`AzdoReader`, `SeedClient`, `DevOpsSource`). Así, si la interfaz
   cambia, el test deja de compilar.
-- **Fechas:** `NOW` de `test/helpers/test-data.ts` y fechas ISO literales. El lint rechaza `new Date()` sin
-  argumento en los tests (el porqué: `tests-semanticos`, criterio 3).
+- **Fechas:** `const NOW = new Date(NOW_ISO)` en cada archivo (`NOW_ISO` de `#test-helpers/test-data.js`; un
+  `Date` compartido se puede modificar) y fechas ISO literales. El lint rechaza `new Date()` sin argumento en los
+  tests (el porqué: `tests-semanticos`, criterio 3).
 - **Nombres de test en español.** Qué deben citar: `tests-semanticos`, criterio 1.
 - **Aserciones:** criterios 2 y 4 de `tests-semanticos`. Excepción de forma: en los tests de traducción
   API → dominio se compara el objeto completo con `assert.deepEqual`.
@@ -109,6 +111,8 @@ function buildApiWorkItem(id: number, type: string, state: string, overrides: Pa
 
 Genera los datos desde `fixtures/expected.json` con fechas relativas a `NOW`. Sus tests comprueban que cada
 caso acaba donde dice `expected` y que los casos solo verificables con fixtures (M, N, O) tienen sus fechas o su revisor.
+Junto con las reglas del dominio comprueban también el resultado (siguiente paso, tarea estancada): lo esperado se
+lee de `expected.json` (`expectedByCase`), no se copia en el test.
 
 ```typescript
 const source = new FixtureSource(loadCases(), NOW);
@@ -129,7 +133,8 @@ números escritos a mano.
 
 Lo que se prueba es que **no escribe** cuando una salvaguarda falla. El cliente falso implementa `SeedClient`,
 registra cada petición y lanza `WriteAttempted` ante la primera escritura (todo lo que no sea GET, salvo la
-consulta WIQL, que es un POST de lectura).
+consulta WIQL, que es un POST de lectura). El escenario pasa `print() {}` para que los mensajes del seed no
+llenen la salida de `npm test`.
 
 ```typescript
 describe("Salvaguardas del seed: si una comprobación falla, no escribe", () => {
@@ -151,7 +156,9 @@ un fallo antes de las salvaguardas haría pasar todos los tests sin probar nada.
 
 - Patrón AAA (*Arrange, Act, Assert*) siempre, también en los tests cortos: preparar los datos, guardar el
   resultado de la acción en `result` (o `results`) y comprobarlo, con una línea en blanco entre los tres. Sin
-  comentarios `// Arrange`.
+  comentarios `// Arrange`. La acción es la llamada que se prueba (la regla o el método del adaptador); buscar un
+  caso en su resultado (`find`) es parte de comprobar, no de la acción. Si no hay nada que preparar, el test
+  empieza por la acción. Una acción que debe fallar se guarda sin `await` y se comprueba con `assert.rejects`.
 - Primero el caso normal y después los límites y los errores.
 - Un test por regla o comportamiento; si un nombre necesita "y", probablemente son dos tests.
 - Para comprobar que un test sirve, rompe a propósito la regla que cubre, mira que falla y deshaz el cambio.

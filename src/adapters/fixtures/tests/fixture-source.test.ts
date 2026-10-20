@@ -3,14 +3,19 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { FIXTURE_ME, FixtureSource, fixturePullRequestId } from "../fixture-source.js";
 import { loadCases } from "../cases.js";
-import { isPendingMyReview, isPendingTeamReview, myTasks } from "../../../domain/rules.js";
-import { NOW } from "../../../../test/helpers/test-data.js";
+import { isPendingMyReview, isPendingTeamReview, isStale, myTasks, nextStep, taskPullRequest } from "../../../domain/rules.js";
+import type { WorkItem } from "../../../domain/types.js";
+import { NOW_ISO } from "#test-helpers/test-data.js";
 
+const NOW = new Date(NOW_ISO);
+/** Umbral por defecto del glosario ("Tarea estancada"). */
+const STALE_TASK_DAYS = 3;
 const cases = loadCases();
 const source = new FixtureSource(cases, NOW);
 
 /** Los títulos de los casos empiezan por su clave: "[K] Paginación…" → "K". */
-const caseKeys = (items: { title: string }[]) => items.map((item) => item.title.slice(1, 2)).sort();
+const caseKey = (item: { title: string }) => item.title.slice(1, 2);
+const caseKeys = (items: { title: string }[]) => items.map(caseKey).sort();
 const hasCaseKey = (key: string) => (item: { title: string }) => item.title.startsWith(`[${key}]`);
 
 async function currentIterationWorkItems() {
@@ -50,17 +55,14 @@ describe("Adaptador falso: pull requests", () => {
   it("M se crea con la antigüedad de expected.json", async () => {
     const pullRequests = await source.pullRequestsToReview();
 
-    const pullRequestM = pullRequests.find(hasCaseKey("M"));
-
-    assert.equal(pullRequestM?.createdAt, "2026-10-14T09:00:00.000Z");
+    assert.equal(pullRequests.find(hasCaseKey("M"))?.createdAt, "2026-10-14T09:00:00.000Z");
   });
 
   it("los votos salen de expected.json", async () => {
     const myPullRequests = await source.myPullRequests();
 
-    const votes = ["D", "E", "F"].map((key) => myPullRequests.find(hasCaseKey(key))?.reviewers.map((reviewer) => reviewer.vote));
-
-    assert.deepEqual(votes, [[], [-5], [10]]);
+    const votesOf = (key: string) => myPullRequests.find(hasCaseKey(key))?.reviewers.map((reviewer) => reviewer.vote);
+    assert.deepEqual(["D", "E", "F"].map(votesOf), [[], [-5], [10]]);
   });
 
   it("PRs pendientes del equipo: solo O", async () => {
@@ -82,12 +84,15 @@ describe("Adaptador falso: pull requests", () => {
 });
 
 describe("Adaptador falso: iteración y work items", () => {
-  it("iteración actual: A-H, J y N; I está en el sprint anterior", async () => {
+  it("iteración actual: Sprint actual", async () => {
     const iteration = await source.currentIteration();
 
-    const workItems = await source.workItemsInIteration(iteration!.id);
-
     assert.equal(iteration?.name, "Sprint actual");
+  });
+
+  it("work items de la iteración actual: A-H, J y N (I está en el sprint anterior)", async () => {
+    const workItems = await currentIterationWorkItems();
+
     assert.deepEqual(caseKeys(workItems), ["A", "B", "C", "D", "E", "F", "G", "H", "J", "N"]);
   });
 
@@ -102,9 +107,7 @@ describe("Adaptador falso: iteración y work items", () => {
   it("N tiene la antigüedad de expected.json", async () => {
     const workItems = await currentIterationWorkItems();
 
-    const workItemN = workItems.find(hasCaseKey("N"));
-
-    assert.equal(workItemN?.changedAt, "2026-10-15T09:00:00.000Z");
+    assert.equal(workItems.find(hasCaseKey("N"))?.changedAt, "2026-10-15T09:00:00.000Z");
   });
 
   it("G enlaza su PR completada", async () => {
@@ -113,5 +116,35 @@ describe("Adaptador falso: iteración y work items", () => {
     const linkedPullRequests = await Promise.all((workItemG?.pullRequestIds ?? []).map((id) => source.pullRequestById(id)));
 
     assert.deepEqual(linkedPullRequests.map((pullRequest) => pullRequest?.status), ["completed"]);
+  });
+});
+
+/** Siguiente paso de una tarea con el adaptador falso: busca sus PRs vinculadas, elige la suya y aplica la regla. */
+async function nextStepOf(task: WorkItem) {
+  const linkedPullRequests = await Promise.all(task.pullRequestIds.map((id) => source.pullRequestById(id)));
+  return nextStep(taskPullRequest(linkedPullRequests));
+}
+
+/** Claves de los casos de expected.json que cumplen `matches`, con el valor esperado de `field`. */
+function expectedByCase(field: string, matches: (value: unknown) => boolean): Record<string, unknown> {
+  const entries = cases.filter((testCase) => field in testCase.expected && matches(testCase.expected[field]));
+  return Object.fromEntries(entries.map((testCase) => [testCase.key, testCase.expected[field]]));
+}
+
+describe("Adaptador falso con las reglas: resultado de expected.json", () => {
+  it("siguiente paso de mis tareas: el de expected.json (D–G con PR; A, B, C y N sin siguiente paso)", async () => {
+    const tasks = myTasks(await currentIterationWorkItems(), FIXTURE_ME);
+
+    const nextSteps = Object.fromEntries(await Promise.all(tasks.map(async (task) => [caseKey(task), await nextStepOf(task)] as const)));
+
+    assert.deepEqual(nextSteps, expectedByCase("nextStep", () => true));
+  });
+
+  it("tareas estancadas: las de expected.json (N)", async () => {
+    const tasks = myTasks(await currentIterationWorkItems(), FIXTURE_ME);
+
+    const staleTasks = tasks.filter((task) => isStale(task, NOW, STALE_TASK_DAYS));
+
+    assert.deepEqual(caseKeys(staleTasks), Object.keys(expectedByCase("stale", (value) => value === true)));
   });
 });

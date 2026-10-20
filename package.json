@@ -4,6 +4,9 @@
   "description": "Informe diario asistido por IA a partir de PRs y work items de Azure DevOps",
   "private": true,
   "type": "module",
+  "imports": {
+    "#test-helpers/*": "./test/helpers/*"
+  },
   "engines": {
     "node": ">=20.12"
   },

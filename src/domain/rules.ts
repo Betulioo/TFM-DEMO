@@ -61,13 +61,22 @@ export function isAged(pullRequest: PullRequest, now: Date, agedPrDays: number):
   return isActive(pullRequest) && hasElapsedDays(pullRequest.createdAt, now, agedPrDays);
 }
 
-/** PR de una tarea: de las PRs vinculadas, la más reciente, que es la de mayor ID. `undefined` si no tiene. */
-export function taskPullRequestId(workItem: WorkItem): number | undefined {
-  return workItem.pullRequestIds.length === 0 ? undefined : Math.max(...workItem.pullRequestIds);
+/**
+ * PR de una tarea: de sus PRs vinculadas ya buscadas (`undefined` si no se encontró), la más reciente, que es la de
+ * mayor ID. Las que no se encuentran se ignoran, como si no estuvieran vinculadas. `undefined` si no queda ninguna.
+ */
+export function taskPullRequest(linkedPullRequests: (PullRequest | undefined)[]): PullRequest | undefined {
+  const found = linkedPullRequests.filter((pullRequest): pullRequest is PullRequest => pullRequest !== undefined);
+  return found.sort((first, second) => second.id - first.id)[0];
+}
+
+/** PR en borrador: estado active y marcada como borrador. */
+function isDraft(pullRequest: PullRequest): boolean {
+  return pullRequest.status === "active" && pullRequest.isDraft;
 }
 
 /** PR activa sin votos: ningún revisor ha votado (o no tiene revisores). */
-function hasNoVotes(pullRequest: PullRequest): boolean {
+function isActiveWithoutVotes(pullRequest: PullRequest): boolean {
   return isActive(pullRequest) && pullRequest.reviewers.every((reviewer) => reviewer.vote === NO_VOTE);
 }
 
@@ -83,8 +92,9 @@ export function isStale(workItem: WorkItem, now: Date, staleTaskDays: number): b
 export function nextStep(taskPullRequest: PullRequest | undefined): NextStep | null {
   if (taskPullRequest === undefined) return null;
   if (taskPullRequest.status === "completed") return "Cerrar la tarea";
+  if (isDraft(taskPullRequest)) return "PR en borrador";
   if (isApproved(taskPullRequest)) return "Completar la PR";
   if (isBlocked(taskPullRequest)) return "Atender cambios solicitados";
-  if (hasNoVotes(taskPullRequest)) return "Esperar revisión";
+  if (isActiveWithoutVotes(taskPullRequest)) return "Esperar revisión";
   return "Revisar estado";
 }

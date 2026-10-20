@@ -28,9 +28,12 @@ export interface SeedDependencies {
   ask(question: string): Promise<string>;
   /** Guarda los IDs creados (fixtures/demo-ids.json). */
   saveDemoIds(data: DemoIds): void;
+  /** Muestra un mensaje a la persona. Es una dependencia para que los tests no llenen la salida. */
+  print: (message: string) => void;
 }
 
 interface SeedContext {
+  print: (message: string) => void;
   currentUserClient: SeedClient;
   teammateClient?: SeedClient;
   currentUser: AuthenticatedUser;
@@ -50,7 +53,7 @@ interface CreatedPullRequest {
 }
 
 export async function runSeed(dependencies: SeedDependencies): Promise<DemoIds> {
-  const { currentUserClient, teammateClient, project, cases } = dependencies;
+  const { currentUserClient, teammateClient, project, cases, print } = dependencies;
   await confirm(dependencies);
 
   const encodedProject = encodeURIComponent(project);
@@ -63,19 +66,19 @@ export async function runSeed(dependencies: SeedDependencies): Promise<DemoIds> 
   const myEmail = currentUser.email ?? dependencies.userEmail;
   if (!myEmail) throw new Error("No se pudo averiguar tu correo. Añade AZDO_USER_EMAIL en .env.");
 
-  console.log(`Tú:         ${currentUser.displayName}`);
-  console.log(`Compañero:  ${teammate?.displayName ?? "no configurado (se omiten los casos K y L)"}`);
+  print(`Tú:         ${currentUser.displayName}`);
+  print(`Compañero:  ${teammate?.displayName ?? "no configurado (se omiten los casos K y L)"}`);
 
   if (teammateClient) await ensureTeammateSeesRepos(currentUserClient, teammateClient, encodedProject);
   await ensureProjectIsEmpty(currentUserClient, encodedProject);
 
-  log("Creando iteraciones");
+  print(progress("Creando iteraciones"));
   const iterationPaths = await createIterations(currentUserClient, project, encodedProject);
 
-  log("Preparando el repositorio");
+  print(progress("Preparando el repositorio"));
   const { repositoryId, mainSha } = await ensureMainBranch(currentUserClient, project, encodedProject);
 
-  const context: SeedContext = { currentUserClient, teammateClient, currentUser, teammate, myEmail, project, encodedProject, repositoryId, mainSha, iterationPaths };
+  const context: SeedContext = { print, currentUserClient, teammateClient, currentUser, teammate, myEmail, project, encodedProject, repositoryId, mainSha, iterationPaths };
   const workItems: Record<string, number> = {};
   const pullRequests: Record<string, number> = {};
   const skipped: string[] = [];
@@ -99,10 +102,10 @@ export async function runSeed(dependencies: SeedDependencies): Promise<DemoIds> 
   const demoIds: DemoIds = { generatedAt: new Date().toISOString(), project, workItems, pullRequests, skipped };
   dependencies.saveDemoIds(demoIds);
 
-  console.log("\nSeed completado.");
-  console.log(`Work items: ${Object.entries(workItems).map(([caseKey, id]) => `${caseKey}=#${id}`).join(", ")}`);
-  console.log(`PRs:        ${Object.entries(pullRequests).map(([caseKey, id]) => `${caseKey}=!${id}`).join(", ") || "ninguna"}`);
-  if (skipped.length) console.log(`Omitidos:   ${skipped.join(", ")} (falta AZDO_PAT_TEAMMATE)`);
+  print("\nSeed completado.");
+  print(`Work items: ${Object.entries(workItems).map(([caseKey, id]) => `${caseKey}=#${id}`).join(", ")}`);
+  print(`PRs:        ${Object.entries(pullRequests).map(([caseKey, id]) => `${caseKey}=!${id}`).join(", ") || "ninguna"}`);
+  if (skipped.length) print(`Omitidos:   ${skipped.join(", ")} (falta AZDO_PAT_TEAMMATE)`);
   return demoIds;
 }
 
@@ -110,7 +113,7 @@ export async function runSeed(dependencies: SeedDependencies): Promise<DemoIds> 
 
 async function confirm(dependencies: SeedDependencies): Promise<void> {
   const organization = organizationName(dependencies.orgUrl);
-  console.log(`Vas a crear datos de prueba en:\n  ${dependencies.orgUrl}\n  Proyecto: ${dependencies.project}\n`);
+  dependencies.print(`Vas a crear datos de prueba en:\n  ${dependencies.orgUrl}\n  Proyecto: ${dependencies.project}\n`);
   const organizationAnswer = (await dependencies.ask("Escribe el nombre de la organización para confirmar: ")).trim();
   const projectAnswer = (await dependencies.ask("Escribe el nombre del proyecto para confirmar: ")).trim();
   if (organizationAnswer !== organization || projectAnswer !== dependencies.project) {
@@ -228,7 +231,7 @@ function addFile(path: string, content: string) {
 // --- Casos ---------------------------------------------------------------------
 
 async function seedWorkItemCase(context: SeedContext, testCase: Case, setup: WorkItemSetup): Promise<{ workItemId: number; pullRequestId?: number }> {
-  log(`Caso ${testCase.key}: ${setup.type} "${setup.title}"`);
+  context.print(progress(`Caso ${testCase.key}: ${setup.type} "${setup.title}"`));
 
   const fields: [string, string][] = [
     ["System.Title", setup.title],
@@ -279,7 +282,7 @@ async function seedWorkItemCase(context: SeedContext, testCase: Case, setup: Wor
 async function seedTeammatePrCase(context: SeedContext, testCase: Case, setup: PullRequestSetup): Promise<number> {
   // `validateCases` ya rechaza este caso fuera de fixtures; aquí solo acota el tipo para leer `myVote`.
   if (setup.reviewer === "myTeam") throw new Error(`Caso ${testCase.key}: el seed no crea PRs con el equipo como revisor (solo fixtures).`);
-  log(`Caso ${testCase.key}: PR del compañero "${setup.title}"`);
+  context.print(progress(`Caso ${testCase.key}: PR del compañero "${setup.title}"`));
   const teammateClient = context.teammateClient!;
   // Sin ID en la rama: no está vinculada a ninguna de tus tareas.
   const branch = `feat/revision-${testCase.key.toLowerCase()}_${slug(setup.title)}`;
@@ -349,6 +352,7 @@ function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-function log(message: string): void {
-  console.log(`· ${message}`);
+/** Mensaje de avance: una línea con viñeta por cada paso del seed. */
+function progress(message: string): string {
+  return `· ${message}`;
 }

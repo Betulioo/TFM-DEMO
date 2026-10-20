@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { organizationName, runSeed, type SeedDependencies } from "../seed.js";
 import type { Method, SeedClient } from "../write-client.js";
 import { loadCases } from "../../../src/adapters/fixtures/cases.js";
-import { listOf } from "../../../test/helpers/test-data.js";
+import { listOf } from "#test-helpers/test-data.js";
 
 interface Call {
   method: Method;
@@ -73,6 +73,7 @@ function buildScenario({ answers = ["TFM-Demo", "TFM Demo"], currentUserAccount 
     saveDemoIds() {
       throw new Error("no debería llegar a guardar IDs");
     },
+    print() {},
   };
   return { dependencies, calls };
 }

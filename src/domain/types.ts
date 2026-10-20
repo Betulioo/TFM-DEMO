@@ -65,6 +65,7 @@ export interface WorkItem {
 /** Siguiente paso de una tarea con PR, tal cual lo nombra el glosario. */
 export type NextStep =
   | "Cerrar la tarea"
+  | "PR en borrador"
   | "Completar la PR"
   | "Atender cambios solicitados"
   | "Esperar revisión"

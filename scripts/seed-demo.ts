@@ -22,6 +22,7 @@ async function main(): Promise<void> {
       teammateClient: teammatePat ? new AzdoWriteClient(config.orgUrl, teammatePat) : undefined,
       userEmail: optionalEnv("AZDO_USER_EMAIL"),
       ask: (question) => terminal.question(question),
+      print: (message) => console.log(message),
       saveDemoIds: (data) => {
         writeFileSync(DEMO_IDS_PATH, `${JSON.stringify(data, null, 2)}\n`);
         console.log(`IDs guardados en ${DEMO_IDS_PATH}`);

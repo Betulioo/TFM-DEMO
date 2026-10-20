@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { AzdoSource, type ApiPullRequest, type ApiWorkItem } from "../azdo-source.js";
 import { AzdoHttpError, type AzdoReader } from "../read-only-client.js";
-import { listOf } from "../../../../test/helpers/test-data.js";
+import { listOf } from "#test-helpers/test-data.js";
 
 interface Call {
   path: string;
@@ -41,15 +41,22 @@ function fakeReader(respond: (call: Call) => unknown): { reader: AzdoReader; cal
 const numbersFrom = (first: number, count: number) => listOf(count, (position) => first + position);
 
 describe("Adaptador Azure DevOps: pull requests", () => {
-  it("PRs donde soy revisor: filtra por mi ID y por activas, y traduce al dominio", async () => {
-    const { reader, calls } = fakeReader(() => ({ value: [buildApiPullRequest(7, { isDraft: true })] }));
+  it("PRs donde soy revisor: pide las PRs activas del proyecto con mi ID como revisor", async () => {
+    const { reader, calls } = fakeReader(() => ({ value: [] }));
 
-    const pullRequests = await new AzdoSource(reader, "TFM Demo").pullRequestsToReview();
+    await new AzdoSource(reader, "TFM Demo").pullRequestsToReview();
 
     const listCall = calls.find((call) => call.path.endsWith("/_apis/git/pullrequests"));
     assert.equal(listCall?.path, "TFM%20Demo/_apis/git/pullrequests");
     assert.equal(listCall?.params["searchCriteria.reviewerId"], "me-id");
     assert.equal(listCall?.params["searchCriteria.status"], "active");
+  });
+
+  it("PRs donde soy revisor: traduce la respuesta al dominio", async () => {
+    const { reader } = fakeReader(() => ({ value: [buildApiPullRequest(7, { isDraft: true })] }));
+
+    const pullRequests = await new AzdoSource(reader, "TFM Demo").pullRequestsToReview();
+
     assert.deepEqual(pullRequests, [
       {
         id: 7,
@@ -133,12 +140,19 @@ function iterationReader(workItemIds: number[], workItemsFor: (ids: number[]) =>
 }
 
 describe("Adaptador Azure DevOps: iteración y work items", () => {
-  it("iteración actual: equipo por defecto y $timeframe=current", async () => {
-    const { reader, calls } = iterationReader([], () => []);
+  it("iteración actual: traduce nombre y fechas", async () => {
+    const { reader } = iterationReader([], () => []);
 
     const iteration = await new AzdoSource(reader, "TFM Demo").currentIteration();
 
     assert.deepEqual(iteration, { id: "it-1", name: "Sprint actual", startDate: "2026-10-12T00:00:00Z", finishDate: "2026-10-26T00:00:00Z" });
+  });
+
+  it("iteración actual: la pide al equipo por defecto con $timeframe=current", async () => {
+    const { reader, calls } = iterationReader([], () => []);
+
+    await new AzdoSource(reader, "TFM Demo").currentIteration();
+
     const iterationCall = calls.find((call) => call.path.endsWith("/iterations"));
     assert.equal(iterationCall?.path, "TFM%20Demo/TFM%20Demo%20Team/_apis/work/teamsettings/iterations");
     assert.equal(iterationCall?.params.$timeframe, "current");
@@ -152,30 +166,46 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
     assert.deepEqual(workItems.map((workItem) => [workItem.id, workItem.stateCategory]), [[1, "InProgress"], [2, "Resolved"]]);
   });
 
-  it("pide relaciones sin `fields` y en lotes de 200", async () => {
+  it("detalles en lotes de 200: con 201 work items hace dos peticiones y los devuelve todos", async () => {
     const { reader, calls } = iterationReader(numbersFrom(1, 201), (batch) => batch.map((id) => buildApiWorkItem(id, "Bug", "Resolved")));
 
     const workItems = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
 
-    assert.equal(workItems.length, 201);
     const detailCalls = calls.filter((call) => call.path.endsWith("/_apis/wit/workitems"));
     assert.deepEqual(detailCalls.map((call) => call.params.ids!.split(",").length), [200, 1]);
-    assert.ok(detailCalls.every((call) => call.params.$expand === "relations" && call.params.fields === undefined));
+    assert.equal(workItems.length, 201);
   });
 
-  it("asignación y PRs vinculadas (enlace real con %2f; otros enlaces se ignoran)", async () => {
-    const apiWorkItem = buildApiWorkItem(10, "Bug", "Resolved", {
-      relations: [
-        { rel: "ArtifactLink", url: "vstfs:///Git/PullRequestId/e0b10b96%2f46e352da%2f3", attributes: { name: "Pull Request" } },
-        { rel: "ArtifactLink", url: "vstfs:///Git/Commit/e0b10b96%2f46e352da%2fe0d6c7eb", attributes: { name: "Fixed in Commit" } },
-      ],
-    });
+  it("detalles: pide las relaciones sin `fields` (la API no admite los dos a la vez)", async () => {
+    const { reader, calls } = iterationReader([1], (batch) => batch.map((id) => buildApiWorkItem(id, "Bug", "Resolved")));
+
+    await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+
+    const detailCall = calls.find((call) => call.path.endsWith("/_apis/wit/workitems"));
+    assert.deepEqual([detailCall?.params.$expand, detailCall?.params.fields], ["relations", undefined]);
+  });
+
+  it("asignación: sale de System.AssignedTo", async () => {
+    const apiWorkItem = buildApiWorkItem(10, "Bug", "Resolved");
     apiWorkItem.fields["System.AssignedTo"] = { id: "me-id", displayName: "Yo" };
     const { reader } = iterationReader([10], () => [apiWorkItem]);
 
     const [workItem] = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
 
     assert.deepEqual(workItem?.assignedTo, { id: "me-id", displayName: "Yo" });
+  });
+
+  it("PRs vinculadas: solo los enlaces Pull Request (forma real, con %2f); los demás se ignoran", async () => {
+    const apiWorkItem = buildApiWorkItem(10, "Bug", "Resolved", {
+      relations: [
+        { rel: "ArtifactLink", url: "vstfs:///Git/PullRequestId/e0b10b96%2f46e352da%2f3", attributes: { name: "Pull Request" } },
+        { rel: "ArtifactLink", url: "vstfs:///Git/Commit/e0b10b96%2f46e352da%2fe0d6c7eb", attributes: { name: "Fixed in Commit" } },
+      ],
+    });
+    const { reader } = iterationReader([10], () => [apiWorkItem]);
+
+    const [workItem] = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+
     assert.deepEqual(workItem?.pullRequestIds, [3]);
   });
 
@@ -190,12 +220,19 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
 
 describe("Adaptador Azure DevOps: equipos", () => {
   it("mis equipos: pide los equipos del proyecto con $mine=true", async () => {
-    const { reader, calls } = fakeReader(() => ({ value: [{ id: "team-id", name: "TFM Demo Team", description: "The default project team." }], count: 1 }));
+    const { reader, calls } = fakeReader(() => ({ value: [], count: 0 }));
 
-    const teams = await new AzdoSource(reader, "TFM Demo").myTeams();
+    await new AzdoSource(reader, "TFM Demo").myTeams();
 
     assert.equal(calls.at(-1)?.path, "_apis/projects/TFM%20Demo/teams");
     assert.deepEqual(calls.at(-1)?.params, { $mine: "true" });
+  });
+
+  it("mis equipos: traduce la respuesta al dominio (solo ID y nombre)", async () => {
+    const { reader } = fakeReader(() => ({ value: [{ id: "team-id", name: "TFM Demo Team", description: "The default project team." }], count: 1 }));
+
+    const teams = await new AzdoSource(reader, "TFM Demo").myTeams();
+
     assert.deepEqual(teams, [{ id: "team-id", name: "TFM Demo Team" }]);
   });
 

@@ -82,6 +82,15 @@ function nonGetViolations(files: SourceFile[]): string[] {
   });
 }
 
+/** Imports de código de producción que apuntan a una carpeta `tests/` o a los helpers de los tests. */
+function testImportViolations(files: SourceFile[]): string[] {
+  return files.flatMap((file) =>
+    imports(file)
+      .filter((importPath) => isTestFile(importPath) || importPath.startsWith("#test-helpers/"))
+      .map((importPath) => `${file.path} importa ${importPath}`),
+  );
+}
+
 function scriptsViolations(files: SourceFile[]): string[] {
   return files.flatMap((file) =>
     imports(file)
@@ -122,6 +131,12 @@ describe("Arquitectura: el código real cumple las reglas", () => {
 
   it("src/ no importa nada de scripts/", () => {
     const violations = scriptsViolations(files);
+
+    assert.deepEqual(violations, []);
+  });
+
+  it("el código de src/ no importa de carpetas tests/ ni de #test-helpers", () => {
+    const violations = testImportViolations(files);
 
     assert.deepEqual(violations, []);
   });
@@ -180,6 +195,17 @@ describe("Arquitectura, controles: el check detecta cada violación", () => {
     const excluded = fileNames.map(isTestFile);
 
     assert.deepEqual(excluded, [true, false, false, false]);
+  });
+
+  it("código de src/ que importa de una carpeta tests/ o de #test-helpers", () => {
+    const bad: SourceFile = {
+      path: "src/domain/malo.ts",
+      text: 'import { buildCase } from "./tests/helpers.js";\nimport { NOW_ISO } from "#test-helpers/test-data.js";',
+    };
+
+    const violations = testImportViolations([bad]);
+
+    assert.deepEqual(violations, ["src/domain/malo.ts importa src/domain/tests/helpers.js", "src/domain/malo.ts importa #test-helpers/test-data.js"]);
   });
 
   it("src/ importando scripts/", () => {

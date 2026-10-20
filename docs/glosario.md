@@ -22,7 +22,8 @@ Votos de revisor en Azure DevOps: `10` aprobada, `5` aprobada con sugerencias, `
 
 | Término | Definición |
 |---|---|
-| **PR activa** | PR con estado *active*. Las PR en borrador (*draft*) no cuentan para nada del informe. |
+| **PR activa** | PR con estado *active*. Las PR en borrador no cuentan para nada del informe, salvo para el siguiente paso de una tarea (regla 2). |
+| **PR en borrador** | PR con estado *active* marcada como borrador (*draft*). |
 | **PR pendiente de mi revisión** | PR activa en la que el usuario es revisor, no es el autor y su voto es `0`. |
 | **PR pendiente del equipo** | PR activa en la que uno de mis equipos es revisor, el usuario no es el autor y no figura como revisor individual. Si figura con voto `0`, ya es "PR pendiente de mi revisión"; si votó, ya la revisó. |
 | **PR bloqueada** | PR activa con al menos un voto `-5` o `-10`. |
@@ -34,7 +35,7 @@ Votos de revisor en Azure DevOps: `10` aprobada, `5` aprobada con sugerencias, `
 
 | Término | Definición |
 |---|---|
-| **PR de una tarea** | PR vinculada al work item en Azure DevOps (enlace de tipo *Pull Request*). Si hay varias, cuenta la más reciente: la de mayor ID. |
+| **PR de una tarea** | PR vinculada al work item en Azure DevOps (enlace de tipo *Pull Request*). Una PR vinculada que no se encuentra (borrada o sin acceso) se ignora, como si no estuviera vinculada. Si hay varias, cuenta la más reciente: la de mayor ID. |
 
 Las ramas no se consultan: la herramienta no comprueba si una tarea tiene rama.
 
@@ -47,10 +48,11 @@ si lo está, que es una tarea estancada.
 | # | Siguiente paso | Condición |
 |---|---|---|
 | 1 | **Cerrar la tarea** | Su PR está completada (*merged*). |
-| 2 | **Completar la PR** | Su PR es una PR aprobada. |
-| 3 | **Atender cambios solicitados** | Su PR es una PR bloqueada. |
-| 4 | **Esperar revisión** | Su PR es una PR activa sin votos. |
-| 5 | **Revisar estado** | Tiene PR y no se cumple ninguna de las anteriores (por ejemplo, PR abandonada). |
+| 2 | **PR en borrador** | Su PR es una PR en borrador. |
+| 3 | **Completar la PR** | Su PR es una PR aprobada. |
+| 4 | **Atender cambios solicitados** | Su PR es una PR bloqueada. |
+| 5 | **Esperar revisión** | Su PR es una PR activa sin votos. |
+| 6 | **Revisar estado** | Tiene PR y no se cumple ninguna de las anteriores (por ejemplo, PR abandonada). |
 
 ## Señales de riesgo
 

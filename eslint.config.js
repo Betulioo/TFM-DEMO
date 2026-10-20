@@ -10,11 +10,15 @@ const NO_SCRIPTS = { group: ["**/scripts/**"], message: "src/ no puede importar 
 /** Solo el cliente de solo lectura habla con la red, y lo hace con fetch: nada de node:http(s). */
 const NO_HTTP = { group: ["node:http", "node:https", "http", "https"], message: "Las peticiones solo las hace AzdoReadOnlyClient (fetch, solo GET)." };
 
+/** El código de producción no depende de los tests ni de sus helpers (regex: en `group`, `#` es un comentario). */
+const NO_TESTS = { regex: "(^|/)tests/|^#test-helpers/", message: "El código de src/ no importa de tests/ ni de #test-helpers." };
+
 /** Tests: junto al código que prueban, en carpetas `tests/`, y los transversales y helpers en `test/`. */
 const TEST_FILES = ["test/**/*.ts", "src/**/tests/**/*.ts", "scripts/**/tests/**/*.ts"];
 
 /**
- * Regla de imports para una capa: siempre prohíbe scripts/ y node:http(s), y además los grupos indicados.
+ * Regla de imports para una capa: siempre prohíbe scripts/, node:http(s) y los tests, y además los grupos indicados
+ * (cada capa repite las comunes porque, en ESLint, la última configuración de una regla sustituye a las anteriores).
  * Los tests de la capa quedan fuera: necesitan `node:test` y `node:assert`, y no son código de la capa.
  */
 function layer(files, forbidden) {
@@ -22,7 +26,7 @@ function layer(files, forbidden) {
     files,
     ignores: ["src/**/tests/**"],
     rules: {
-      "no-restricted-imports": ["error", { patterns: [NO_SCRIPTS, NO_HTTP, ...forbidden] }],
+      "no-restricted-imports": ["error", { patterns: [NO_SCRIPTS, NO_HTTP, NO_TESTS, ...forbidden] }],
     },
   };
 }

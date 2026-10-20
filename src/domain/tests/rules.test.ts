@@ -10,9 +10,10 @@ import {
   isStale,
   myTasks,
   nextStep,
-  taskPullRequestId,
+  taskPullRequest,
 } from "../rules.js";
 import { daysBefore } from "../dates.js";
+import { NOW_ISO } from "#test-helpers/test-data.js";
 import type { PullRequest, PullRequestStatus, StateCategory, User, Vote, WorkItem } from "../types.js";
 
 const CURRENT_USER = { id: "me", displayName: "Yo" };
@@ -21,7 +22,7 @@ const THIRD_USER = { id: "third", displayName: "Tercera" };
 const MY_TEAM = { id: "my-team", name: "Mi equipo" };
 const OTHER_TEAM = { id: "other-team", name: "Otro equipo" };
 const MY_TEAM_REVIEWER = { id: MY_TEAM.id, displayName: MY_TEAM.name };
-const NOW = new Date("2026-10-19T09:00:00Z");
+const NOW = new Date(NOW_ISO);
 const AGED_PR_DAYS = 3;
 const STALE_TASK_DAYS = 3;
 
@@ -41,6 +42,7 @@ function buildWorkItem(
 }
 
 interface PullRequestOptions {
+  id?: number;
   author?: User;
   status?: PullRequestStatus;
   isDraft?: boolean;
@@ -48,9 +50,9 @@ interface PullRequestOptions {
   votes?: [User, Vote][];
 }
 
-function buildPullRequest({ author = OTHER_USER, status = "active", isDraft = false, createdAt = "2026-10-19T08:00:00Z", votes = [] }: PullRequestOptions = {}): PullRequest {
+function buildPullRequest({ id = 1, author = OTHER_USER, status = "active", isDraft = false, createdAt = "2026-10-19T08:00:00Z", votes = [] }: PullRequestOptions = {}): PullRequest {
   const reviewers = votes.map(([reviewer, vote]) => ({ ...reviewer, vote }));
-  return { id: 1, title: "PR 1", status, isDraft, author, createdAt, sourceBranch: "feat/1_tarea", reviewers };
+  return { id, title: `PR ${id}`, status, isDraft, author, createdAt, sourceBranch: `feat/${id}_tarea`, reviewers };
 }
 
 /** Las tres formas de no ser PR activa: borrador, completada y abandonada. */
@@ -272,26 +274,45 @@ describe("PR envejecida", () => {
 });
 
 describe("PR de una tarea", () => {
+  /** PRs vinculadas ya buscadas: `undefined` es una vinculada que no se encontró. */
+  const linked = (...ids: (number | undefined)[]) => ids.map((id) => (id === undefined ? undefined : buildPullRequest({ id })));
+
   it("con una PR vinculada, esa (casos D–G)", () => {
-    const workItem = buildWorkItem(11, { pullRequestIds: [42] });
+    const linkedPullRequests = linked(42);
 
-    const result = taskPullRequestId(workItem);
+    const result = taskPullRequest(linkedPullRequests);
 
-    assert.equal(result, 42);
+    assert.equal(result?.id, 42);
   });
 
   it("con varias, la más reciente (la de mayor ID), en cualquier orden", () => {
-    const workItem = buildWorkItem(11, { pullRequestIds: [7, 31, 12] });
+    const linkedPullRequests = linked(7, 31, 12);
 
-    const result = taskPullRequestId(workItem);
+    const result = taskPullRequest(linkedPullRequests);
 
-    assert.equal(result, 31);
+    assert.equal(result?.id, 31);
   });
 
   it("sin PRs vinculadas no tiene (casos A, B, C y N)", () => {
-    const workItem = buildWorkItem(11, { pullRequestIds: [] });
+    const linkedPullRequests = linked();
 
-    const result = taskPullRequestId(workItem);
+    const result = taskPullRequest(linkedPullRequests);
+
+    assert.equal(result, undefined);
+  });
+
+  it("una vinculada que no se encuentra se ignora: cuenta la mayor de las que sí existen", () => {
+    const linkedPullRequests = [buildPullRequest({ id: 7 }), undefined, buildPullRequest({ id: 12 })];
+
+    const result = taskPullRequest(linkedPullRequests);
+
+    assert.equal(result?.id, 12);
+  });
+
+  it("si no se encuentra ninguna, es como si no tuviera PR", () => {
+    const linkedPullRequests = linked(undefined, undefined);
+
+    const result = taskPullRequest(linkedPullRequests);
 
     assert.equal(result, undefined);
   });
@@ -338,10 +359,18 @@ describe("Siguiente paso", () => {
     assert.deepEqual(results, ["Esperar revisión", "Esperar revisión"]);
   });
 
-  it("PR abandonada o en borrador → Revisar estado", () => {
-    const pullRequests = [buildPullRequest({ status: "abandoned", votes: [[THIRD_USER, 10]] }), buildPullRequest({ isDraft: true })];
+  it("PR en borrador → PR en borrador, tenga o no votos", () => {
+    const drafts = [buildPullRequest({ isDraft: true }), buildPullRequest({ isDraft: true, votes: [[THIRD_USER, 10]] })];
 
-    const results = pullRequests.map(nextStep);
+    const results = drafts.map(nextStep);
+
+    assert.deepEqual(results, ["PR en borrador", "PR en borrador"]);
+  });
+
+  it("PR abandonada → Revisar estado (también si era borrador)", () => {
+    const abandoned = [buildPullRequest({ status: "abandoned", votes: [[THIRD_USER, 10]] }), buildPullRequest({ status: "abandoned", isDraft: true })];
+
+    const results = abandoned.map(nextStep);
 
     assert.deepEqual(results, ["Revisar estado", "Revisar estado"]);
   });
