@@ -8,10 +8,17 @@ import { loadCases } from "../src/adapters/fixtures/cases.js";
 import { collectSnapshot } from "../src/application/collect-snapshot.js";
 import { loadBlockedTaskCriteria, loadThresholds } from "../src/config.js";
 import type { Snapshot } from "../src/domain/types.js";
-import { DEMO_IDS_PATH, checkLine, readDemoIds, reportFailures, runScript, sourceFromArguments } from "./lib/demo.js";
+import {
+  DEMO_IDS_PATH,
+  SNAPSHOT_PATH,
+  caseIdsFromDemo,
+  checkLine,
+  readDemoIds,
+  reportFailures,
+  runScript,
+  sourceFromArguments,
+} from "./lib/demo.js";
 import { checkCase } from "./lib/snapshot-check.js";
-
-const SNAPSHOT_PATH = "output/snapshot.json";
 
 async function main(): Promise<void> {
   const now = new Date();
@@ -46,8 +53,8 @@ function compareWithDemoIds(snapshot: Snapshot): void {
 
   console.log(`Comparación con ${DEMO_IDS_PATH} y expected.json:`);
   for (const testCase of loadCases()) {
-    const ids = { workItemId: demoIds.workItems[testCase.key], pullRequestId: demoIds.pullRequests[testCase.key] };
-    if (ids.workItemId === undefined && ids.pullRequestId === undefined) continue;
+    const ids = caseIdsFromDemo(testCase, demoIds);
+    if (!ids) continue;
 
     for (const check of checkCase(snapshot, testCase, ids)) {
       if (!check.passed) failures++;

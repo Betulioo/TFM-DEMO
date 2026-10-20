@@ -69,6 +69,8 @@ Reglas de uso:
   `[WI #n](…)`, y los compara con `fixtures/expected.json`.
 - Debe contar con los casos P y Q y con la línea "tarea bloqueada" de Mis tareas y de Riesgos.
 - Antes, la persona hace el commit de los pasos 7 y de la tarea bloqueada.
+- Lanzar el agente `revisor-tfm`: su descripción pide usarlo al cerrar el paso 6 y no se hizo (no existe
+  `docs/revisiones/`). Se puede hacer ahora o junto al cierre del paso 8.
 
 **Decisiones pendientes**
 - Nombre del siguiente paso para una PR en borrador: "PR en borrador" (frase de la persona, describe un estado)
@@ -464,6 +466,15 @@ Detectados, sin corregir; ninguno rompe los checks.
     reason, y el seed se niega en un proyecto con work items. `validateCases` rechaza esos datos fuera de fixtures.
   - El dominio recibe `tags` (lista) y la regla vive en `rules.ts`, no en los adaptadores. La etiqueta se compara
     entera y sin distinguir mayúsculas, porque el seed ya pone `tfm-seed` en `System.Tags`.
+- Skills de sesión y de revisión (la persona preguntó si mantener o fusionar `revisar-tfm` y `traspaso-sesion`,
+  que no usa):
+  - Se borra `traspaso-sesion`: sus pasos ya los pide la lista de cierre de `CLAUDE.md`. Sus dos aportes propios
+    pasan al `CLAUDE.md`: proponer instrucciones dadas solo en el chat (punto 3 de la lista de cierre) y el modo
+    "el contexto está fallando" (sección Contexto). Descartado fusionarla con `iniciar-sesion`: se usan en
+    sesiones distintas, una escribe la bitácora y la otra la lee.
+  - Se mantienen `revisar-tfm` y el agente `revisor-tfm`, sin fusionar con `/reflect`: `/reflect` revisa el
+    trabajo del turno con el contexto del chat; `revisor-tfm` revisa el repositorio entero frente a `docs/plan.md`
+    y `docs/enunciado-tfm.md`, aislado. Solo él comprueba el enunciado. `CLAUDE.md` dice ahora cuándo usar cada uno.
 
 **Hechos comprobados**
 - Correcciones tras la reflexión del paso 6 (pedidas por la persona, con las skills `testing` y

@@ -5,8 +5,11 @@ import { AzdoReadOnlyClient } from "../../src/adapters/azdo/read-only-client.js"
 import { AzdoSource } from "../../src/adapters/azdo/azdo-source.js";
 import { FixtureSource } from "../../src/adapters/fixtures/fixture-source.js";
 import type { DevOpsSource } from "../../src/ports/devops-source.js";
+import type { Case } from "../../src/adapters/fixtures/cases.js";
+import type { CaseIds } from "./snapshot-check.js";
 
 export const DEMO_IDS_PATH = "fixtures/demo-ids.json";
+export const SNAPSHOT_PATH = "output/snapshot.json";
 
 /** IDs creados por el seed en el proyecto demo, por clave de caso. */
 export interface DemoIds {
@@ -43,14 +46,20 @@ export function readDemoIds(): DemoIds | undefined {
   return JSON.parse(readFileSync(DEMO_IDS_PATH, "utf8")) as DemoIds;
 }
 
+/** IDs de un caso en la demo, o `undefined` si el seed no lo creó (casos solo de fixtures o saltados). */
+export function caseIdsFromDemo(testCase: Case, demoIds: DemoIds): CaseIds | undefined {
+  const ids = { workItemId: demoIds.workItems[testCase.key], pullRequestId: demoIds.pullRequests[testCase.key] };
+  return ids.workItemId === undefined && ids.pullRequestId === undefined ? undefined : ids;
+}
+
 /** Línea de cada comprobación: `OK` o `FALLO` alineados. */
 export function checkLine(passed: boolean, text: string): string {
   return `  ${passed ? "OK   " : "FALLO"} ${text}`;
 }
 
 /** Resumen final de una comparación; si hay fallos, el script termina con código 1. */
-export function reportFailures(failures: number): void {
-  console.log(failures === 0 ? "\nTodo coincide." : `\n${failures} caso(s) no coinciden.`);
+export function reportFailures(failures: number, unit = "caso(s)"): void {
+  console.log(failures === 0 ? "\nTodo coincide." : `\n${failures} ${unit} no coinciden.`);
   if (failures > 0) process.exitCode = 1;
 }
 

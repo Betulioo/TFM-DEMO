@@ -5,7 +5,8 @@ PRs que esperan su revisión, sus tareas de la iteración actual y qué le falta
 Es el caso práctico de un TFM: el código debe ser simple, verificable y reutilizable.
 
 **Al empezar cada sesión**, sigue la skill `iniciar-sesion`. Se trabaja un paso cada vez; al terminar uno,
-sigue la lista de cierre.
+sigue la lista de cierre. `/reflect` revisa el trabajo del turno; el agente `revisor-tfm` revisa el repositorio
+frente al plan y al enunciado al cerrar los pasos 6 y 8 y antes de la entrega.
 
 ### Forma de trabajar
 
@@ -23,13 +24,11 @@ sigue la lista de cierre.
 
 **Lista de cierre** (al terminar cada paso o bloque, antes de darlo por hecho)
 
-Al terminar un paso manda esta lista, también si se usa la skill `traspaso-sesion`. Esa skill solo registra sin
-corregir cuando se usa porque el contexto está fallando ([`traspaso-sesion`](.claude/skills/traspaso-sesion/SKILL.md)).
-
 1. `npm run verify` (typecheck, lint y tests) en verde. Si algo falla, corrígelo antes de seguir.
 2. `git diff --stat` para listar los archivos cambiados. Si alguno no debería haberse tocado, revísalo y avisa.
    La revisión línea a línea la hace la persona antes de su commit.
 3. Relee las instrucciones de la persona en ese turno y comprueba cada una; di cuál queda pendiente y por qué.
+   Si dio en el chat una instrucción que debe mantenerse, propón añadirla al `CLAUDE.md`; no la añadas sin confirmación.
 4. Bitácora al día según [su formato](docs/bitacora.md#cómo-se-escribe-esta-bitácora); el Próximo paso, al terminar
    y no al empezar. Comprueba que el Estado y el README siguen siendo ciertos.
 5. En el mensaje final, no solo en el resumen de cierre: archivos cambiados, cómo verificarlo la persona y lo que
@@ -38,7 +37,10 @@ corregir cuando se usa porque el contexto está fallando ([`traspaso-sesion`](.c
 **Contexto**
 - Se trabaja una sesión por paso. Si la persona avisa de que va a cambiar de sesión, deja la bitácora lista para
   que otra sesión continúe sin esta conversación: qué está hecho, qué falta del paso actual y decisiones pendientes.
-  
+- Si el contexto está fallando, no implementes ni corrijas: deja la bitácora al día (Estado, Próximo paso y
+  Problemas abiertos) con el resultado de `npm run verify` y de `git diff --stat`, y pide abrir una sesión nueva
+  con `iniciar-sesion`.
+
 ### Criterios
 
 **Ambigüedad.** Si una petición admite dos lecturas que llevan a cambios distintos, no elijas: pregunta con las dos

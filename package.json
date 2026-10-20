@@ -20,7 +20,8 @@
     "verify": "npm run typecheck && npm run lint && npm test",
     "prepare": "git config core.hooksPath .githooks",
     "list:tasks": "tsx scripts/list-tasks.ts",
-    "collect": "tsx scripts/collect.ts"
+    "collect": "tsx scripts/collect.ts",
+    "verify:brief": "tsx scripts/verify-brief.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

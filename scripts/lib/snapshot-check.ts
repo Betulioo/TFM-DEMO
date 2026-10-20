@@ -62,13 +62,17 @@ function includesId(pullRequests: SnapshotPullRequest[], id: number): boolean {
   return pullRequests.some((pullRequest) => pullRequest.id === id);
 }
 
-/** La PR en cualquier parte del snapshot: en una lista o como PR de una tarea. */
-function findPullRequest(snapshot: Snapshot, id: number): SnapshotPullRequest | undefined {
-  const all = [
+/** Todas las PRs del snapshot: las de cada lista y la PR de cada tarea (puede haber repetidas). */
+export function allPullRequests(snapshot: Snapshot): SnapshotPullRequest[] {
+  return [
     ...snapshot.pullRequestsPendingMyReview,
     ...snapshot.pullRequestsPendingTeamReview,
     ...snapshot.myPullRequests,
     ...snapshot.myTasks.flatMap((task) => (task.pullRequest ? [task.pullRequest] : [])),
   ];
-  return all.find((pullRequest) => pullRequest.id === id);
+}
+
+/** La PR en cualquier parte del snapshot: en una lista o como PR de una tarea. */
+function findPullRequest(snapshot: Snapshot, id: number): SnapshotPullRequest | undefined {
+  return allPullRequests(snapshot).find((pullRequest) => pullRequest.id === id);
 }
