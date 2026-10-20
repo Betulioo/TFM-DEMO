@@ -1,11 +1,11 @@
 // Adaptador falso: construye los datos a partir de los casos de fixtures/expected.json,
 // con fechas relativas a `now`. Así hay una sola lista de casos (la misma que usa el seed)
 // y se pueden probar los casos de fechas (M, N) que la demo real no permite crear.
-import type { Iteration, PullRequest, StateCategory, Team, User, WorkItem } from "../../domain/types.js";
-import { loadCases, type Case, type WorkItemSetup } from "./cases.js";
+import type { Iteration, PullRequest, Reviewer, StateCategory, Team, User, WorkItem } from "../../domain/types.js";
+import { loadCases, type Case, type PullRequestSetup, type WorkItemSetup } from "./cases.js";
 import type { DevOpsSource } from "../../ports/devops-source.js";
+import { daysBefore } from "../../domain/dates.js";
 
-const DAY_MS = 86_400_000;
 
 export const FIXTURE_ME: User = { id: "fixture-me", displayName: "Yo (fixture)" };
 export const FIXTURE_TEAMMATE: User = { id: "fixture-teammate", displayName: "Compañero (fixture)" };
@@ -122,7 +122,7 @@ function toPullRequest(testCase: Case, index: number, now: Date): PullRequest | 
       author: FIXTURE_TEAMMATE,
       createdAt: daysBefore(now, setup.createdDaysAgo ?? 0),
       sourceBranch: `feat/revision-${testCase.key.toLowerCase()}`,
-      reviewers: setup.reviewer === "myTeam" ? [{ id: FIXTURE_TEAM.id, displayName: FIXTURE_TEAM.name, vote: 0 }] : [{ ...FIXTURE_ME, vote: setup.myVote }],
+      reviewers: reviewersFor(setup),
     };
   }
 
@@ -140,7 +140,8 @@ function toPullRequest(testCase: Case, index: number, now: Date): PullRequest | 
   };
 }
 
-/** Fecha ISO `days` días naturales antes de `now`. */
-function daysBefore(now: Date, days: number): string {
-  return new Date(now.getTime() - days * DAY_MS).toISOString();
+/** Revisor de una PR del compañero: el equipo (sin voto) o el usuario con `myVote`. */
+function reviewersFor(setup: PullRequestSetup): Reviewer[] {
+  if (setup.reviewer === "myTeam") return [{ id: FIXTURE_TEAM.id, displayName: FIXTURE_TEAM.name, vote: 0 }];
+  return [{ ...FIXTURE_ME, vote: setup.myVote }];
 }

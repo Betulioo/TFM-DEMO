@@ -72,12 +72,17 @@ test("N tiene la antigüedad de expected.json y G enlaza su PR", async () => {
   assert.equal((await source.pullRequestById(workItemG.pullRequestIds[0]!))?.status, "completed");
 });
 
-test("PRs pendientes del equipo: solo O; O no está pendiente de mi revisión", async () => {
+test("PRs pendientes del equipo: solo O", async () => {
   const teams = await source.myTeams();
   const teamPullRequests = (await Promise.all(teams.map((team) => source.pullRequestsToReviewByTeam(team.id)))).flat();
+
   const pendingTeamReview = teamPullRequests.filter((pullRequest) => isPendingTeamReview(pullRequest, FIXTURE_ME, teams));
-  const pendingMyReview = (await source.pullRequestsToReview()).filter((pullRequest) => isPendingMyReview(pullRequest, FIXTURE_ME));
 
   assert.deepEqual(caseKeys(pendingTeamReview), ["O"]);
+});
+
+test("PRs pendientes de mi revisión: K y M (L ya votada, O es del equipo)", async () => {
+  const pendingMyReview = (await source.pullRequestsToReview()).filter((pullRequest) => isPendingMyReview(pullRequest, FIXTURE_ME));
+
   assert.deepEqual(caseKeys(pendingMyReview), ["K", "M"]);
 });

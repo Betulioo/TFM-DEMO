@@ -36,11 +36,20 @@ export interface Case {
 export function loadCases(path = "fixtures/expected.json"): Case[] {
   const data = JSON.parse(readFileSync(path, "utf8")) as { cases?: Case[] };
   if (!Array.isArray(data.cases)) throw new Error(`${path} no tiene una lista "cases".`);
+  return validateCases(data.cases);
+}
 
-  for (const testCase of data.cases) {
-    if (testCase.setup.entity === "workItem" && testCase.setup.pr && !testCase.setup.branch) {
+/** Rechaza los casos que el seed no podría crear, antes de que escriba nada. */
+export function validateCases(cases: Case[]): Case[] {
+  for (const testCase of cases) {
+    const setup = testCase.setup;
+    if (setup.entity === "workItem" && setup.pr && !setup.branch) {
       throw new Error(`Caso ${testCase.key}: una PR necesita rama ("branch": true).`);
     }
+    // El seed no sabe añadir un equipo como revisor.
+    if (setup.entity === "pullRequest" && setup.reviewer === "myTeam" && testCase.verifiedIn !== "fixtures") {
+      throw new Error(`Caso ${testCase.key}: una PR con el equipo como revisor solo puede ser "verifiedIn": "fixtures".`);
+    }
   }
-  return data.cases;
+  return cases;
 }

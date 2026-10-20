@@ -26,13 +26,15 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-**Estado (2026-10-19):** paso 6 empezado, con alcance revisado (sin ramas; con PRs del equipo). Hecho: reglas de
+**Estado (2026-10-20):** paso 6 empezado, con alcance revisado (sin ramas; con PRs del equipo). Hecho: reglas de
 PR en `src/domain/rules.ts` (`isActive`, `isPendingMyReview`, `isPendingTeamReview`, `isBlocked`, `isApproved`,
-`isAged`), `myTeams()` y `pullRequestsToReviewByTeam()` en el puerto y los dos adaptadores, caso O en
-`expected.json` y glosario sin ramas. Sin commitear. `npm run typecheck`, `npm run lint` y `npm test` (62/62) en verde.
+`isAged`), días naturales en `src/domain/dates.ts`, `myTeams()` y `pullRequestsToReviewByTeam()` en el puerto y los
+dos adaptadores, caso O en `expected.json` (validado en `validateCases`) y glosario sin ramas. Sin commitear.
+`npm run typecheck`, `npm run lint` y `npm test` (65/65) en verde.
 
-**Seguir por:** reglas "tarea estancada" y "siguiente paso" (solo tareas con PR) en `src/domain/rules.ts`.
-Después: `src/application/collect-snapshot.ts` y `npm run collect`.
+**Seguir por:** reglas "tarea estancada" (con `hasElapsedDays`) y "siguiente paso" (solo tareas con PR) en
+`src/domain/rules.ts`. Después: `src/application/collect-snapshot.ts` y `npm run collect`, que debe quitar
+duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abiertos).
 
 **Decisiones pendientes**
 - Si una PR deja de estar "pendiente del equipo" cuando otro miembro ya ha votado por el equipo. La definición
@@ -50,6 +52,11 @@ Después: `src/application/collect-snapshot.ts` y `npm run collect`.
   pasado en una variable; el lint sí marca cualquier uso de `fetch`. Límite no documentado en el test.
 - `azdo-source.ts` convierte `status`, `vote` y `category` de la API con `as`, sin validar el valor.
 - El paso 0 (medir la rutina manual en el cliente) sigue pendiente y lo hace la persona.
+- PRs del equipo sin comprobar con datos reales: que `searchCriteria.reviewerId={teamId}` devuelva las PRs con el
+  equipo como revisor, que el revisor lleve el mismo `id` que `teams?$mine=true`, y si `reviewerId={miId}` ya
+  incluye las PRs de mis equipos (habría duplicados entre las dos listas). En la demo ninguna PR tiene un equipo
+  como revisor.
+- `myTeams()` no pagina: la API devuelve 100 equipos por defecto (según la documentación; no comprobado).
 
 ## Registro
 
@@ -212,10 +219,10 @@ Después: `src/application/collect-snapshot.ts` y `npm run collect`.
   calendario, para que no dependa de la zona horaria. Propuesta del agente, confirmada por la persona; se aplica
   también a "tarea estancada".
 - El puerto devuelve solo nombres de rama (`string[]`), no un tipo `Branch` con repositorio: las definiciones del
-  glosario solo usan el nombre. Si hace falta el repositorio, se amplía. (Retirado después: ver siguiente.)
+  glosario solo usan el nombre. Si hace falta el repositorio, se amplía.
 - Las ramas salen del alcance: la persona no quiere que la herramienta diga "crear rama" o "abrir PR"; quiere las
   PRs asignadas a ella o a su equipo y sus tareas. Una tarea sin PR sale con su estado y, si lo está, estancada.
-  Si hace falta la rama, ya la tiene en su nota de Obsidian (`branch:` en el frontmatter; paso 8c).
+  Observación del agente, no dicha por la persona: su plantilla de Obsidian ya guarda la rama en `branch:` (paso 8c).
 - PRs del equipo: el equipo cuenta si es revisor de la PR. Van en una lista aparte de "pendientes de mi
   revisión" (decisión de la persona). Para que una PR no salga en las dos listas, "pendiente del equipo" exige
   que el usuario no figure como revisor individual (precisión del agente sobre la definición propuesta, que
@@ -296,3 +303,28 @@ Después: `src/application/collect-snapshot.ts` y `npm run collect`.
   preguntar para qué las quería la persona. Al revisarlo, la persona vio que no escala en un proyecto grande y
   que no necesita las ramas. Se retiró sin commitear. Cambia: antes de implementar una parte del plan que añade
   datos al informe, confirmar que la persona los quiere y cómo escala la consulta.
+
+### 2026-10-20
+
+**Progreso**
+- Correcciones tras la reflexión del paso 6 (pedidas por la persona, con las skills `testing` y
+  `tests-semanticos` cargadas):
+  - DRY: la duración de un día estaba en `rules.ts`, en `fixture-source.ts` y a mano en `test/rules.test.ts`.
+    Ahora vive en `src/domain/dates.ts` (`MILLISECONDS_PER_DAY`, `daysBefore`, `hasElapsedDays`).
+  - La comprobación "PR con el equipo como revisor solo en fixtures" pasa del seed a `validateCases` en
+    `src/adapters/fixtures/cases.ts`, junto a "una PR necesita rama", y así falla antes de escribir. El seed solo
+    conserva una comprobación que acota el tipo. Tests nuevos en `test/cases.test.ts` (también para "una PR
+    necesita rama", que no tenía test).
+  - `ApiTeam` para la respuesta de equipos (como `ApiPullRequest`) y `reviewersFor` en el adaptador falso.
+  - Tests: PR abandonada en "PR pendiente del equipo" y el test del adaptador falso separado en dos (uno por
+    comportamiento). Mutaciones de control: cambiar el filtro de "mis equipos" por "tiene revisores" hace fallar 1
+    test; quitar la condición de fixtures en `validateCases` hace fallar su test (y rechaza `expected.json`).
+  - Comentarios de `Team` y del puerto: ya no afirman lo que no se ha comprobado.
+  - Skills `testing` y `tests-semanticos`: casos A–O. README: preguntas 1 y 3 al día con el alcance revisado.
+
+**Errores y correcciones**
+- En la bitácora del 2026-10-19 se escribió como hecho que la persona ya tiene la rama en Obsidian; era una
+  inferencia del agente. Se corrige el texto para marcarlo como observación. Además se había añadido una nota a
+  una decisión anterior del registro ("Retirado después"), lo que reescribe historial; se quita (la retirada ya
+  consta en su propia entrada).
+

@@ -35,6 +35,12 @@ export interface ApiWorkItem {
   relations?: { rel: string; url: string; attributes?: { name?: string } }[];
 }
 
+/** Forma de un equipo en `_apis/projects/{project}/teams` (solo los campos que usamos). */
+interface ApiTeam {
+  id: string;
+  name: string;
+}
+
 interface ApiIteration {
   id: string;
   name: string;
@@ -66,7 +72,7 @@ export class AzdoSource implements DevOpsSource {
   }
 
   async myTeams(): Promise<Team[]> {
-    const result = await this.reader.get<{ value: Team[] }>(`_apis/projects/${this.encodedProject}/teams`, { $mine: "true" });
+    const result = await this.reader.get<{ value: ApiTeam[] }>(`_apis/projects/${this.encodedProject}/teams`, { $mine: "true" });
     return result.value.map((team) => ({ id: team.id, name: team.name }));
   }
 

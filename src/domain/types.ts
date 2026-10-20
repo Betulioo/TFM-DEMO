@@ -6,7 +6,10 @@ export interface User {
   displayName: string;
 }
 
-/** Equipo del proyecto. Su `id` es el de su identidad: el mismo que aparece cuando es revisor de una PR. */
+/**
+ * Equipo del proyecto. Su `id` es el de su identidad (comprobado en la demo). Que sea el mismo `id` que aparece
+ * cuando el equipo es revisor de una PR está sin comprobar: en la demo ninguna PR tiene un equipo como revisor.
+ */
 export interface Team {
   id: string;
   name: string;

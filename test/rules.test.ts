@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { isAged, isApproved, isBlocked, isPendingMyReview, isPendingTeamReview, myTasks } from "../src/domain/rules.js";
+import { daysBefore } from "../src/domain/dates.js";
 import type { PullRequest, PullRequestStatus, StateCategory, User, Vote, WorkItem } from "../src/domain/types.js";
 
 const CURRENT_USER = { id: "me", displayName: "Yo" };
@@ -119,7 +120,7 @@ test("PR aprobada: una PR completada no cuenta como PR aprobada", () => {
 });
 
 test("PR envejecida: 3 días o más (límite 2, 3 y 4 días; caso M)", () => {
-  const createdDaysAgo = (days: number) => buildPullRequest({ createdAt: new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000).toISOString() });
+  const createdDaysAgo = (days: number) => buildPullRequest({ createdAt: daysBefore(NOW, days) });
 
   assert.deepEqual([2, 3, 4].map((days) => isAged(createdDaysAgo(days), NOW, AGED_PR_DAYS)), [false, true, true]);
 });
@@ -167,9 +168,13 @@ test("PR pendiente del equipo: si soy el autor no cuenta", () => {
   assert.equal(isPendingTeamReview(pullRequest, CURRENT_USER, [MY_TEAM]), false);
 });
 
-test("PR pendiente del equipo: solo PR activa (ni borrador ni completada)", () => {
+test("PR pendiente del equipo: solo PR activa (ni borrador, ni completada, ni abandonada)", () => {
   const votes: [User, Vote][] = [[MY_TEAM_REVIEWER, 0]];
-  const notActive = [buildPullRequest({ votes, isDraft: true }), buildPullRequest({ votes, status: "completed" })];
+  const notActive = [
+    buildPullRequest({ votes, isDraft: true }),
+    buildPullRequest({ votes, status: "completed" }),
+    buildPullRequest({ votes, status: "abandoned" }),
+  ];
 
-  assert.deepEqual(notActive.map((pullRequest) => isPendingTeamReview(pullRequest, CURRENT_USER, [MY_TEAM])), [false, false]);
+  assert.deepEqual(notActive.map((pullRequest) => isPendingTeamReview(pullRequest, CURRENT_USER, [MY_TEAM])), [false, false, false]);
 });

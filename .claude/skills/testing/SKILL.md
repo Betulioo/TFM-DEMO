@@ -21,7 +21,7 @@ Antes de escribir uno, lee `docs/glosario.md` (definiciones) y el caso en `fixtu
   `"PR por ID: devuelve undefined si no existe (404)"`. El nombre dice la regla, no la implementación.
 - **Comparar IDs o claves de caso, no objetos enteros**, salvo en los tests de traducción API → dominio, donde
   sí se compara el objeto completo con `assert.deepEqual`.
-- **Casos A–N:** salen de `fixtures/expected.json`. No copies la lista de casos en un test.
+- **Casos A–O:** salen de `fixtures/expected.json`. No copies la lista de casos en un test.
 - **Datos explícitos y mínimos:** cada test construye solo lo que importa para su regla con un helper local
   (`buildWorkItem(...)`, `buildApiPullRequest(...)`, `buildApiWorkItem(...)`). Si un helper se usa en 2+ archivos, muévelo a `test/helpers/`.
 - **Antes de dar el trabajo por terminado:** `npm run typecheck`, `npm run lint` y `npm test` en verde.
@@ -105,7 +105,7 @@ function buildApiWorkItem(id: number, type: string, state: string, overrides: Pa
 ## 3. Adaptador falso (`src/adapters/fixtures/`)
 
 Genera los datos desde `fixtures/expected.json` con fechas relativas a `NOW`. Sus tests comprueban que cada
-caso acaba donde dice `expected` y que los casos solo verificables con fixtures (M, N) tienen sus fechas.
+caso acaba donde dice `expected` y que los casos solo verificables con fixtures (M, N, O) tienen sus fechas o su revisor.
 
 ```typescript
 const NOW = new Date("2026-10-19T09:00:00Z");

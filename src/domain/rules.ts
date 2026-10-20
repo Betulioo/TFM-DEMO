@@ -1,11 +1,11 @@
 // Reglas del glosario (docs/glosario.md) como funciones puras. Se completan en el paso 6.
+import { hasElapsedDays } from "./dates.js";
 import type { PullRequest, StateCategory, Team, User, Vote, WorkItem } from "./types.js";
 
 const CLOSED_CATEGORIES: ReadonlySet<StateCategory> = new Set(["Completed", "Removed"]);
 const NEGATIVE_VOTES: ReadonlySet<Vote> = new Set([-5, -10]);
 const POSITIVE_VOTES: ReadonlySet<Vote> = new Set([5, 10]);
 const NO_VOTE: Vote = 0;
-const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Mis tareas: work items de cualquier tipo, en la iteración actual, asignados al usuario y cuya categoría
@@ -56,11 +56,7 @@ export function isApproved(pullRequest: PullRequest): boolean {
   return isActive(pullRequest) && hasVoteIn(pullRequest, POSITIVE_VOTES) && !hasVoteIn(pullRequest, NEGATIVE_VOTES);
 }
 
-/**
- * PR envejecida: PR activa creada hace `agedPrDays` días naturales o más. Se cuenta el tiempo transcurrido
- * (múltiplos de 24 h) y no las fechas del calendario, para no depender de la zona horaria.
- */
+/** PR envejecida: PR activa creada hace `agedPrDays` días naturales o más (cómo se cuentan: `dates.ts`). */
 export function isAged(pullRequest: PullRequest, now: Date, agedPrDays: number): boolean {
-  const elapsedMilliseconds = now.getTime() - new Date(pullRequest.createdAt).getTime();
-  return isActive(pullRequest) && elapsedMilliseconds >= agedPrDays * MILLISECONDS_PER_DAY;
+  return isActive(pullRequest) && hasElapsedDays(pullRequest.createdAt, now, agedPrDays);
 }

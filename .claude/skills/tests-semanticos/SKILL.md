@@ -12,7 +12,7 @@ Si no hay respuesta, el test sobra o está mal enfocado.
 
 Fuentes (no repitas su contenido, enlázalo):
 - Definiciones y umbrales: [`docs/glosario.md`](../../../docs/glosario.md).
-- Casos A–N y su resultado esperado: [`fixtures/expected.json`](../../../fixtures/expected.json).
+- Casos A–O y su resultado esperado: [`fixtures/expected.json`](../../../fixtures/expected.json).
 - Reglas del proyecto y de arquitectura: [`CLAUDE.md`](../../../CLAUDE.md).
 - Herramientas, dobles y estructura: skill [`testing`](../testing/SKILL.md).
 

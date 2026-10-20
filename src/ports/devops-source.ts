@@ -11,7 +11,7 @@ export interface DevOpsSource {
   pullRequestsToReview(): Promise<PullRequest[]>;
   /** Equipos del proyecto de los que el usuario es miembro. */
   myTeams(): Promise<Team[]>;
-  /** PRs activas (borradores incluidos) donde el equipo es revisor. */
+  /** PRs activas (borradores incluidos) donde el equipo es revisor. Sin comprobar con datos reales (ver bitácora). */
   pullRequestsToReviewByTeam(teamId: string): Promise<PullRequest[]>;
   /** PRs activas (borradores incluidos) creadas por el usuario. */
   myPullRequests(): Promise<PullRequest[]>;

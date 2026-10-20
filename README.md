@@ -3,9 +3,9 @@
 Informe diario asistido por IA para desarrolladores que trabajan con **Azure DevOps** (Repos + Boards).
 Responde a tres preguntas al empezar el día:
 
-1. ¿Qué PRs esperan mi revisión y cuáles están bloqueadas o envejecidas?
+1. ¿Qué PRs esperan mi revisión o la de mi equipo, y cuáles están bloqueadas o envejecidas?
 2. ¿En qué tareas de la iteración actual estoy y qué les falta?
-3. ¿Qué riesgos tiene la iteración (tareas sin avance o sin PR)?
+3. ¿Qué riesgos tiene la iteración (tareas estancadas y PRs envejecidas)?
 
 > Estado: en desarrollo (TFM). Las secciones marcadas como *pendiente* se completan en pasos posteriores.
 
