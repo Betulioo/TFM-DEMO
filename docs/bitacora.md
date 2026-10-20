@@ -46,23 +46,20 @@ Reglas de uso:
 - [ ] 12. Documento técnico
 - [ ] 13. Vídeo (opcional) y comprobación de accesos
 
-**Paso 6, hecho (2026-10-20).** Alcance revisado: sin ramas y con PRs del equipo.
-- Hecho y commiteado (`ab04ea8`, `e13dd60`, `810e748`): reglas del glosario en `src/domain/rules.ts` y
-  `src/domain/dates.ts`, `myTeams()` y `pullRequestsToReviewByTeam()` en el puerto y los dos adaptadores, caso O,
-  siguiente paso "PR en borrador", `taskPullRequest` y tests junto al código.
-- Hecho sin commitear: tipo `Snapshot` en `src/domain/types.ts`, `src/application/collect-snapshot.ts`,
-  `loadThresholds()` en `src/config.ts`, `scripts/collect.ts` (`npm run collect`), comprobación por caso en
-  `scripts/lib/snapshot-check.ts` y sus tests (los 15 casos A–O pasan con el adaptador falso).
-  `npm run verify` en verde (132/132).
-- "Hecho si" de `docs/plan.md` cumplido: 15 casos en `npm test` y `npm run collect` contra la demo con A–L en `OK`.
-- Pendiente de la persona: añadir `AGED_PR_DAYS=3` y `STALE_TASK_DAYS=3` a `.env.example` (el agente no puede
-  leer ese archivo).
+**Paso 7, en curso (2026-10-20).**
+- Hecho sin commitear: skill `.claude/skills/daily-brief/SKILL.md` (lee solo `output/snapshot.json` y escribe
+  `output/brief-AAAA-MM-DD.md` con plantilla fija); `CLAUDE.md` (Arquitectura) y README (Uso, Estructura) la nombran.
+- Probada sobre fixtures: el informe de `npm run collect -- --fixtures` coincide con los 15 casos A–O.
+- Informe sobre la demo generado (`output/brief-2026-10-20.md`, tras el `npm run collect` de la persona con A–L
+  en `OK`). Falta para el "Hecho si" de `docs/plan.md`: que la persona lo revise a mano.
+- Pendiente de la persona (del paso 6): añadir `AGED_PR_DAYS=3` y `STALE_TASK_DAYS=3` a `.env.example` (el agente
+  no puede leer ese archivo).
 
 ## Próximo paso
 
-**Seguir por:** paso 7, skill de informe diario en `.claude/skills/` (sección del paso 7 de `docs/plan.md`): lee
-solo `output/snapshot.json` y redacta Hechos (con ID) y Sugerencias con los términos del glosario. Un campo
-`null` o ausente en el snapshot es "sin datos" (comentario de `Snapshot` en `src/domain/types.ts`).
+**Seguir por:** cerrar el paso 7. La persona revisa a mano `output/brief-2026-10-20.md` (IDs de A–L según
+`fixtures/demo-ids.json`) y anota aquí el resultado. Con eso, paso 8: `scripts/verify-brief.ts` lee los IDs por encabezado de la plantilla
+de la skill.
 
 **Decisiones pendientes**
 - Nombre del siguiente paso para una PR en borrador: "PR en borrador" (frase de la persona, describe un estado)
@@ -420,6 +417,13 @@ Detectados, sin corregir; ninguno rompe los checks.
 - Orden (opción de la persona): esperar a su commit del paso 6 (`327cf49`) antes de aplicarlas, para no mezclar
   cambios con los de la otra sesión. Descartado aplicarlas encima de sus cambios sin commitear o dejar `verify` en
   rojo hasta que esa sesión quitara sus `!`.
+- Paso 7: el plan dice que la skill ejecuta `npm run collect`, pero `CLAUDE.md` no deja al agente ejecutarlo
+  contra la demo. Opción de la persona: la skill pide a la persona que lo ejecute (o usa `-- --fixtures` para
+  probar). Descartado añadir `collect` a los scripts de solo lectura del agente (sigue en Decisiones pendientes).
+- Paso 7 (decisiones del agente, aprobadas en el plan de la sesión): la skill copia las señales ya calculadas del
+  snapshot y no las recalcula; encabezados fijos para el verificador del paso 8; se añade la sección "PRs
+  pendientes del equipo", que la lista de Hechos del plan no nombra pero existe en el glosario y el snapshot desde
+  el paso 6; lista vacía → "Ninguna.", y `pullRequest: null` en una tarea es "sin PR", no "sin datos".
 
 **Hechos comprobados**
 - Correcciones tras la reflexión del paso 6 (pedidas por la persona, con las skills `testing` y
@@ -543,6 +547,14 @@ Detectados, sin corregir; ninguno rompe los checks.
   - Ambigüedad resuelta por la persona: el comentario de `Snapshot` dice que "sin datos" es `null` o un campo
     ausente; la skill del paso 7 debe tratar los dos igual. No cambia el JSON.
   - `npm run verify` en verde (132/132).
+- Skill `daily-brief` probada en la misma sesión que la escribió (no en un chat nuevo): sobre el snapshot de
+  `npm run collect -- --fixtures`, el informe pone PR #11 y #13 en "pendientes de mi revisión" (#13 envejecida),
+  PR #15 en "del equipo", PR #4/#5/#6 en "Mis PRs" (sin votos / bloqueada / aprobada), WI #101–107 y #114 con sus
+  siguientes pasos y WI #114 estancada; comparado a mano con `expected.json`, los 15 casos coinciden. Sin
+  "PR en borrador": ningún caso de fixtures la tiene en "Mis tareas".
+- `npm run collect` contra la demo (lo ejecutó la persona, 27 comprobaciones A–L en `OK`) y skill `daily-brief` en
+  la misma sesión: el informe tiene 1 PR pendiente de mi revisión (PR #6), 0 del equipo, 3 mías (PR #4 aprobada,
+  #3 bloqueada, #2 sin votos), 7 tareas (WI #6–12) y 1 riesgo (PR #3). Revisión a mano de la persona pendiente.
 
 **Errores y correcciones**
 - Comentario `/** … src/**/tests/ … */` en `test/architecture.test.ts` → el `*/` de `**/` cerró el comentario y el

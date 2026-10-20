@@ -34,8 +34,9 @@ npm run typecheck
 
 ## Uso
 
-La recogida (`npm run collect`) escribe `output/snapshot.json` con solo lectura contra Azure DevOps. La skill del
-informe está *pendiente* (paso 7).
+La recogida (`npm run collect`) escribe `output/snapshot.json` con solo lectura contra Azure DevOps. Después, en
+Claude Code, la skill `daily-brief` ("hazme el informe diario") lee solo ese snapshot y escribe
+`output/brief-AAAA-MM-DD.md` con Hechos (siempre con ID) y Sugerencias.
 
 ```bash
 npm run check:conn              # comprueba la conexión con Azure DevOps (.env)
@@ -57,7 +58,7 @@ src/               Recogida de datos de Azure DevOps (domain, ports, application
 scripts/           Recogida (collect), scripts de consulta y seed del proyecto demo; tests en lib/tests/
 test/              Checks transversales (arquitectura, que npm test vea todos los tests) y helpers compartidos
 fixtures/          Casos esperados del proyecto demo
-.claude/           Skills y agente de trabajo; la skill del informe llega en el paso 7
+.claude/           Skills y agente de trabajo; daily-brief es la skill del informe
 docs/              Plan, bitácora, glosario y enunciado del TFM
 docs/evidencias/   Capturas para el documento del TFM
 output/            Salidas generadas (no se versiona)

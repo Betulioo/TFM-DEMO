@@ -65,7 +65,8 @@ El formato y sus reglas están en un solo sitio: [Cómo se escribe esta bitácor
    Azure DevOps y otro falso que lee fixtures. La lógica de vinculación no conoce el adaptador.
    Capas: `src/domain`, `src/ports`, `src/application` (paso 6),
    `src/adapters/azdo` y `src/adapters/fixtures`.
-2. **Síntesis (IA)** — skill en `.claude/skills/`: lee `output/snapshot.json` y redacta el informe.
+2. **Síntesis (IA)** — skill `.claude/skills/daily-brief/`: lee `output/snapshot.json` y escribe el informe en
+   `output/brief-AAAA-MM-DD.md`.
 3. **Verificación** — `scripts/` y tests: compara el informe con `fixtures/expected.json`.
 
 Mantén esta separación: la skill de síntesis nunca llama a la API; solo interpreta el snapshot.
