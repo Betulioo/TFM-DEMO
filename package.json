@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "check:conn": "tsx scripts/check-connection.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
-    "test": "tsx --test test/*.test.ts",
+    "test": "tsx --test test/*.test.ts src/*/tests/*.test.ts src/*/*/tests/*.test.ts scripts/*/tests/*.test.ts",
     "list:prs": "tsx scripts/list-prs.ts",
     "lint": "eslint .",
     "verify": "npm run typecheck && npm run lint && npm test",

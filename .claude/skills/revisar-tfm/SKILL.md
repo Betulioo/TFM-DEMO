@@ -26,7 +26,7 @@ Si falta alguna, sigue con lo demás y di al principio del resultado qué archiv
 1. Ejecuta `npm run typecheck`, `npm run lint` y `npm test`. Anota el resultado tal cual.
 2. Ejecuta el check de arquitectura por separado (`npx tsx --test test/architecture.test.ts`) y anota cada
    regla de la sección "Arquitectura" de `CLAUDE.md` con su resultado. Si el archivo no existe, es un hallazgo.
-3. Revisa los tests existentes (`test/*.test.ts`) con los criterios de `.claude/skills/tests-semanticos/SKILL.md`:
+3. Revisa los tests existentes (`test/*.test.ts` y las carpetas `tests/` de `src/` y `scripts/`) con los criterios de `.claude/skills/tests-semanticos/SKILL.md`:
    léela antes y aplica su apartado "Al revisar un test existente". No copies sus criterios en el informe;
    cita el número del criterio que falla.
 4. Para cada paso marcado como hecho en la bitácora: ¿el código cumple el diseño y el criterio de "hecho" de `plan.md`?

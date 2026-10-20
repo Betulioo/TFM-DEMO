@@ -52,9 +52,9 @@ npm run verify                  # typecheck, lint y tests
 ## Estructura
 
 ```
-src/               Recogida de datos de Azure DevOps (domain, ports, adapters)
-scripts/           Scripts de consulta y seed del proyecto demo
-test/              Tests con node:test, sin red
+src/               Recogida de datos de Azure DevOps (domain, ports, adapters); tests junto al código en tests/
+scripts/           Scripts de consulta y seed del proyecto demo; tests del seed en lib/tests/
+test/              Check de arquitectura y helpers compartidos de los tests
 fixtures/          Casos esperados del proyecto demo
 .claude/           Skills y agente de trabajo; la skill del informe llega en el paso 7
 docs/              Plan, bitácora, glosario y enunciado del TFM

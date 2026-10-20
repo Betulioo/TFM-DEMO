@@ -26,16 +26,17 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-**Estado (2026-10-20):** paso 6 empezado, con alcance revisado (sin ramas; con PRs del equipo). Hecho: reglas de
-PR en `src/domain/rules.ts` (`isActive`, `isPendingMyReview`, `isPendingTeamReview`, `isBlocked`, `isApproved`,
-`isAged`), días naturales en `src/domain/dates.ts`, `myTeams()` y `pullRequestsToReviewByTeam()` en el puerto y los
-dos adaptadores, caso O en `expected.json` (validado en `validateCases`) y glosario sin ramas. Sin commitear.
-`npm run typecheck`, `npm run lint` y `npm test` (65/65) en verde.
-Arreglos de la auditoría del arnés del 2026-10-20 hechos y sin commitear (ver Registro); `npm run verify` en verde.
+**Estado (2026-10-20):** paso 6 empezado, con alcance revisado (sin ramas; con PRs del equipo). Hecho y
+commiteado: reglas de PR en `src/domain/rules.ts`, días naturales en `src/domain/dates.ts`, `myTeams()` y
+`pullRequestsToReviewByTeam()` en el puerto y los dos adaptadores, caso O y arreglos de la auditoría del arnés.
+Hecho sin commitear: reglas `isStale` ("tarea estancada"), `nextStep` ("siguiente paso") con tipo `NextStep` y
+`taskPullRequestId` ("PR de una tarea": la de mayor ID). Todos los tests con `describe`/`it` y AAA, junto al
+código que prueban en carpetas `tests/`; en `test/` quedan `architecture.test.ts` y `helpers/`. `npm run verify`
+en verde (84/84 tests, 20 suites).
 
-**Seguir por:** reglas "tarea estancada" (con `hasElapsedDays`) y "siguiente paso" (solo tareas con PR) en
-`src/domain/rules.ts`. Después: `src/application/collect-snapshot.ts` y `npm run collect`, que debe quitar
-duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abiertos).
+**Seguir por:** `src/application/collect-snapshot.ts` (traer cada "PR de una tarea" por ID con el puerto y
+aplicar `nextStep` e `isStale`) y `npm run collect`, que debe quitar duplicados si una PR sale a la vez
+como mía y del equipo (ver Problemas abiertos).
 
 **Decisiones pendientes**
 - Si una PR deja de estar "pendiente del equipo" cuando otro miembro ya ha votado por el equipo. La definición
@@ -342,6 +343,10 @@ duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abierto
   - ISSUE-11: `testing` queda con el cómo y enlaza `tests-semanticos` para el qué. Cierra el problema abierto
     del solapamiento entre las dos skills.
   - O-6: `.claude/skills/harness-audit-pape/` en `.gitignore`.
+- Paso 6: reglas "tarea estancada" (`isStale`) y "siguiente paso" (`nextStep`) en `src/domain/rules.ts`, y tipo
+  `NextStep` en `src/domain/types.ts` con los nombres del glosario. 11 tests nuevos en `test/rules.test.ts`: caso N,
+  límites de 2, 3 y 4 días, umbral configurable, solo *InProgress*, casos D–G, tarea sin PR, PR abandonada o en
+  borrador y orden de las reglas. `npm run verify` en verde (76/76).
 
 **Decisiones**
 - ISSUE-11: de las dos opciones propuestas (fusionar o separar cómo y qué), la persona eligió separar.
@@ -350,8 +355,34 @@ duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abierto
 - Limitaciones documentadas, sin arreglo: los `deny` son patrones de prefijo, así que otras formas de git
   (`git -C . commit`) o de leer `.env` no quedan bloqueadas (ISSUE-13; inferencia, no probado). En esta ronda no
   se añaden hooks: `Stop` descartado por la persona; `PreToolUse` (para `.env` e ISSUE-13) queda para más adelante.
+- `nextStep` recibe la PR de la tarea ya elegida (o `undefined`), no el work item con todas sus PRs: elegir la
+  PR es la vinculación, que va aparte. Decisión del agente; la persona puede revisarla.
+- Una PR en borrador cae en "Revisar estado": no es PR activa, así que no cumple las reglas 2–4.
+- "PR de una tarea": si hay varias, la más reciente es la de **mayor ID** (decisión de la persona). Glosario
+  actualizado; regla `taskPullRequestId` en `src/domain/rules.ts` con 3 tests.
+- Tests junto al código que prueban, en carpetas `tests/` (`src/domain/tests/rules.test.ts`), con `describe` por
+  término del glosario, `it` por caso y AAA siempre separado sin comentarios (decisiones de la persona). Por ahora
+  solo `rules.test.ts`; los otros 5 archivos de `test/` siguen con `test()`. Helpers locales; si tests de carpetas
+  distintas comparten uno, sale a una carpeta de helpers.
+- Consecuencia: las carpetas `tests/` de `src/` quedan fuera de las reglas de capas (necesitan `node:test` y
+  `node:assert`). Cambiado en `CLAUDE.md`, `eslint.config.js` (`ignores` en `layer()` y `TEST_FILES` para las reglas
+  de tests) y `test/architecture.test.ts` (`isTestFile`, con test de control). `npm test` añade
+  `src/*/tests/*.test.ts`, glob de la shell y no de Node, porque Node 20 no acepta globs en `--test` (según la documentación de Node; no
+  probado); solo llega a
+  un nivel bajo `src/` (p. ej. `src/adapters/azdo/tests/` no entraría).
+- Los otros 5 archivos de test, al mismo estilo (pedido por la persona): `azdo-source` → `src/adapters/azdo/tests/`,
+  `cases` y `fixture-source` → `src/adapters/fixtures/tests/`, `seed` → `scripts/lib/tests/`; `architecture.test.ts`
+  se queda en `test/` porque comprueba todo `src/`, no un módulo. `npm test` añade `src/*/*/tests/` y
+  `scripts/*/tests/`; `TEST_FILES` del lint, `scripts/**/tests/**`. Se parten en dos los tests que comprobaban dos
+  comportamientos (equipo como revisor en fixtures / en la demo, PR de G / PR inexistente, antigüedad de N / PR de
+  G, import válido en el control de dominio): de 80 a 84 tests. `numbersFrom` (azdo-source) y `listOf` (seed)
+  hacían lo mismo y `NOW` estaba repetido: pasan a `test/helpers/test-data.ts`.
 
 **Aprendizajes**
+- Un comentario `/** … src/**/tests/ … */` se cierra en el `*/` de `**/`: el typecheck falló con decenas de errores
+  en `test/architecture.test.ts`. Se reescribió sin `**/`.
+- Mutación de control: sin `isTestFile` en `sourceFiles`, el check de arquitectura falla con
+  `src/domain/tests/rules.test.ts importa node:test` y `node:assert/strict`; con él, pasa.
 - La regla `no-restricted-syntax` con `NewExpression[callee.name='Date'][arguments.length=0]` marca `new Date()`
   y no `new Date("2026-10-19T09:00:00Z")`: comprobado con un archivo temporal en `test/` (1 error, en la línea de
   `new Date()`), borrado después.

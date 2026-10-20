@@ -1,6 +1,6 @@
 // Reglas del glosario (docs/glosario.md) como funciones puras. Se completan en el paso 6.
 import { hasElapsedDays } from "./dates.js";
-import type { PullRequest, StateCategory, Team, User, Vote, WorkItem } from "./types.js";
+import type { NextStep, PullRequest, StateCategory, Team, User, Vote, WorkItem } from "./types.js";
 
 const CLOSED_CATEGORIES: ReadonlySet<StateCategory> = new Set(["Completed", "Removed"]);
 const NEGATIVE_VOTES: ReadonlySet<Vote> = new Set([-5, -10]);
@@ -59,4 +59,32 @@ export function isApproved(pullRequest: PullRequest): boolean {
 /** PR envejecida: PR activa creada hace `agedPrDays` días naturales o más (cómo se cuentan: `dates.ts`). */
 export function isAged(pullRequest: PullRequest, now: Date, agedPrDays: number): boolean {
   return isActive(pullRequest) && hasElapsedDays(pullRequest.createdAt, now, agedPrDays);
+}
+
+/** PR de una tarea: de las PRs vinculadas, la más reciente, que es la de mayor ID. `undefined` si no tiene. */
+export function taskPullRequestId(workItem: WorkItem): number | undefined {
+  return workItem.pullRequestIds.length === 0 ? undefined : Math.max(...workItem.pullRequestIds);
+}
+
+/** PR activa sin votos: ningún revisor ha votado (o no tiene revisores). */
+function hasNoVotes(pullRequest: PullRequest): boolean {
+  return isActive(pullRequest) && pullRequest.reviewers.every((reviewer) => reviewer.vote === NO_VOTE);
+}
+
+/** Tarea estancada: categoría InProgress y última modificación hace `staleTaskDays` días naturales o más. */
+export function isStale(workItem: WorkItem, now: Date, staleTaskDays: number): boolean {
+  return workItem.stateCategory === "InProgress" && hasElapsedDays(workItem.changedAt, now, staleTaskDays);
+}
+
+/**
+ * Siguiente paso de una tarea según su PR (la elige la vinculación). Las reglas se evalúan en el orden del
+ * glosario y gana la primera que se cumple. Una tarea sin PR no tiene siguiente paso.
+ */
+export function nextStep(taskPullRequest: PullRequest | undefined): NextStep | null {
+  if (taskPullRequest === undefined) return null;
+  if (taskPullRequest.status === "completed") return "Cerrar la tarea";
+  if (isApproved(taskPullRequest)) return "Completar la PR";
+  if (isBlocked(taskPullRequest)) return "Atender cambios solicitados";
+  if (hasNoVotes(taskPullRequest)) return "Esperar revisión";
+  return "Revisar estado";
 }

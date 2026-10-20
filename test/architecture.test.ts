@@ -2,7 +2,7 @@
 // comprobadas sobre el código. eslint.config.js comprueba las mismas en `npm run lint`.
 // Lee los archivos de src/ como texto (sin dependencias nuevas). Cada regla tiene un test de control con
 // código de ejemplo, para que un fallo del propio check no haga pasar los tests sin comprobar nada.
-import { test } from "node:test";
+import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { isBuiltin } from "node:module";
@@ -17,9 +17,12 @@ interface SourceFile {
   text: string;
 }
 
+/** Los tests en carpetas `tests/` de `src/` no son código de ninguna capa: usan `node:test` y `node:assert`. */
+const isTestFile = (fileName: string) => fileName.split(/[\\/]/).includes("tests");
+
 function sourceFiles(directory = "src"): SourceFile[] {
   return readdirSync(join(ROOT, directory), { recursive: true, encoding: "utf8" })
-    .filter((fileName) => fileName.endsWith(".ts"))
+    .filter((fileName) => fileName.endsWith(".ts") && !isTestFile(fileName))
     .map((fileName) => {
       const path = join(directory, fileName).split("\\").join("/");
       return { path, text: readFileSync(join(ROOT, path), "utf8") };
@@ -87,66 +90,103 @@ function scriptsViolations(files: SourceFile[]): string[] {
   );
 }
 
-// --- Sobre el código real -------------------------------------------------------
-
 const files = sourceFiles();
 
-test("arquitectura: hay archivos que comprobar (incluido el cliente de solo lectura)", () => {
-  assert.ok(files.some((file) => file.path.startsWith("src/domain/")));
-  assert.ok(files.some((file) => file.path === READ_ONLY_CLIENT));
+describe("Arquitectura: el código real cumple las reglas", () => {
+  it("hay archivos que comprobar (incluido el cliente de solo lectura)", () => {
+    const paths = files.map((file) => file.path);
+
+    const hasDomain = paths.some((path) => path.startsWith("src/domain/"));
+    const hasReadOnlyClient = paths.includes(READ_ONLY_CLIENT);
+
+    assert.deepEqual([hasDomain, hasReadOnlyClient], [true, true]);
+  });
+
+  it("src/domain solo importa de src/domain, sin node:* ni fetch", () => {
+    const violations = domainViolations(files);
+
+    assert.deepEqual(violations, []);
+  });
+
+  it("src/ports solo importa de src/domain", () => {
+    const violations = portsViolations(files);
+
+    assert.deepEqual(violations, []);
+  });
+
+  it("en src/ solo el cliente de solo lectura hace peticiones, y solo GET", () => {
+    const violations = nonGetViolations(files);
+
+    assert.deepEqual(violations, []);
+  });
+
+  it("src/ no importa nada de scripts/", () => {
+    const violations = scriptsViolations(files);
+
+    assert.deepEqual(violations, []);
+  });
 });
 
-test("arquitectura: src/domain solo importa de src/domain, sin node:* ni fetch", () => {
-  assert.deepEqual(domainViolations(files), []);
-});
+describe("Arquitectura, controles: el check detecta cada violación", () => {
+  it("dominio que importa un adaptador, un puerto, node:fs o fs, o llama a fetch", () => {
+    const bad: SourceFile = {
+      path: "src/domain/malo.ts",
+      text: [
+        'import { AzdoSource } from "../adapters/azdo/azdo-source.js";',
+        'import type { DevOpsSource } from "../ports/devops-source.js";',
+        'import { readFileSync } from "node:fs";',
+        'import { readFile } from "fs";',
+        "await fetch(url);",
+      ].join("\n"),
+    };
 
-test("arquitectura: src/ports solo importa de src/domain", () => {
-  assert.deepEqual(portsViolations(files), []);
-});
+    const violations = domainViolations([bad]);
 
-test("arquitectura: en src/ solo el cliente de solo lectura hace peticiones, y solo GET", () => {
-  assert.deepEqual(nonGetViolations(files), []);
-});
+    assert.equal(violations.length, 5);
+  });
 
-test("arquitectura: src/ no importa nada de scripts/", () => {
-  assert.deepEqual(scriptsViolations(files), []);
-});
+  it("un import dentro de domain/ no es violación", () => {
+    const good: SourceFile = { path: "src/domain/bueno.ts", text: 'import type { WorkItem } from "./types.js";' };
 
-// --- Controles: el check detecta cada violación ----------------------------------
+    const violations = domainViolations([good]);
 
-test("control: detecta dominio que importa un adaptador, un puerto, node:fs o fs, o llama a fetch", () => {
-  const bad: SourceFile = {
-    path: "src/domain/malo.ts",
-    text: [
-      'import { AzdoSource } from "../adapters/azdo/azdo-source.js";',
-      'import type { DevOpsSource } from "../ports/devops-source.js";',
-      'import { readFileSync } from "node:fs";',
-      'import { readFile } from "fs";',
-      "await fetch(url);",
-    ].join("\n"),
-  };
-  const good: SourceFile = { path: "src/domain/bueno.ts", text: 'import type { WorkItem } from "./types.js";' };
+    assert.deepEqual(violations, []);
+  });
 
-  assert.equal(domainViolations([bad]).length, 5);
-  assert.deepEqual(domainViolations([good]), []);
-});
+  it("un puerto que importa un adaptador o node:*", () => {
+    const bad: SourceFile = {
+      path: "src/ports/malo.ts",
+      text: 'import { AzdoSource } from "../adapters/azdo/azdo-source.js";\nimport { readFileSync } from "node:fs";',
+    };
 
-test("control: detecta un puerto que importa un adaptador o node:*", () => {
-  const bad: SourceFile = {
-    path: "src/ports/malo.ts",
-    text: 'import { AzdoSource } from "../adapters/azdo/azdo-source.js";\nimport { readFileSync } from "node:fs";',
-  };
-  assert.equal(portsViolations([bad]).length, 2);
-});
+    const violations = portsViolations([bad]);
 
-test("control: detecta fetch fuera del cliente, node:https y métodos que no son GET", () => {
-  const outside: SourceFile = { path: "src/adapters/azdo/otro.ts", text: "await fetch(url, { method: \"GET\" });" };
-  const https: SourceFile = { path: "src/adapters/azdo/otro2.ts", text: 'import { request } from "node:https";' };
-  const post: SourceFile = { path: READ_ONLY_CLIENT, text: 'await fetch(url, { method: "POST" });' };
-  assert.equal(nonGetViolations([outside, https, post]).length, 3);
-});
+    assert.equal(violations.length, 2);
+  });
 
-test("control: detecta src/ importando scripts/", () => {
-  const bad: SourceFile = { path: "src/adapters/azdo/malo.ts", text: 'import { AzdoWriteClient } from "../../../scripts/lib/write-client.js";' };
-  assert.deepEqual(scriptsViolations([bad]), ["src/adapters/azdo/malo.ts importa scripts/lib/write-client.js"]);
+  it("fetch fuera del cliente, node:https y métodos que no son GET", () => {
+    const outside: SourceFile = { path: "src/adapters/azdo/otro.ts", text: "await fetch(url, { method: \"GET\" });" };
+    const https: SourceFile = { path: "src/adapters/azdo/otro2.ts", text: 'import { request } from "node:https";' };
+    const post: SourceFile = { path: READ_ONLY_CLIENT, text: 'await fetch(url, { method: "POST" });' };
+
+    const violations = nonGetViolations([outside, https, post]);
+
+    assert.equal(violations.length, 3);
+  });
+
+  it("solo se excluyen del check los archivos dentro de una carpeta tests/", () => {
+    const fileNames = ["domain/tests/rules.test.ts", "domain/rules.ts", "domain/tests-helpers.ts", "domain/rules.test.ts"];
+
+    const excluded = fileNames.map(isTestFile);
+
+    assert.deepEqual(excluded, [true, false, false, false]);
+  });
+
+  it("src/ importando scripts/", () => {
+    const bad: SourceFile = { path: "src/adapters/azdo/malo.ts", text: 'import { AzdoWriteClient } from "../../../scripts/lib/write-client.js";' };
+
+    const violations = scriptsViolations([bad]);
+
+    assert.deepEqual(violations, ["src/adapters/azdo/malo.ts importa scripts/lib/write-client.js"]);
+  });
 });

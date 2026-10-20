@@ -34,7 +34,7 @@ Votos de revisor en Azure DevOps: `10` aprobada, `5` aprobada con sugerencias, `
 
 | Término | Definición |
 |---|---|
-| **PR de una tarea** | PR vinculada al work item en Azure DevOps (enlace de tipo *Pull Request*). Si hay varias, cuenta la más reciente. |
+| **PR de una tarea** | PR vinculada al work item en Azure DevOps (enlace de tipo *Pull Request*). Si hay varias, cuenta la más reciente: la de mayor ID. |
 
 Las ramas no se consultan: la herramienta no comprueba si una tarea tiene rama.
 

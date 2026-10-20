@@ -61,3 +61,11 @@ export interface WorkItem {
   /** IDs de las PRs vinculadas (enlaces de tipo "Pull Request"). */
   pullRequestIds: number[];
 }
+
+/** Siguiente paso de una tarea con PR, tal cual lo nombra el glosario. */
+export type NextStep =
+  | "Cerrar la tarea"
+  | "Completar la PR"
+  | "Atender cambios solicitados"
+  | "Esperar revisión"
+  | "Revisar estado";

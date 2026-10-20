@@ -10,10 +10,17 @@ const NO_SCRIPTS = { group: ["**/scripts/**"], message: "src/ no puede importar 
 /** Solo el cliente de solo lectura habla con la red, y lo hace con fetch: nada de node:http(s). */
 const NO_HTTP = { group: ["node:http", "node:https", "http", "https"], message: "Las peticiones solo las hace AzdoReadOnlyClient (fetch, solo GET)." };
 
-/** Regla de imports para una capa: siempre prohíbe scripts/ y node:http(s), y además los grupos indicados. */
+/** Tests: junto al código que prueban, en carpetas `tests/`, y los transversales y helpers en `test/`. */
+const TEST_FILES = ["test/**/*.ts", "src/**/tests/**/*.ts", "scripts/**/tests/**/*.ts"];
+
+/**
+ * Regla de imports para una capa: siempre prohíbe scripts/ y node:http(s), y además los grupos indicados.
+ * Los tests de la capa quedan fuera: necesitan `node:test` y `node:assert`, y no son código de la capa.
+ */
 function layer(files, forbidden) {
   return {
     files,
+    ignores: ["src/**/tests/**"],
     rules: {
       "no-restricted-imports": ["error", { patterns: [NO_SCRIPTS, NO_HTTP, ...forbidden] }],
     },
@@ -56,11 +63,11 @@ export default tseslint.config(
     { group: ["**/adapters/**", "**/config.js"], message: "application/ usa los puertos, no los adaptadores." },
   ]),
 
-  // node:test gestiona las promesas que devuelve test(): no hace falta esperarlas.
-  { files: ["test/**/*.ts"], rules: { "@typescript-eslint/no-floating-promises": "off" } },
+  // node:test gestiona las promesas que devuelven test(), describe() e it(): no hace falta esperarlas.
+  { files: TEST_FILES, rules: { "@typescript-eslint/no-floating-promises": "off" } },
   // Un test que lee la hora real pasa hoy y falla mañana (skill tests-semanticos, criterio 3).
   {
-    files: ["test/**/*.ts"],
+    files: TEST_FILES,
     rules: {
       "no-restricted-syntax": ["error", {
         selector: "NewExpression[callee.name='Date'][arguments.length=0]",
@@ -70,7 +77,7 @@ export default tseslint.config(
   },
   // Los dobles (adaptador falso y lectores de los tests) tienen los datos en memoria: `async` sin `await`
   // es intencionado y se lee mejor que `Promise.resolve(...)`. En el resto, la regla detecta `await` olvidados.
-  { files: ["src/adapters/fixtures/**/*.ts", "test/**/*.ts"], rules: { "@typescript-eslint/require-await": "off" } },
+  { files: ["src/adapters/fixtures/**/*.ts", ...TEST_FILES], rules: { "@typescript-eslint/require-await": "off" } },
 
   // --- Solo lectura: en src/ solo el cliente de solo lectura habla con la red ---
   {
