@@ -26,17 +26,19 @@ Las normas de cada sección están en `CLAUDE.md`.
 
 ## Próximo paso
 
-**Estado al traspaso (2026-10-19):** pasos 1–5 y 4.5 hechos y verificados; clean code terminado (reglas de nombres
-en `error`). Todo commiteado (último commit `f2a266e`). `npm run typecheck`, `npm run lint` y `npm test` (38/38) en
-verde. El paso 6 no se ha empezado.
+**Estado (2026-10-19):** paso 6 empezado, con alcance revisado (sin ramas; con PRs del equipo). Hecho: reglas de
+PR en `src/domain/rules.ts` (`isActive`, `isPendingMyReview`, `isPendingTeamReview`, `isBlocked`, `isApproved`,
+`isAged`), `myTeams()` y `pullRequestsToReviewByTeam()` en el puerto y los dos adaptadores, caso O en
+`expected.json` y glosario sin ramas. Sin commitear. `npm run typecheck`, `npm run lint` y `npm test` (62/62) en verde.
 
-**Seguir por:** paso 6 (diseño en `docs/plan.md`), empezando por `src/domain/rules.ts`: añadir, como funciones
-puras que reciben `now` y los umbrales, "PR pendiente de mi revisión", "bloqueada", "aprobada" y "envejecida"
-(`docs/glosario.md`), con sus tests en `test/rules.test.ts`. Después: ramas en el puerto
-(`GET {project}/_apis/git/repositories/{repoId}/refs?filter=heads/`, comprobar la respuesta real antes),
-"siguiente paso" y "tarea estancada", `src/application/collect-snapshot.ts` y `npm run collect`.
+**Seguir por:** reglas "tarea estancada" y "siguiente paso" (solo tareas con PR) en `src/domain/rules.ts`.
+Después: `src/application/collect-snapshot.ts` y `npm run collect`.
 
 **Decisiones pendientes**
+- Si una PR deja de estar "pendiente del equipo" cuando otro miembro ya ha votado por el equipo. La definición
+  actual no lo mira; falta ver en la demo qué voto muestra el equipo en ese caso.
+- Si se crea el caso O en la demo a mano (PR del compañero con "TFM Demo Team" como revisor) para comprobar el
+  adaptador real. El seed no puede: se niega en un proyecto con work items.
 - Si las comprobaciones usadas al renombrar (textos literales sin cambios y regresión de peticiones del seed) pasan
   a ser un script del repo (`scripts/check-rename.ts`). Propuesto, no hecho.
 - Si se añaden al `CLAUDE.md` las instrucciones de trabajo dadas solo en el chat (ver propuesta del traspaso).
@@ -107,6 +109,26 @@ puras que reciben `now` y los umbrales, "PR pendiente de mi revisión", "bloquea
   sin problemas, y un archivo de prueba con `c` y `prs` falla. Mutaciones de control: quitar la comprobación de
   proyecto vacío y tratar Completed como abierta hacen fallar 3 tests. Ejemplos de la skill `testing` actualizados
   a los nombres nuevos.
+- Paso 6, reglas de PR: `isActive` (estado *active* y no borrador), `isPendingMyReview`, `isBlocked`,
+  `isApproved` e `isAged(pullRequest, now, agedPrDays)` en `src/domain/rules.ts`. 16 tests nuevos en
+  `test/rules.test.ts` (positivos, negativos, borradores y PR no activas, límite de 2, 3 y 4 días, un minuto antes
+  del umbral y umbral configurable). Mutaciones de control: cambiar `>=` por `>` en `isAged` y quitar `isActive`
+  de `isBlocked` hacen fallar 3 tests; restaurado, 54/54.
+- Paso 6, ramas: `branchNames()` en `DevOpsSource`. `AzdoSource` lista los repositorios del proyecto, salta los
+  deshabilitados y pide `refs?filter=heads/` de cada uno; `FixtureSource` devuelve `main`, las ramas de los casos
+  con `"branch": true` (`feat/{id}_{clave}`) y las de las PRs de revisión. 4 tests nuevos (2 por adaptador).
+  Mutaciones de control: no saltar deshabilitados y no quitar `refs/heads/` hacen fallar 2 tests. Contra la demo,
+  `branchNames()` devuelve 8 ramas: `feat/8_…` a `feat/12_…` (C–G, IDs de `demo-ids.json`), las de K y L y `main`.
+- Paso 6, alcance revisado: `branchNames()` retirado (revertidos los 5 archivos; no estaba commiteado). Glosario:
+  fuera "Rama de una tarea" y los pasos "Abrir PR", "Crear rama" y "Empezar"; una tarea sin PR no tiene siguiente
+  paso. `expected.json`: `nextStep` de A, B, C y N pasa a `null`; `setup.branch` se mantiene porque el seed
+  necesita rama para crear una PR. `BRANCH_ID_PATTERN` fuera de `.env.example`.
+- Paso 6, PRs del equipo: tipo `Team`, "Mis equipos" y "PR pendiente del equipo" en el glosario,
+  `isPendingTeamReview`, `myTeams()` y `pullRequestsToReviewByTeam()` en el puerto y los dos adaptadores, y el caso
+  O (`verifiedIn: "fixtures"`, `reviewer: "myTeam"`). El seed lanza un error si recibe un caso con el equipo como
+  revisor (no llega a pasar: salta los casos de fixtures). 8 tests nuevos. Mutación de control: quitar "no figura
+  como revisor individual" hace fallar 1 test. Contra la demo: `myTeams()` devuelve "TFM Demo Team" y
+  `pullRequestsToReviewByTeam()` ninguna PR. `list:prs` y `list:tasks` siguen coincidiendo con `demo-ids.json`.
 
 **Decisiones**
 - Tema: flujo de "estado del día" sobre Azure DevOps (Repos + Boards). Descartada la pre-revisión
@@ -186,6 +208,20 @@ puras que reciben `now` y los umbrales, "PR pendiente de mi revisión", "bloquea
   lint (`id-length` mínimo 3 con excepciones `id` e `i`; `id-denylist` para `prs`, `ctx`, `deps`…) y renombrado
   por bloques. Las reglas entran como `warn` para no romper lint y pre-push durante el renombrado, y pasan a
   `error` al terminar. `me` y `pr` también se renombran (`currentUser`, `pullRequest`): sin excepciones de dominio.
+- "N días naturales o más" se calcula como tiempo transcurrido ≥ N × 24 h desde `createdAt`, no por fechas de
+  calendario, para que no dependa de la zona horaria. Propuesta del agente, confirmada por la persona; se aplica
+  también a "tarea estancada".
+- El puerto devuelve solo nombres de rama (`string[]`), no un tipo `Branch` con repositorio: las definiciones del
+  glosario solo usan el nombre. Si hace falta el repositorio, se amplía. (Retirado después: ver siguiente.)
+- Las ramas salen del alcance: la persona no quiere que la herramienta diga "crear rama" o "abrir PR"; quiere las
+  PRs asignadas a ella o a su equipo y sus tareas. Una tarea sin PR sale con su estado y, si lo está, estancada.
+  Si hace falta la rama, ya la tiene en su nota de Obsidian (`branch:` en el frontmatter; paso 8c).
+- PRs del equipo: el equipo cuenta si es revisor de la PR. Van en una lista aparte de "pendientes de mi
+  revisión" (decisión de la persona). Para que una PR no salga en las dos listas, "pendiente del equipo" exige
+  que el usuario no figure como revisor individual (precisión del agente sobre la definición propuesta, que
+  decía "no estás como revisor con voto").
+- Paso 8c: la nota de Obsidian se buscará por `azure_id` en el frontmatter, con la plantilla de la persona
+  (`estado`, `branch`, secciones "Qué hay que hacer", "Cómo se prueba" y "Notas"). Pendiente de pasar a `docs/plan.md`.
 
 **Aprendizajes**
 - El material del track (`docs/contexto-track.md`) prohíbe usar cuentas personales con datos de
@@ -208,6 +244,13 @@ puras que reciben `now` y los umbrales, "PR pendiente de mi revisión", "bloquea
   `$expand=relations` no se puede combinar con `fields` (400); el endpoint de estados devuelve `category`, que
   **depende del tipo** (Agile: `Resolved` es InProgress en User Story y Resolved en Bug; Bug no tiene
   `Removed`); el enlace a PR usa `%2f` en minúscula. Todo lo demás coincide con `docs/plan.md`.
+- API real, ramas (2026-10-19): `_apis/git/repositories` devuelve `isDisabled` en cada repositorio (la demo tiene
+  uno, `TFM Demo`); `refs?filter=heads/` devuelve `{ value, count }` con `name` (`refs/heads/…`), `objectId`,
+  `creator` y `url`. La rama de G sigue existiendo aunque su PR está completada. Sin paginar: con 8 ramas no se ha
+  comprobado qué pasa con muchas (según la documentación, la API pagina con `$top` y `continuationToken`; no comprobado, y el cliente no lo lee).
+- API real, equipos (2026-10-19): `_apis/projects/{project}/teams?$mine=true` funciona con el token de lectura y
+  devuelve `id`, `name`, `description`, `identityUrl`… El `id` del equipo es el de su identidad. En la demo ninguna
+  PR tiene un equipo como revisor: los revisores individuales vienen sin `isContainer`.
 
 **Errores y correcciones**
 - Vinculación rama ↔ tarea con "el nombre contiene el número": daba falsos positivos con ramas como
@@ -249,3 +292,7 @@ puras que reciben `now` y los umbrales, "PR pendiente de mi revisión", "bloquea
   punto); lo detectaron typecheck y tests. Desde ahí, los tests se reescribieron enteros en vez de sustituir.
   Además, los ejemplos de la skill `testing` seguían con los nombres antiguos (los habría enseñado a pesar del
   lint); se vio al buscar nombres antiguos en `docs/` y `.claude/skills/` (lista de cierre, "busca lo que existe").
+- Paso 6, ramas: se implementó `branchNames()` siguiendo el plan (traerse todas las ramas del proyecto) sin
+  preguntar para qué las quería la persona. Al revisarlo, la persona vio que no escala en un proyecto grande y
+  que no necesita las ramas. Se retiró sin commitear. Cambia: antes de implementar una parte del plan que añade
+  datos al informe, confirmar que la persona los quiere y cómo escala la consulta.

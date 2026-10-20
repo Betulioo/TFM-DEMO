@@ -1,7 +1,7 @@
 // Adaptador real: lee Azure DevOps con un cliente que solo tiene GET.
 import { AzdoHttpError, type AzdoReader } from "./read-only-client.js";
 import { getAuthenticatedUser } from "./identity.js";
-import type { Iteration, PullRequest, PullRequestStatus, StateCategory, User, Vote, WorkItem } from "../../domain/types.js";
+import type { Iteration, PullRequest, PullRequestStatus, StateCategory, Team, User, Vote, WorkItem } from "../../domain/types.js";
 import type { DevOpsSource } from "../../ports/devops-source.js";
 
 const PAGE_SIZE = 100;
@@ -63,6 +63,15 @@ export class AzdoSource implements DevOpsSource {
   async pullRequestsToReview(): Promise<PullRequest[]> {
     const { id } = await this.currentUser();
     return this.listActive({ "searchCriteria.reviewerId": id });
+  }
+
+  async myTeams(): Promise<Team[]> {
+    const result = await this.reader.get<{ value: Team[] }>(`_apis/projects/${this.encodedProject}/teams`, { $mine: "true" });
+    return result.value.map((team) => ({ id: team.id, name: team.name }));
+  }
+
+  async pullRequestsToReviewByTeam(teamId: string): Promise<PullRequest[]> {
+    return this.listActive({ "searchCriteria.reviewerId": teamId });
   }
 
   async myPullRequests(): Promise<PullRequest[]> {

@@ -278,6 +278,7 @@ async function seedWorkItemCase(context: SeedContext, testCase: Case, setup: Wor
 
 async function seedTeammatePrCase(context: SeedContext, testCase: Case, setup: PullRequestSetup): Promise<number> {
   log(`Caso ${testCase.key}: PR del compañero "${setup.title}"`);
+  if (setup.reviewer === "myTeam") throw new Error(`Caso ${testCase.key}: el seed no crea PRs con el equipo como revisor (solo fixtures).`);
   const teammateClient = context.teammateClient!;
   // Sin ID en la rama: no está vinculada a ninguna de tus tareas.
   const branch = `feat/revision-${testCase.key.toLowerCase()}_${slug(setup.title)}`;

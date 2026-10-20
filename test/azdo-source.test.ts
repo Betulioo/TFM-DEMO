@@ -178,3 +178,22 @@ test("work items: un estado sin categoría es un error explícito", async () => 
 
   await assert.rejects(new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1"), /sin categoría/);
 });
+
+test("mis equipos: pide los equipos del proyecto con $mine=true", async () => {
+  const { reader, calls } = fakeReader(() => ({ value: [{ id: "team-id", name: "TFM Demo Team", description: "The default project team." }], count: 1 }));
+
+  const teams = await new AzdoSource(reader, "TFM Demo").myTeams();
+
+  assert.equal(calls.at(-1)?.path, "_apis/projects/TFM%20Demo/teams");
+  assert.deepEqual(calls.at(-1)?.params, { $mine: "true" });
+  assert.deepEqual(teams, [{ id: "team-id", name: "TFM Demo Team" }]);
+});
+
+test("PRs donde mi equipo es revisor: filtra por el ID del equipo y por activas", async () => {
+  const { reader, calls } = fakeReader(() => ({ value: [] }));
+
+  await new AzdoSource(reader, "TFM Demo").pullRequestsToReviewByTeam("team-id");
+
+  assert.equal(calls.at(-1)?.params["searchCriteria.reviewerId"], "team-id");
+  assert.equal(calls.at(-1)?.params["searchCriteria.status"], "active");
+});

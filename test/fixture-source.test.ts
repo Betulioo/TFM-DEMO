@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { FIXTURE_ME, FixtureSource, fixturePullRequestId } from "../src/adapters/fixtures/fixture-source.js";
-import { myTasks } from "../src/domain/rules.js";
+import { isPendingMyReview, isPendingTeamReview, myTasks } from "../src/domain/rules.js";
 import { loadCases } from "../src/adapters/fixtures/cases.js";
 
 const NOW = new Date("2026-10-19T09:00:00Z");
@@ -70,4 +70,14 @@ test("N tiene la antigüedad de expected.json y G enlaza su PR", async () => {
   assert.equal(workItemN?.changedAt, "2026-10-15T09:00:00.000Z");
   assert.equal(workItemG?.pullRequestIds.length, 1);
   assert.equal((await source.pullRequestById(workItemG.pullRequestIds[0]!))?.status, "completed");
+});
+
+test("PRs pendientes del equipo: solo O; O no está pendiente de mi revisión", async () => {
+  const teams = await source.myTeams();
+  const teamPullRequests = (await Promise.all(teams.map((team) => source.pullRequestsToReviewByTeam(team.id)))).flat();
+  const pendingTeamReview = teamPullRequests.filter((pullRequest) => isPendingTeamReview(pullRequest, FIXTURE_ME, teams));
+  const pendingMyReview = (await source.pullRequestsToReview()).filter((pullRequest) => isPendingMyReview(pullRequest, FIXTURE_ME));
+
+  assert.deepEqual(caseKeys(pendingTeamReview), ["O"]);
+  assert.deepEqual(caseKeys(pendingMyReview), ["K", "M"]);
 });

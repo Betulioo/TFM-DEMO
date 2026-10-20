@@ -19,7 +19,7 @@ no I; en Repos → Pull requests aparecen D, E y F activas y G completada; exist
 
 - `src/domain/types.ts`: tipos de dominio (usuario, PR, work item, snapshot). Sin nada de Azure DevOps.
 - `src/ports/devops-source.ts`: interfaz `DevOpsSource` (usuario actual, PRs activas donde soy revisor,
-  mis PRs activas, PR por ID, work items de la iteración actual, ramas).
+  mis PRs activas, PR por ID, work items de la iteración actual).
 - `src/adapters/azdo-source.ts`: implementación real con `AzdoReadOnlyClient` (solo GET).
   - PRs donde soy revisor: `GET {project}/_apis/git/pullrequests?searchCriteria.reviewerId={id}&searchCriteria.status=active`
   - Mis PRs: igual con `searchCriteria.creatorId={id}`. Campos: `reviewers[].vote`, `isDraft`, `creationDate`.
@@ -104,19 +104,23 @@ Reglas: `src/` nunca importa `scripts/`; `domain/` no importa `node:*` ni adapta
 
 ## Paso 6 — Vinculación, snapshot y tests
 
+Alcance revisado el 2026-10-19: sin ramas, y con las PRs en las que el revisor es uno de mis equipos.
+
 - `src/domain/rules.ts`: funciones puras para cada definición del glosario (PR pendiente de mi revisión,
-  bloqueada, aprobada, envejecida, tarea estancada, rama de una tarea, siguiente paso). Reciben `now` y
+  PR pendiente del equipo, bloqueada, aprobada, envejecida, tarea estancada, siguiente paso). Reciben `now` y
   los umbrales como parámetros.
 - PR de una tarea: relación `ArtifactLink` con nombre "Pull Request" y URL
   `vstfs:///Git/PullRequestId/{projectId}%2F{repoId}%2F{prId}` (la API real lo devuelve con `%2f` en
   minúscula; ya se extrae en el paso 5 como `WorkItem.pullRequestIds`).
-- Ramas: `GET {project}/_apis/git/repositories/{repoId}/refs?filter=heads/` + `BRANCH_ID_PATTERN`.
-- `npm run collect` → `output/snapshot.json` con: fecha, umbrales, usuario, iteración, mis tareas (con
-  rama, PR, siguiente paso y si está estancada), PRs pendientes de mi revisión y mis PRs.
-- Tests con `node:test` (`npm test`) sobre el adaptador falso cubriendo los casos A–N de
-  `fixtures/expected.json`, incluidos M y N (fechas).
+- Mis equipos: `GET _apis/projects/{project}/teams?$mine=true`. PRs del equipo:
+  `GET {project}/_apis/git/pullrequests?searchCriteria.reviewerId={teamId}&searchCriteria.status=active`.
+- `npm run collect` → `output/snapshot.json` con: fecha, umbrales, usuario, equipos, iteración, mis tareas (con
+  PR, siguiente paso si tiene PR y si está estancada), PRs pendientes de mi revisión, PRs pendientes del equipo
+  y mis PRs.
+- Tests con `node:test` (`npm test`) sobre el adaptador falso cubriendo los casos A–O de
+  `fixtures/expected.json`, incluidos M, N y O (solo fixtures).
 
-**Hecho si:** `npm test` pasa con los 14 casos y el snapshot de la demo coincide con `expected.json`.
+**Hecho si:** `npm test` pasa con los 15 casos y el snapshot de la demo coincide con `expected.json`.
 
 ## Paso 7 — Skill de informe diario
 

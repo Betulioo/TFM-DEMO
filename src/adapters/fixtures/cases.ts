@@ -14,13 +14,17 @@ export interface WorkItemSetup {
   changedDaysAgo?: number;
 }
 
-export interface PullRequestSetup {
+interface PullRequestSetupBase {
   entity: "pullRequest";
   author: "teammate";
   title: string;
-  myVote: -10 | -5 | 0 | 5 | 10;
   createdDaysAgo?: number;
 }
+
+/** PR del compañero. Revisor: el usuario (con `myVote`, por defecto) o uno de sus equipos (sin el usuario). */
+export type PullRequestSetup =
+  | (PullRequestSetupBase & { reviewer?: "me"; myVote: -10 | -5 | 0 | 5 | 10 })
+  | (PullRequestSetupBase & { reviewer: "myTeam" });
 
 export interface Case {
   key: string;

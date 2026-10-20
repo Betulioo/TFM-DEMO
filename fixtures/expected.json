@@ -11,19 +11,19 @@
       "key": "A",
       "verifiedIn": "demo",
       "setup": { "entity": "workItem", "type": "User Story", "title": "[A] Filtro de fechas en el buscador", "state": "New", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null },
-      "expected": { "inMyTasks": true, "nextStep": "Empezar" }
+      "expected": { "inMyTasks": true, "nextStep": null }
     },
     {
       "key": "B",
       "verifiedIn": "demo",
       "setup": { "entity": "workItem", "type": "Task", "title": "[B] Carrusel de tarifas", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null },
-      "expected": { "inMyTasks": true, "nextStep": "Crear rama" }
+      "expected": { "inMyTasks": true, "nextStep": null }
     },
     {
       "key": "C",
       "verifiedIn": "demo",
       "setup": { "entity": "workItem", "type": "Task", "title": "[C] Modal accesible de reserva", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": true, "pr": null },
-      "expected": { "inMyTasks": true, "nextStep": "Abrir PR" }
+      "expected": { "inMyTasks": true, "nextStep": null }
     },
     {
       "key": "D",
@@ -89,7 +89,13 @@
       "key": "N",
       "verifiedIn": "fixtures",
       "setup": { "entity": "workItem", "type": "Task", "title": "[N] Skeleton de carga", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null, "changedDaysAgo": 4 },
-      "expected": { "inMyTasks": true, "nextStep": "Crear rama", "stale": true }
+      "expected": { "inMyTasks": true, "nextStep": null, "stale": true }
+    },
+    {
+      "key": "O",
+      "verifiedIn": "fixtures",
+      "setup": { "entity": "pullRequest", "author": "teammate", "title": "[O] Textos del checkout", "reviewer": "myTeam" },
+      "expected": { "pendingMyReview": false, "pendingTeamReview": true }
     }
   ]
 }

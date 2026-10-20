@@ -1,7 +1,7 @@
 // Adaptador falso: construye los datos a partir de los casos de fixtures/expected.json,
 // con fechas relativas a `now`. Así hay una sola lista de casos (la misma que usa el seed)
 // y se pueden probar los casos de fechas (M, N) que la demo real no permite crear.
-import type { Iteration, PullRequest, StateCategory, User, WorkItem } from "../../domain/types.js";
+import type { Iteration, PullRequest, StateCategory, Team, User, WorkItem } from "../../domain/types.js";
 import { loadCases, type Case, type WorkItemSetup } from "./cases.js";
 import type { DevOpsSource } from "../../ports/devops-source.js";
 
@@ -9,6 +9,7 @@ const DAY_MS = 86_400_000;
 
 export const FIXTURE_ME: User = { id: "fixture-me", displayName: "Yo (fixture)" };
 export const FIXTURE_TEAMMATE: User = { id: "fixture-teammate", displayName: "Compañero (fixture)" };
+export const FIXTURE_TEAM: Team = { id: "fixture-team", name: "Equipo (fixture)" };
 
 /** IDs deterministas por posición del caso: PR #1, #2… y WI #101, #102… */
 export function fixturePullRequestId(index: number): number {
@@ -65,6 +66,16 @@ export class FixtureSource implements DevOpsSource {
     );
   }
 
+  async myTeams(): Promise<Team[]> {
+    return [FIXTURE_TEAM];
+  }
+
+  async pullRequestsToReviewByTeam(teamId: string): Promise<PullRequest[]> {
+    return this.pullRequests.filter(
+      (pullRequest) => pullRequest.status === "active" && pullRequest.reviewers.some((reviewer) => reviewer.id === teamId),
+    );
+  }
+
   async myPullRequests(): Promise<PullRequest[]> {
     return this.pullRequests.filter((pullRequest) => pullRequest.status === "active" && pullRequest.author.id === FIXTURE_ME.id);
   }
@@ -102,7 +113,7 @@ function toPullRequest(testCase: Case, index: number, now: Date): PullRequest | 
   const id = fixturePullRequestId(index);
 
   if (setup.entity === "pullRequest") {
-    // PR de un compañero en la que el usuario es revisor.
+    // PR de un compañero en la que el usuario, o su equipo, es revisor.
     return {
       id,
       title: setup.title,
@@ -111,7 +122,7 @@ function toPullRequest(testCase: Case, index: number, now: Date): PullRequest | 
       author: FIXTURE_TEAMMATE,
       createdAt: daysBefore(now, setup.createdDaysAgo ?? 0),
       sourceBranch: `feat/revision-${testCase.key.toLowerCase()}`,
-      reviewers: [{ ...FIXTURE_ME, vote: setup.myVote }],
+      reviewers: setup.reviewer === "myTeam" ? [{ id: FIXTURE_TEAM.id, displayName: FIXTURE_TEAM.name, vote: 0 }] : [{ ...FIXTURE_ME, vote: setup.myVote }],
     };
   }
 

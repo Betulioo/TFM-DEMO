@@ -6,6 +6,12 @@ export interface User {
   displayName: string;
 }
 
+/** Equipo del proyecto. Su `id` es el de su identidad: el mismo que aparece cuando es revisor de una PR. */
+export interface Team {
+  id: string;
+  name: string;
+}
+
 /** Voto de revisor: 10 aprobada, 5 aprobada con sugerencias, 0 sin voto, -5 esperando al autor, -10 rechazada. */
 export type Vote = -10 | -5 | 0 | 5 | 10;
 
