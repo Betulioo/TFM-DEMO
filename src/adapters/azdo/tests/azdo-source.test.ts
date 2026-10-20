@@ -19,8 +19,15 @@ function buildApiPullRequest(id: number, overrides: Partial<ApiPullRequest> = {}
     creationDate: "2026-10-15T08:00:00Z",
     sourceRefName: `refs/heads/feat/${id}_tarea`,
     reviewers: [{ id: "me-id", displayName: "Yo", vote: 0 }],
+    repository: { name: "TFM Demo" },
     ...overrides,
   };
+}
+
+const ORG_URL = "https://dev.azure.com/org";
+
+function sourceFor(reader: AzdoReader, project = "TFM Demo", lockReasonField?: string): AzdoSource {
+  return new AzdoSource(reader, project, ORG_URL, lockReasonField);
 }
 
 /** Lector falso: responde según la ruta y guarda las llamadas. */
@@ -50,7 +57,7 @@ describe("Adaptador Azure DevOps: pull requests", () => {
   it("PRs donde soy revisor: pide las PRs activas del proyecto con mi ID como revisor", async () => {
     const { reader, calls } = fakeReader(() => ({ value: [] }));
 
-    await new AzdoSource(reader, "TFM Demo").pullRequestsToReview();
+    await sourceFor(reader).pullRequestsToReview();
 
     const listCall = calls.find((call) => call.path.endsWith("/_apis/git/pullrequests"));
     assert.equal(listCall?.path, "TFM%20Demo/_apis/git/pullrequests");
@@ -61,7 +68,7 @@ describe("Adaptador Azure DevOps: pull requests", () => {
   it("PRs donde soy revisor: traduce la respuesta al dominio", async () => {
     const { reader } = fakeReader(() => ({ value: [buildApiPullRequest(7, { isDraft: true })] }));
 
-    const pullRequests = await new AzdoSource(reader, "TFM Demo").pullRequestsToReview();
+    const pullRequests = await sourceFor(reader).pullRequestsToReview();
 
     assert.deepEqual(pullRequests, [
       {
@@ -73,14 +80,23 @@ describe("Adaptador Azure DevOps: pull requests", () => {
         createdAt: "2026-10-15T08:00:00Z",
         sourceBranch: "feat/7_tarea",
         reviewers: [{ id: "me-id", displayName: "Yo", vote: 0 }],
+        webUrl: "https://dev.azure.com/org/TFM%20Demo/_git/TFM%20Demo/pullrequest/7",
       },
     ]);
+  });
+
+  it("enlace de una PR: proyecto y repositorio codificados en la URL web", async () => {
+    const { reader } = fakeReader(() => buildApiPullRequest(8, { repository: { name: "Web App" } }));
+
+    const pullRequest = await sourceFor(reader, "Mi Proyecto").pullRequestById(8);
+
+    assert.equal(pullRequest?.webUrl, "https://dev.azure.com/org/Mi%20Proyecto/_git/Web%20App/pullrequest/8");
   });
 
   it("mis PRs: filtra por creador", async () => {
     const { reader, calls } = fakeReader(() => ({ value: [] }));
 
-    await new AzdoSource(reader, "TFM Demo").myPullRequests();
+    await sourceFor(reader).myPullRequests();
 
     assert.equal(calls.at(-1)?.params["searchCriteria.creatorId"], "me-id");
   });
@@ -92,7 +108,7 @@ describe("Adaptador Azure DevOps: pull requests", () => {
       return { value: numbersFrom(skip + 1, pageSize).map((id) => buildApiPullRequest(id)) };
     });
 
-    const pullRequests = await new AzdoSource(reader, "P").myPullRequests();
+    const pullRequests = await sourceFor(reader, "P").myPullRequests();
 
     assert.equal(pullRequests.length, 103);
     assert.deepEqual(calls.filter((call) => call.path.endsWith("pullrequests")).map((call) => call.params.$skip), ["0", "100"]);
@@ -103,7 +119,7 @@ describe("Adaptador Azure DevOps: pull requests", () => {
       throw new AzdoHttpError(404, "/x", "no existe");
     });
 
-    const result = await new AzdoSource(reader, "P").pullRequestById(99);
+    const result = await sourceFor(reader, "P").pullRequestById(99);
 
     assert.equal(result, undefined);
   });
@@ -113,7 +129,7 @@ describe("Adaptador Azure DevOps: pull requests", () => {
       throw new AzdoHttpError(401, "/x", "sin permisos");
     });
 
-    const result = new AzdoSource(reader, "P").pullRequestById(1);
+    const result = sourceFor(reader, "P").pullRequestById(1);
 
     await assert.rejects(result, AzdoHttpError);
   });
@@ -149,7 +165,7 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
   it("iteración actual: traduce nombre y fechas", async () => {
     const { reader } = iterationReader([], () => []);
 
-    const iteration = await new AzdoSource(reader, "TFM Demo").currentIteration();
+    const iteration = await sourceFor(reader).currentIteration();
 
     assert.deepEqual(iteration, { id: "it-1", name: "Sprint actual", startDate: "2026-10-12T00:00:00Z", finishDate: "2026-10-26T00:00:00Z" });
   });
@@ -157,7 +173,7 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
   it("iteración actual: la pide al equipo por defecto con $timeframe=current", async () => {
     const { reader, calls } = iterationReader([], () => []);
 
-    await new AzdoSource(reader, "TFM Demo").currentIteration();
+    await sourceFor(reader).currentIteration();
 
     const iterationCall = calls.find((call) => call.path.endsWith("/iterations"));
     assert.equal(iterationCall?.path, "TFM%20Demo/TFM%20Demo%20Team/_apis/work/teamsettings/iterations");
@@ -167,7 +183,7 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
   it("la categoría sale de la API y depende del tipo", async () => {
     const { reader } = iterationReader([1, 2], () => [buildApiWorkItem(1, "User Story", "Resolved"), buildApiWorkItem(2, "Bug", "Resolved")]);
 
-    const workItems = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+    const workItems = await sourceFor(reader).workItemsInIteration("it-1");
 
     assert.deepEqual(workItems.map((workItem) => [workItem.id, workItem.stateCategory]), [[1, "InProgress"], [2, "Resolved"]]);
   });
@@ -175,7 +191,7 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
   it("detalles en lotes de 200: con 201 work items hace dos peticiones y los devuelve todos", async () => {
     const { reader, calls } = iterationReader(numbersFrom(1, 201), (batch) => batch.map((id) => buildApiWorkItem(id, "Bug", "Resolved")));
 
-    const workItems = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+    const workItems = await sourceFor(reader).workItemsInIteration("it-1");
 
     const detailCalls = calls.filter((call) => call.path.endsWith("/_apis/wit/workitems"));
     assert.deepEqual(detailCalls.map((call) => requestedIds(call.params).length), [200, 1]);
@@ -185,7 +201,7 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
   it("detalles: pide las relaciones sin `fields` (la API no admite los dos a la vez)", async () => {
     const { reader, calls } = iterationReader([1], (batch) => batch.map((id) => buildApiWorkItem(id, "Bug", "Resolved")));
 
-    await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+    await sourceFor(reader).workItemsInIteration("it-1");
 
     const detailCall = calls.find((call) => call.path.endsWith("/_apis/wit/workitems"));
     assert.deepEqual([detailCall?.params.$expand, detailCall?.params.fields], ["relations", undefined]);
@@ -196,9 +212,17 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
     apiWorkItem.fields["System.AssignedTo"] = { id: "me-id", displayName: "Yo" };
     const { reader } = iterationReader([10], () => [apiWorkItem]);
 
-    const [workItem] = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+    const [workItem] = await sourceFor(reader).workItemsInIteration("it-1");
 
     assert.deepEqual(workItem?.assignedTo, { id: "me-id", displayName: "Yo" });
+  });
+
+  it("enlace de un work item: apunta a su edición en el proyecto", async () => {
+    const { reader } = iterationReader([10], () => [buildApiWorkItem(10, "Bug", "Resolved")]);
+
+    const [workItem] = await sourceFor(reader).workItemsInIteration("it-1");
+
+    assert.equal(workItem?.webUrl, "https://dev.azure.com/org/TFM%20Demo/_workitems/edit/10");
   });
 
   it("PRs vinculadas: solo los enlaces Pull Request (forma real, con %2f); los demás se ignoran", async () => {
@@ -210,15 +234,47 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
     });
     const { reader } = iterationReader([10], () => [apiWorkItem]);
 
-    const [workItem] = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+    const [workItem] = await sourceFor(reader).workItemsInIteration("it-1");
 
     assert.deepEqual(workItem?.pullRequestIds, [3]);
+  });
+
+  it("etiquetas: System.Tags separado por \"; \" (forma real, con la etiqueta del seed); sin el campo, ninguna", async () => {
+    const tagged = buildApiWorkItem(10, "Bug", "Resolved");
+    tagged.fields["System.Tags"] = "tfm-seed; Blocked";
+    const { reader } = iterationReader([10, 11], () => [tagged, buildApiWorkItem(11, "Bug", "Resolved")]);
+
+    const workItems = await sourceFor(reader).workItemsInIteration("it-1");
+
+    assert.deepEqual(workItems.map((workItem) => workItem.tags), [["tfm-seed", "Blocked"], []]);
+  });
+
+  it("motivo del bloqueo: sale del campo configurado; vacío o sin campo, no hay motivo", async () => {
+    const withReason = buildApiWorkItem(10, "Bug", "Resolved");
+    withReason.fields["Custom.LockReason"] = " Esperando credenciales ";
+    const emptyReason = buildApiWorkItem(11, "Bug", "Resolved");
+    emptyReason.fields["Custom.LockReason"] = "";
+    const { reader } = iterationReader([10, 11, 12], () => [withReason, emptyReason, buildApiWorkItem(12, "Bug", "Resolved")]);
+
+    const workItems = await sourceFor(reader, "TFM Demo", "Custom.LockReason").workItemsInIteration("it-1");
+
+    assert.deepEqual(workItems.map((workItem) => workItem.lockReason), ["Esperando credenciales", undefined, undefined]);
+  });
+
+  it("motivo del bloqueo: sin LOCK_REASON_FIELD no se lee ningún campo", async () => {
+    const withReason = buildApiWorkItem(10, "Bug", "Resolved");
+    withReason.fields["Custom.LockReason"] = "Esperando credenciales";
+    const { reader } = iterationReader([10], () => [withReason]);
+
+    const [workItem] = await sourceFor(reader).workItemsInIteration("it-1");
+
+    assert.equal(workItem?.lockReason, undefined);
   });
 
   it("un estado sin categoría es un error explícito", async () => {
     const { reader } = iterationReader([5], () => [buildApiWorkItem(5, "Bug", "Inventado")]);
 
-    const result = new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
+    const result = sourceFor(reader).workItemsInIteration("it-1");
 
     await assert.rejects(result, /sin categoría/);
   });
@@ -228,7 +284,7 @@ describe("Adaptador Azure DevOps: equipos", () => {
   it("mis equipos: pide los equipos del proyecto con $mine=true", async () => {
     const { reader, calls } = fakeReader(() => ({ value: [], count: 0 }));
 
-    await new AzdoSource(reader, "TFM Demo").myTeams();
+    await sourceFor(reader).myTeams();
 
     assert.equal(calls.at(-1)?.path, "_apis/projects/TFM%20Demo/teams");
     assert.deepEqual(calls.at(-1)?.params, { $mine: "true" });
@@ -237,7 +293,7 @@ describe("Adaptador Azure DevOps: equipos", () => {
   it("mis equipos: traduce la respuesta al dominio (solo ID y nombre)", async () => {
     const { reader } = fakeReader(() => ({ value: [{ id: "team-id", name: "TFM Demo Team", description: "The default project team." }], count: 1 }));
 
-    const teams = await new AzdoSource(reader, "TFM Demo").myTeams();
+    const teams = await sourceFor(reader).myTeams();
 
     assert.deepEqual(teams, [{ id: "team-id", name: "TFM Demo Team" }]);
   });
@@ -245,7 +301,7 @@ describe("Adaptador Azure DevOps: equipos", () => {
   it("PRs donde mi equipo es revisor: filtra por el ID del equipo y por activas", async () => {
     const { reader, calls } = fakeReader(() => ({ value: [] }));
 
-    await new AzdoSource(reader, "TFM Demo").pullRequestsToReviewByTeam("team-id");
+    await sourceFor(reader).pullRequestsToReviewByTeam("team-id");
 
     assert.equal(calls.at(-1)?.params["searchCriteria.reviewerId"], "team-id");
     assert.equal(calls.at(-1)?.params["searchCriteria.status"], "active");

@@ -21,6 +21,8 @@ const OBSERVERS: Record<string, Observe> = {
   inMyTasks: (snapshot, ids) => withId(ids.workItemId, (id) => findTask(snapshot, id) !== undefined),
   nextStep: (snapshot, ids) => withId(ids.workItemId, (id) => findTask(snapshot, id)?.nextStep),
   stale: (snapshot, ids) => withId(ids.workItemId, (id) => findTask(snapshot, id)?.stale),
+  taskBlocked: (snapshot, ids) => withId(ids.workItemId, (id) => findTask(snapshot, id)?.blocked),
+  lockReason: (snapshot, ids) => withId(ids.workItemId, (id) => findTask(snapshot, id)?.lockReason),
   prIsMine: (snapshot, ids) => withId(ids.pullRequestId, (id) => includesId(snapshot.myPullRequests, id)),
   prBlocked: (snapshot, ids) => withId(ids.pullRequestId, (id) => findPullRequest(snapshot, id)?.blocked),
   prApproved: (snapshot, ids) => withId(ids.pullRequestId, (id) => findPullRequest(snapshot, id)?.approved),

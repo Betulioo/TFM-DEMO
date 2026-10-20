@@ -5,7 +5,7 @@ Responde a tres preguntas al empezar el día:
 
 1. ¿Qué PRs esperan mi revisión o la de mi equipo, y cuáles están bloqueadas o envejecidas?
 2. ¿En qué tareas de la iteración actual estoy y qué les falta?
-3. ¿Qué riesgos tiene la iteración (tareas estancadas y PRs envejecidas)?
+3. ¿Qué riesgos tiene la iteración (tareas estancadas o bloqueadas, PRs envejecidas y PRs propias bloqueadas)?
 
 > Estado: en desarrollo (TFM). Las secciones marcadas como *pendiente* se completan en pasos posteriores.
 
@@ -36,7 +36,7 @@ npm run typecheck
 
 La recogida (`npm run collect`) escribe `output/snapshot.json` con solo lectura contra Azure DevOps. Después, en
 Claude Code, la skill `daily-brief` ("hazme el informe diario") lee solo ese snapshot y escribe
-`output/brief-AAAA-MM-DD.md` con Hechos (siempre con ID) y Sugerencias.
+`output/brief-AAAA-MM-DD.md` con Hechos (siempre con ID, enlazado a Azure DevOps) y Sugerencias.
 
 ```bash
 npm run check:conn              # comprueba la conexión con Azure DevOps (.env)

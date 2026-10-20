@@ -4,6 +4,7 @@ import {
   isAged,
   isApproved,
   isBlocked,
+  isBlockedTask,
   isPendingMyReview,
   isPendingTeamReview,
   isStale,
@@ -11,10 +12,15 @@ import {
   nextStep,
   taskPullRequest,
 } from "../domain/rules.js";
-import type { PullRequest, Snapshot, SnapshotPullRequest, SnapshotTask, Team, Thresholds, WorkItem } from "../domain/types.js";
+import type { BlockedTaskCriteria, PullRequest, Snapshot, SnapshotPullRequest, SnapshotTask, Team, Thresholds, WorkItem } from "../domain/types.js";
 import type { DevOpsSource } from "../ports/devops-source.js";
 
-export async function collectSnapshot(source: DevOpsSource, now: Date, thresholds: Thresholds): Promise<Snapshot> {
+export async function collectSnapshot(
+  source: DevOpsSource,
+  now: Date,
+  thresholds: Thresholds,
+  blockedTaskCriteria: BlockedTaskCriteria,
+): Promise<Snapshot> {
   const user = await source.currentUser();
   const teams = await source.myTeams();
   const iteration = await source.currentIteration();
@@ -25,10 +31,11 @@ export async function collectSnapshot(source: DevOpsSource, now: Date, threshold
   return {
     generatedAt: now.toISOString(),
     thresholds,
+    blockedTaskCriteria,
     user,
     teams,
     iteration: iteration ?? null,
-    myTasks: await Promise.all(tasks.map((task) => toSnapshotTask(source, task, now, thresholds))),
+    myTasks: await Promise.all(tasks.map((task) => toSnapshotTask(source, task, now, thresholds, blockedTaskCriteria))),
     pullRequestsPendingMyReview: reviewCandidates.filter((pullRequest) => isPendingMyReview(pullRequest, user)).map(toSnapshot),
     pullRequestsPendingTeamReview: reviewCandidates
       .filter((pullRequest) => isPendingTeamReview(pullRequest, user, teams))
@@ -51,7 +58,13 @@ async function pullRequestsToReviewWithoutDuplicates(source: DevOpsSource, teams
   return [...byId.values()];
 }
 
-async function toSnapshotTask(source: DevOpsSource, task: WorkItem, now: Date, thresholds: Thresholds): Promise<SnapshotTask> {
+async function toSnapshotTask(
+  source: DevOpsSource,
+  task: WorkItem,
+  now: Date,
+  thresholds: Thresholds,
+  blockedTaskCriteria: BlockedTaskCriteria,
+): Promise<SnapshotTask> {
   const linkedPullRequests = await Promise.all(task.pullRequestIds.map((id) => source.pullRequestById(id)));
   const pullRequest = taskPullRequest(linkedPullRequests);
   return {
@@ -59,6 +72,7 @@ async function toSnapshotTask(source: DevOpsSource, task: WorkItem, now: Date, t
     pullRequest: pullRequest ? toSnapshotPullRequest(pullRequest, now, thresholds) : null,
     nextStep: nextStep(pullRequest),
     stale: isStale(task, now, thresholds.staleTaskDays),
+    blocked: isBlockedTask(task, blockedTaskCriteria),
   };
 }
 

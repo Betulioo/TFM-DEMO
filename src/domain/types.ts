@@ -35,6 +35,8 @@ export interface PullRequest {
   /** Nombre de la rama de origen sin `refs/heads/`, p. ej. `feat/123_tarea`. */
   sourceBranch: string;
   reviewers: Reviewer[];
+  /** URL para abrirla en el navegador; la pone el adaptador. */
+  webUrl: string;
 }
 
 /** Categoría de estado: común a todos los procesos (Basic, Agile, Scrum, personalizados). */
@@ -60,6 +62,12 @@ export interface WorkItem {
   changedAt: string;
   /** IDs de las PRs vinculadas (enlaces de tipo "Pull Request"). */
   pullRequestIds: number[];
+  /** Etiquetas (`System.Tags`), una por elemento. */
+  tags: string[];
+  /** Motivo del bloqueo (campo `LOCK_REASON_FIELD`); `undefined` si no está configurado o viene vacío. */
+  lockReason?: string;
+  /** URL para abrirlo en el navegador; la pone el adaptador. */
+  webUrl: string;
 }
 
 /** Siguiente paso de una tarea con PR, tal cual lo nombra el glosario. */
@@ -77,20 +85,33 @@ export interface Thresholds {
   staleTaskDays: number;
 }
 
+/** Qué marca una tarea bloqueada (glosario): la etiqueta (`BLOCKED_TAG`) o el estado (`BLOCKED_STATE`). */
+export interface BlockedTaskCriteria {
+  tag: string;
+  state: string;
+}
+
 /** PR del snapshot con las señales del glosario ya calculadas. */
 export type SnapshotPullRequest = PullRequest & { aged: boolean; blocked: boolean; approved: boolean };
 
-/** Una de "Mis tareas" con su PR (`null` si no tiene), su siguiente paso y si es una tarea estancada. */
-export type SnapshotTask = WorkItem & { pullRequest: SnapshotPullRequest | null; nextStep: NextStep | null; stale: boolean };
+/** Una de "Mis tareas" con su PR (`null` si no tiene), su siguiente paso y si es una tarea estancada o bloqueada. */
+export type SnapshotTask = WorkItem & {
+  pullRequest: SnapshotPullRequest | null;
+  nextStep: NextStep | null;
+  stale: boolean;
+  blocked: boolean;
+};
 
 /**
  * Lo que la recogida escribe en `output/snapshot.json` y la skill de síntesis interpreta. "Sin datos" es `null` o
- * un campo ausente: los opcionales (`startDate`, `finishDate`, `assignedTo`) no aparecen en el JSON si faltan.
+ * un campo ausente: los opcionales (`startDate`, `finishDate`, `assignedTo`, `lockReason`) no aparecen en el JSON si
+ * faltan.
  */
 export interface Snapshot {
   /** Fecha ISO 8601 de la recogida: el "ahora" de todas las reglas. */
   generatedAt: string;
   thresholds: Thresholds;
+  blockedTaskCriteria: BlockedTaskCriteria;
   user: User;
   teams: Team[];
   iteration: Iteration | null;

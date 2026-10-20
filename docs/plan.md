@@ -127,8 +127,8 @@ Alcance revisado el 2026-10-19: sin ramas, y con las PRs en las que el revisor e
 - `.claude/skills/daily-brief/SKILL.md`. La descripción dice qué hace y cuándo usarla; los pasos van en el cuerpo.
 - Pasos: ejecutar `npm run collect`, leer solo `output/snapshot.json`, escribir `output/brief-AAAA-MM-DD.md`.
 - Formato fijo: **Hechos** (PRs pendientes de mi revisión, mis PRs, mis tareas con siguiente paso, riesgos;
-  siempre con ID) y **Sugerencias** (prioridad: PR envejecida pendiente de mi revisión → PRs propias
-  bloqueadas → tareas estancadas → resto).
+  siempre con ID enlazado a Azure DevOps) y **Sugerencias** (prioridad: PR envejecida pendiente de mi revisión → PRs propias
+  bloqueadas → tareas bloqueadas → tareas estancadas → resto).
 - Si falta un dato: "sin datos". Nunca escribe en Azure DevOps.
 
 **Hecho si:** sobre la demo genera un informe legible con los IDs correctos, revisado a mano.

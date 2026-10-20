@@ -1,6 +1,6 @@
 // Reglas del glosario (docs/glosario.md) como funciones puras. Se completan en el paso 6.
 import { hasElapsedDays } from "./dates.js";
-import type { NextStep, PullRequest, StateCategory, Team, User, Vote, WorkItem } from "./types.js";
+import type { BlockedTaskCriteria, NextStep, PullRequest, StateCategory, Team, User, Vote, WorkItem } from "./types.js";
 
 const CLOSED_CATEGORIES: ReadonlySet<StateCategory> = new Set(["Completed", "Removed"]);
 const NEGATIVE_VOTES: ReadonlySet<Vote> = new Set([-5, -10]);
@@ -83,6 +83,15 @@ function isActiveWithoutVotes(pullRequest: PullRequest): boolean {
 /** Tarea estancada: categoría InProgress y última modificación hace `staleTaskDays` días naturales o más. */
 export function isStale(workItem: WorkItem, now: Date, staleTaskDays: number): boolean {
   return workItem.stateCategory === "InProgress" && hasElapsedDays(workItem.changedAt, now, staleTaskDays);
+}
+
+/**
+ * Tarea bloqueada: tiene la etiqueta de bloqueo o está en el estado de bloqueo. La etiqueta se compara entera y sin
+ * distinguir mayúsculas, como hace Azure DevOps; el estado, por su nombre exacto.
+ */
+export function isBlockedTask(workItem: WorkItem, criteria: BlockedTaskCriteria): boolean {
+  const blockedTag = criteria.tag.toLowerCase();
+  return workItem.state === criteria.state || workItem.tags.some((tag) => tag.toLowerCase() === blockedTag);
 }
 
 /**

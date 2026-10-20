@@ -1,11 +1,11 @@
 // Recogida: cómo junta lo que da el puerto (sin duplicados, PR de cada tarea, sin iteración) según el glosario.
-// Los casos A–O se comprueban en scripts/lib/tests/snapshot-check.test.ts.
+// Los casos A–Q se comprueban en scripts/lib/tests/snapshot-check.test.ts.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { collectSnapshot } from "../collect-snapshot.js";
 import type { Iteration, PullRequest, Reviewer, Team, User, WorkItem } from "../../domain/types.js";
 import type { DevOpsSource } from "../../ports/devops-source.js";
-import { DEFAULT_THRESHOLDS } from "../../config.js";
+import { DEFAULT_BLOCKED_TASK_CRITERIA, DEFAULT_THRESHOLDS } from "../../config.js";
 import { daysBefore } from "../../domain/dates.js";
 import { NOW_ISO } from "#test-helpers/test-data.js";
 
@@ -74,6 +74,7 @@ function buildPullRequest(id: number, overrides: Partial<PullRequest> = {}): Pul
     createdAt: NOW_ISO,
     sourceBranch: `feat/${id}`,
     reviewers: [],
+    webUrl: `https://example.invalid/pullrequest/${id}`,
     ...overrides,
   };
 }
@@ -88,6 +89,8 @@ function buildMyTask(id: number, pullRequestIds: number[]): WorkItem {
     assignedTo: CURRENT_USER,
     changedAt: NOW_ISO,
     pullRequestIds,
+    tags: [],
+    webUrl: `https://example.invalid/_workitems/edit/${id}`,
   };
 }
 
@@ -111,7 +114,7 @@ describe("Recogida: PRs pendientes sin duplicados", () => {
     const both = buildPullRequest(7, { reviewers: [reviewer(CURRENT_USER), reviewer(TEAM)] });
     const source = fakeSource({ teams: [TEAM], toReview: [both], byTeam: { [TEAM.id]: [both] } });
 
-    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.deepEqual(ids(result.pullRequestsPendingMyReview), [7]);
     assert.deepEqual(ids(result.pullRequestsPendingTeamReview), []);
@@ -121,7 +124,7 @@ describe("Recogida: PRs pendientes sin duplicados", () => {
     const shared = buildPullRequest(8, { reviewers: [reviewer(TEAM), reviewer(OTHER_TEAM)] });
     const source = fakeSource({ teams: [TEAM, OTHER_TEAM], byTeam: { [TEAM.id]: [shared], [OTHER_TEAM.id]: [shared] } });
 
-    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.deepEqual(ids(result.pullRequestsPendingTeamReview), [8]);
   });
@@ -131,7 +134,7 @@ describe("Recogida: PR de una tarea", () => {
   it("con varias PRs vinculadas cuenta la de mayor ID", async () => {
     const source = taskWithCompletedAndActivePullRequests();
 
-    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.equal(result.myTasks[0]?.pullRequest?.id, 9);
   });
@@ -139,7 +142,7 @@ describe("Recogida: PR de una tarea", () => {
   it("el siguiente paso sale de la PR de la tarea, no de las otras vinculadas", async () => {
     const source = taskWithCompletedAndActivePullRequests();
 
-    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.equal(result.myTasks[0]?.nextStep, "Esperar revisión");
   });
@@ -147,7 +150,7 @@ describe("Recogida: PR de una tarea", () => {
   it("una PR vinculada que no se encuentra se ignora: la tarea queda sin PR ni siguiente paso", async () => {
     const source = fakeSource({ iteration: ITERATION, workItems: [buildMyTask(100, [404])] });
 
-    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.equal(result.myTasks[0]?.pullRequest, null);
     assert.equal(result.myTasks[0]?.nextStep, null);
@@ -158,7 +161,7 @@ describe("Recogida: iteración actual y mis PRs", () => {
   it("sin iteración actual: iteración null y ninguna tarea", async () => {
     const source = fakeSource({ workItems: [buildMyTask(100, [])] });
 
-    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.equal(result.iteration, null);
     assert.deepEqual(result.myTasks, []);
@@ -169,7 +172,7 @@ describe("Recogida: iteración actual y mis PRs", () => {
     const draft = buildPullRequest(2, { author: CURRENT_USER, isDraft: true });
     const source = fakeSource({ mine: [active, draft] });
 
-    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.deepEqual(ids(result.myPullRequests), [1]);
   });
@@ -180,7 +183,7 @@ describe("Recogida: umbrales configurables (AGED_PR_DAYS, STALE_TASK_DAYS)", () 
     const fourDaysOld = buildPullRequest(1, { author: CURRENT_USER, createdAt: daysBefore(NOW, FOUR_DAYS) });
     const source = fakeSource({ mine: [fourDaysOld] });
 
-    const result = await collectSnapshot(source, NOW, CUSTOM_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, CUSTOM_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.equal(result.myPullRequests[0]?.aged, false);
   });
@@ -189,8 +192,30 @@ describe("Recogida: umbrales configurables (AGED_PR_DAYS, STALE_TASK_DAYS)", () 
     const twoDaysUnchanged = { ...buildMyTask(100, []), changedAt: daysBefore(NOW, TWO_DAYS) };
     const source = fakeSource({ iteration: ITERATION, workItems: [twoDaysUnchanged] });
 
-    const result = await collectSnapshot(source, NOW, CUSTOM_THRESHOLDS);
+    const result = await collectSnapshot(source, NOW, CUSTOM_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
     assert.equal(result.myTasks[0]?.stale, true);
+  });
+});
+
+describe("Recogida: tarea bloqueada configurable (BLOCKED_TAG, BLOCKED_STATE)", () => {
+  const customCriteria = { tag: "bloqueada", state: "Bloqueado" };
+
+  it("usa los criterios recibidos, no los de por defecto", async () => {
+    const byCustomTag = { ...buildMyTask(100, []), tags: ["bloqueada"] };
+    const byDefaultTag = { ...buildMyTask(101, []), tags: ["Blocked"] };
+    const source = fakeSource({ iteration: ITERATION, workItems: [byCustomTag, byDefaultTag] });
+
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, customCriteria);
+
+    assert.deepEqual(result.myTasks.map((task) => [task.id, task.blocked]), [[100, true], [101, false]]);
+  });
+
+  it("el snapshot dice qué criterios se usaron", async () => {
+    const source = fakeSource({});
+
+    const result = await collectSnapshot(source, NOW, DEFAULT_THRESHOLDS, customCriteria);
+
+    assert.deepEqual(result.blockedTaskCriteria, customCriteria);
   });
 });

@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import type { Thresholds } from "./domain/types.js";
+import type { BlockedTaskCriteria, Thresholds } from "./domain/types.js";
 
 export interface AzdoConfig {
   orgUrl: string;
@@ -44,6 +44,32 @@ export function thresholdsFrom(environment: NodeJS.ProcessEnv): Thresholds {
     agedPrDays: thresholdDays(environment, "AGED_PR_DAYS", DEFAULT_AGED_PR_DAYS),
     staleTaskDays: thresholdDays(environment, "STALE_TASK_DAYS", DEFAULT_STALE_TASK_DAYS),
   };
+}
+
+/** Valores por defecto de docs/glosario.md ("Tarea bloqueada"). */
+export const DEFAULT_BLOCKED_TASK_CRITERIA: BlockedTaskCriteria = { tag: "Blocked", state: "Locked" };
+
+/** Etiqueta y estado de una tarea bloqueada, configurables en `.env` (`BLOCKED_TAG`, `BLOCKED_STATE`). */
+export function loadBlockedTaskCriteria(): BlockedTaskCriteria {
+  loadEnvFile();
+  return blockedTaskCriteriaFrom(process.env);
+}
+
+/** Criterios de tarea bloqueada a partir de unas variables de entorno; separado para probarlo sin `.env`. */
+export function blockedTaskCriteriaFrom(environment: NodeJS.ProcessEnv): BlockedTaskCriteria {
+  return {
+    tag: optionalEnv("BLOCKED_TAG", environment) ?? DEFAULT_BLOCKED_TASK_CRITERIA.tag,
+    state: optionalEnv("BLOCKED_STATE", environment) ?? DEFAULT_BLOCKED_TASK_CRITERIA.state,
+  };
+}
+
+/**
+ * Nombre de referencia del campo con el motivo del bloqueo (`LOCK_REASON_FIELD`, p. ej. `Custom.LockReason`).
+ * Es un campo del proceso del cliente: sin configurar, el motivo queda "sin datos".
+ */
+export function loadLockReasonField(): string | undefined {
+  loadEnvFile();
+  return optionalEnv("LOCK_REASON_FIELD");
 }
 
 function thresholdDays(environment: NodeJS.ProcessEnv, name: string, defaultDays: number): number {

@@ -5,6 +5,7 @@ import {
   isAged,
   isApproved,
   isBlocked,
+  isBlockedTask,
   isPendingMyReview,
   isPendingTeamReview,
   isStale,
@@ -14,7 +15,7 @@ import {
 } from "../rules.js";
 import { daysBefore } from "../dates.js";
 import { NOW_ISO } from "#test-helpers/test-data.js";
-import { DEFAULT_THRESHOLDS } from "../../config.js";
+import { DEFAULT_BLOCKED_TASK_CRITERIA, DEFAULT_THRESHOLDS } from "../../config.js";
 import type { PullRequest, PullRequestStatus, StateCategory, User, Vote, WorkItem } from "../types.js";
 
 const CURRENT_USER = { id: "me", displayName: "Yo" };
@@ -28,18 +29,28 @@ const NOW = new Date(NOW_ISO);
 const { agedPrDays: AGED_PR_DAYS, staleTaskDays: STALE_TASK_DAYS } = DEFAULT_THRESHOLDS;
 
 interface WorkItemOptions {
+  state?: string;
   stateCategory?: StateCategory;
   assignedTo?: User;
   type?: string;
   changedAt?: string;
   pullRequestIds?: number[];
+  tags?: string[];
 }
 
 function buildWorkItem(
   id: number,
-  { stateCategory = "InProgress", assignedTo = CURRENT_USER, type = "Task", changedAt = "2026-10-19T00:00:00Z", pullRequestIds = [] }: WorkItemOptions = {},
+  {
+    state = "x",
+    stateCategory = "InProgress",
+    assignedTo = CURRENT_USER,
+    type = "Task",
+    changedAt = "2026-10-19T00:00:00Z",
+    pullRequestIds = [],
+    tags = [],
+  }: WorkItemOptions = {},
 ): WorkItem {
-  return { id, title: `WI ${id}`, type, state: "x", stateCategory, assignedTo, changedAt, pullRequestIds };
+  return { id, title: `WI ${id}`, type, state, stateCategory, assignedTo, changedAt, pullRequestIds, tags, webUrl: `https://example.invalid/_workitems/edit/${id}` };
 }
 
 interface PullRequestOptions {
@@ -53,7 +64,7 @@ interface PullRequestOptions {
 
 function buildPullRequest({ id = 1, author = OTHER_USER, status = "active", isDraft = false, createdAt = "2026-10-19T08:00:00Z", votes = [] }: PullRequestOptions = {}): PullRequest {
   const reviewers = votes.map(([reviewer, vote]) => ({ ...reviewer, vote }));
-  return { id, title: `PR ${id}`, status, isDraft, author, createdAt, sourceBranch: `feat/${id}_tarea`, reviewers };
+  return { id, title: `PR ${id}`, status, isDraft, author, createdAt, sourceBranch: `feat/${id}_tarea`, reviewers, webUrl: `https://example.invalid/pullrequest/${id}` };
 }
 
 /** Las tres formas de no ser PR activa: borrador, completada y abandonada. */
@@ -419,5 +430,50 @@ describe("Tarea estancada", () => {
     const results = workItems.map((workItem) => isStale(workItem, NOW, STALE_TASK_DAYS));
 
     assert.deepEqual(results, [false, false, false, false]);
+  });
+});
+
+describe("Tarea bloqueada", () => {
+  const isBlockedByDefault = (workItem: WorkItem) => isBlockedTask(workItem, DEFAULT_BLOCKED_TASK_CRITERIA);
+
+  it("con la etiqueta Blocked, sin distinguir mayúsculas y junto a otras (caso P)", () => {
+    const workItems = [["Blocked"], ["blocked"], ["tfm-seed", "Blocked"]].map((tags) => buildWorkItem(11, { tags }));
+
+    const results = workItems.map(isBlockedByDefault);
+
+    assert.deepEqual(results, [true, true, true]);
+  });
+
+  it("en el estado Locked (caso Q)", () => {
+    const locked = buildWorkItem(12, { state: "Locked" });
+
+    const result = isBlockedByDefault(locked);
+
+    assert.equal(result, true);
+  });
+
+  it("la etiqueta cuenta entera: contener la palabra no basta", () => {
+    const workItems = [[], ["tfm-seed"], ["Not Blocked"], ["Blocked-later"]].map((tags) => buildWorkItem(13, { tags }));
+
+    const results = workItems.map(isBlockedByDefault);
+
+    assert.deepEqual(results, [false, false, false, false]);
+  });
+
+  it("otro estado no la bloquea", () => {
+    const active = buildWorkItem(14, { state: "Active" });
+
+    const result = isBlockedByDefault(active);
+
+    assert.equal(result, false);
+  });
+
+  it("la etiqueta y el estado son configurables (BLOCKED_TAG, BLOCKED_STATE)", () => {
+    const criteria = { tag: "bloqueada", state: "Bloqueado" };
+    const workItems = [buildWorkItem(15, { tags: ["Bloqueada"] }), buildWorkItem(16, { state: "Bloqueado" }), buildWorkItem(17, { tags: ["Blocked"], state: "Locked" })];
+
+    const results = workItems.map((workItem) => isBlockedTask(workItem, criteria));
+
+    assert.deepEqual(results, [true, true, false]);
   });
 });

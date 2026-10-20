@@ -12,7 +12,14 @@ export interface WorkItemSetup {
   branch: boolean;
   pr: null | { status: "active" | "completed"; vote: null | -10 | -5 | 0 | 5 | 10 };
   changedDaysAgo?: number;
+  /** Etiquetas del work item (solo fixtures: el seed no las escribe). */
+  tags?: string[];
+  /** Motivo del bloqueo (solo fixtures: es un campo del proceso del cliente). */
+  lockReason?: string;
 }
+
+/** Estado de bloqueo del proceso del cliente; el proceso Agile de la demo no lo tiene. */
+const CLIENT_LOCKED_STATE = "Locked";
 
 interface PullRequestSetupBase {
   entity: "pullRequest";
@@ -46,10 +53,19 @@ export function validateCases(cases: Case[]): Case[] {
     if (setup.entity === "workItem" && setup.pr && !setup.branch) {
       throw new Error(`Caso ${testCase.key}: una PR necesita rama ("branch": true).`);
     }
+    // El seed no escribe etiquetas ni el motivo, y la demo (Agile) no tiene el estado Locked.
+    if (setup.entity === "workItem" && needsClientProcess(setup) && testCase.verifiedIn !== "fixtures") {
+      throw new Error(`Caso ${testCase.key}: etiquetas, motivo del bloqueo o estado Locked solo pueden ser "verifiedIn": "fixtures".`);
+    }
     // El seed no sabe añadir un equipo como revisor.
     if (setup.entity === "pullRequest" && setup.reviewer === "myTeam" && testCase.verifiedIn !== "fixtures") {
       throw new Error(`Caso ${testCase.key}: una PR con el equipo como revisor solo puede ser "verifiedIn": "fixtures".`);
     }
   }
   return cases;
+}
+
+/** Lo que solo existe en el proceso del cliente o el seed no sabe crear: etiquetas, motivo o estado Locked. */
+function needsClientProcess(setup: WorkItemSetup): boolean {
+  return setup.tags !== undefined || setup.lockReason !== undefined || setup.state === CLIENT_LOCKED_STATE;
 }

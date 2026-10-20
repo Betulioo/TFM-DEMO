@@ -60,3 +60,6 @@ si lo está, que es una tarea estancada.
 |---|---|
 | **Tarea estancada** | Tarea en categoría *InProgress* cuya última modificación tiene **3 días naturales o más** (*configurable*: `STALE_TASK_DAYS`). |
 | **PR envejecida pendiente de mi revisión** | Cumple las dos definiciones. Es la señal de mayor prioridad del informe. |
+| **PR propia bloqueada** | PR de "Mis PRs" que es una PR bloqueada. |
+| **Tarea bloqueada** | Tarea de "Mis tareas" con la etiqueta `Blocked` en `System.Tags` (*configurable*: `BLOCKED_TAG`) o en el estado `Locked` (*configurable*: `BLOCKED_STATE`). La etiqueta cuenta entera y sin distinguir mayúsculas (`Not Blocked` no cuenta); el estado, por su nombre exacto. |
+| **Motivo del bloqueo** | Texto del campo de work item cuyo nombre de referencia es `LOCK_REASON_FIELD` (p. ej. `Custom.LockReason`, del proceso del cliente). Si no está configurado o viene vacío: "sin datos". |

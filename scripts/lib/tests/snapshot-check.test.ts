@@ -1,16 +1,16 @@
-// Recogida sobre el adaptador falso: cada caso A–O de fixtures/expected.json acaba en el snapshot como dice `expected`.
+// Recogida sobre el adaptador falso: cada caso A–Q de fixtures/expected.json acaba en el snapshot como dice `expected`.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { loadCases, type Case } from "../../../src/adapters/fixtures/cases.js";
 import { FixtureSource, fixtureCaseIds, fixturePullRequestId } from "../../../src/adapters/fixtures/fixture-source.js";
 import { collectSnapshot } from "../../../src/application/collect-snapshot.js";
-import { DEFAULT_THRESHOLDS } from "../../../src/config.js";
+import { DEFAULT_BLOCKED_TASK_CRITERIA, DEFAULT_THRESHOLDS } from "../../../src/config.js";
 import { checkCase } from "../snapshot-check.js";
 import { NOW_ISO } from "#test-helpers/test-data.js";
 
 const NOW = new Date(NOW_ISO);
 const cases = loadCases();
-const snapshot = await collectSnapshot(new FixtureSource(cases, NOW), NOW, DEFAULT_THRESHOLDS);
+const snapshot = await collectSnapshot(new FixtureSource(cases, NOW), NOW, DEFAULT_THRESHOLDS, DEFAULT_BLOCKED_TASK_CRITERIA);
 
 /** Caso de expected.json por su clave, con su posición. Falla si la clave no existe. */
 function caseByKey(key: string): { testCase: Case; index: number } {
@@ -27,10 +27,10 @@ function failedChecks(testCase: Case, index: number, checkedSnapshot = snapshot)
 }
 
 describe("Snapshot con el adaptador falso: casos de expected.json", () => {
-  it("están los 15 casos (A–O)", () => {
+  it("están los 17 casos (A–Q)", () => {
     const keys = cases.map((testCase) => testCase.key);
 
-    assert.deepEqual(keys, ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]);
+    assert.deepEqual(keys, ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q"]);
   });
 
   cases.forEach((testCase, index) => {

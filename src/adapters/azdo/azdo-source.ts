@@ -20,6 +20,7 @@ export interface ApiPullRequest {
   creationDate: string;
   sourceRefName: string;
   reviewers?: { id: string; displayName: string; vote: number }[];
+  repository: { name: string };
 }
 
 /** Forma de un work item con `$expand=relations` (solo los campos que usamos). */
@@ -31,6 +32,10 @@ export interface ApiWorkItem {
     "System.State": string;
     "System.ChangedDate": string;
     "System.AssignedTo"?: { id: string; displayName: string };
+    /** Etiquetas separadas por "; " (p. ej. `"tfm-seed; Blocked"`); la API omite el campo si no hay ninguna. */
+    "System.Tags"?: string;
+    /** Campos del proceso del cliente, como el del motivo del bloqueo (`LOCK_REASON_FIELD`). */
+    [referenceName: string]: unknown;
   };
   relations?: { rel: string; url: string; attributes?: { name?: string } }[];
 }
@@ -52,11 +57,18 @@ export class AzdoSource implements DevOpsSource {
   private team?: string;
   /** Categoría de cada estado, por tipo de work item: tipo → estado → categoría. */
   private readonly categories = new Map<string, Map<string, StateCategory>>();
+  /** Base de las URLs web del proyecto, p. ej. `https://dev.azure.com/org/Mi%20Proyecto`. */
+  private readonly webBaseUrl: string;
 
   constructor(
     private readonly reader: AzdoReader,
     private readonly project: string,
-  ) {}
+    orgUrl: string,
+    /** Nombre de referencia del campo con el motivo del bloqueo; sin él, ningún work item lleva motivo. */
+    private readonly lockReasonField?: string,
+  ) {
+    this.webBaseUrl = projectWebBaseUrl(orgUrl, project);
+  }
 
   async currentUser(): Promise<User> {
     if (!this.user) {
@@ -87,7 +99,7 @@ export class AzdoSource implements DevOpsSource {
 
   async pullRequestById(id: number): Promise<PullRequest | undefined> {
     try {
-      return toPullRequest(await this.reader.get<ApiPullRequest>(`${this.encodedProject}/_apis/git/pullrequests/${id}`));
+      return toPullRequest(await this.reader.get<ApiPullRequest>(`${this.encodedProject}/_apis/git/pullrequests/${id}`), this.webBaseUrl);
     } catch (error) {
       if (error instanceof AzdoHttpError && error.status === 404) return undefined;
       throw error;
@@ -121,7 +133,7 @@ export class AzdoSource implements DevOpsSource {
         ids: ids.slice(i, i + WORK_ITEMS_BATCH).join(","),
         $expand: "relations",
       });
-      for (const api of batch.value) result.push(toWorkItem(api, await this.stateCategory(api)));
+      for (const api of batch.value) result.push(toWorkItem(api, await this.stateCategory(api), this.webBaseUrl, this.lockReasonField));
     }
     return result;
   }
@@ -165,13 +177,18 @@ export class AzdoSource implements DevOpsSource {
         $top: String(PAGE_SIZE),
         $skip: String(skip),
       });
-      result.push(...page.value.map(toPullRequest));
+      result.push(...page.value.map((api) => toPullRequest(api, this.webBaseUrl)));
       if (page.value.length < PAGE_SIZE) return result;
     }
   }
 }
 
-export function toPullRequest(api: ApiPullRequest): PullRequest {
+/** `orgUrl` llega sin barra final (`loadConfig` la quita). */
+function projectWebBaseUrl(orgUrl: string, project: string): string {
+  return `${orgUrl}/${encodeURIComponent(project)}`;
+}
+
+export function toPullRequest(api: ApiPullRequest, webBaseUrl: string): PullRequest {
   return {
     id: api.pullRequestId,
     title: api.title,
@@ -181,10 +198,25 @@ export function toPullRequest(api: ApiPullRequest): PullRequest {
     createdAt: api.creationDate,
     sourceBranch: api.sourceRefName.replace(/^refs\/heads\//, ""),
     reviewers: (api.reviewers ?? []).map((reviewer) => ({ id: reviewer.id, displayName: reviewer.displayName, vote: reviewer.vote as Vote })),
+    webUrl: `${webBaseUrl}/_git/${encodeURIComponent(api.repository.name)}/pullrequest/${api.pullRequestId}`,
   };
 }
 
-export function toWorkItem(api: ApiWorkItem, stateCategory: StateCategory): WorkItem {
+/** `"tfm-seed; Blocked"` → `["tfm-seed", "Blocked"]`. */
+function parseTags(tags: string | undefined): string[] {
+  return (tags ?? "")
+    .split(";")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag !== "");
+}
+
+/** Texto del campo del motivo; `undefined` si no está configurado, falta o viene vacío. */
+function lockReasonFrom(fields: ApiWorkItem["fields"], lockReasonField: string | undefined): string | undefined {
+  const value = lockReasonField === undefined ? undefined : fields[lockReasonField];
+  return typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+}
+
+export function toWorkItem(api: ApiWorkItem, stateCategory: StateCategory, webBaseUrl: string, lockReasonField?: string): WorkItem {
   const fields = api.fields;
   const assigned = fields["System.AssignedTo"];
   return {
@@ -199,5 +231,8 @@ export function toWorkItem(api: ApiWorkItem, stateCategory: StateCategory): Work
       const match = relation.rel === "ArtifactLink" ? PR_LINK.exec(relation.url) : null;
       return match?.[1] ? [Number(match[1])] : [];
     }),
+    tags: parseTags(fields["System.Tags"]),
+    lockReason: lockReasonFrom(fields, lockReasonField),
+    webUrl: `${webBaseUrl}/_workitems/edit/${api.id}`,
   };
 }

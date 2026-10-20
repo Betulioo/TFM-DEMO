@@ -92,18 +92,27 @@ describe("Adaptador falso: iteración y work items", () => {
     assert.equal(iteration?.name, "Sprint actual");
   });
 
-  it("work items de la iteración actual: A-H, J y N (I está en el sprint anterior)", async () => {
+  it("work items de la iteración actual: A-H, J, N, P y Q (I está en el sprint anterior)", async () => {
     const workItems = await currentIterationWorkItems();
 
-    assert.deepEqual(caseKeys(workItems), ["A", "B", "C", "D", "E", "F", "G", "H", "J", "N"]);
+    assert.deepEqual(caseKeys(workItems), ["A", "B", "C", "D", "E", "F", "G", "H", "J", "N", "P", "Q"]);
   });
 
-  it("mis tareas: A-G y N (H cerrada, J sin asignar)", async () => {
+  it("mis tareas: A-G, N, P y Q (H cerrada, J sin asignar; Locked no es un estado cerrado)", async () => {
     const workItems = await currentIterationWorkItems();
 
     const tasks = myTasks(workItems, FIXTURE_ME);
 
-    assert.deepEqual(caseKeys(tasks), ["A", "B", "C", "D", "E", "F", "G", "N"]);
+    assert.deepEqual(caseKeys(tasks), ["A", "B", "C", "D", "E", "F", "G", "N", "P", "Q"]);
+  });
+
+  it("P lleva sus etiquetas y Q su estado y su motivo de expected.json", async () => {
+    const workItems = await currentIterationWorkItems();
+
+    const [workItemP, workItemQ] = [workItems.find(hasCaseKey("P")), workItems.find(hasCaseKey("Q"))];
+
+    assert.deepEqual(workItemP?.tags, ["Blocked"]);
+    assert.deepEqual([workItemQ?.state, workItemQ?.lockReason], ["Locked", "Esperando credenciales del entorno de pruebas"]);
   });
 
   it("N tiene la antigüedad de expected.json", async () => {

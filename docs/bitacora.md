@@ -36,7 +36,7 @@ Reglas de uso:
 - [x] 4.5. Seguridad y calidad: capas hexagonales, lint, pre-push y salvaguardas
 - [x] 5. Work items de la iteración actual
 - [x] 6. Vinculación work item ↔ PR (sin ramas), PRs del equipo, `output/snapshot.json` y tests unitarios
-- [ ] 7. Skill de informe diario (Hechos / Sugerencias)
+- [x] 7. Skill de informe diario (Hechos / Sugerencias)
 - [ ] 8. Verificador y eval: skill frente a prompt plano, mismo snapshot, chats nuevos
 - [ ] 8b. (Opcional) CLI `npm run brief` con `claude -p`
 - [ ] 8c. (Opcional) Integración con Obsidian por archivos
@@ -46,27 +46,31 @@ Reglas de uso:
 - [ ] 12. Documento técnico
 - [ ] 13. Vídeo (opcional) y comprobación de accesos
 
-**Paso 7, en curso (2026-10-20).**
-- Hecho sin commitear: skill `.claude/skills/daily-brief/SKILL.md` (lee solo `output/snapshot.json` y escribe
-  `output/brief-AAAA-MM-DD.md` con plantilla fija); `CLAUDE.md` (Arquitectura) y README (Uso, Estructura) la nombran.
-- Probada sobre fixtures: el informe de `npm run collect -- --fixtures` coincide con los 15 casos A–O.
-- Informe sobre la demo generado (`output/brief-2026-10-20.md`, tras el `npm run collect` de la persona con A–L
-  en `OK`). Falta para el "Hecho si" de `docs/plan.md`: que la persona lo revise a mano.
-- Pendiente de la persona (del paso 6): añadir `AGED_PR_DAYS=3` y `STALE_TASK_DAYS=3` a `.env.example` (el agente
-  no puede leer ese archivo).
+**Paso 7, cerrado (2026-10-20).**
+- Skill `.claude/skills/daily-brief/SKILL.md`: lee solo `output/snapshot.json` y escribe
+  `output/brief-AAAA-MM-DD.md` con plantilla fija. La nombran `CLAUDE.md` (Arquitectura) y README (Uso,
+  Estructura).
+- Probada sobre fixtures y sobre la demo, con enlaces a Azure DevOps (`webUrl`), "PR propia bloqueada" y fecha en
+  UTC. La persona abrió los enlaces del informe de la demo: funcionan.
+- **Tarea bloqueada** (sesión aparte, antes del paso 8):
+  - Término y "Motivo del bloqueo" en el glosario.
+  - Regla `isBlockedTask`; `tags` y `lockReason` en `WorkItem`; `blocked` en las tareas del snapshot y
+    `blockedTaskCriteria` en el snapshot.
+  - Casos P y Q (fixtures) y skill (Mis tareas, Riesgos, Sugerencias).
+- Todo lo anterior está sin commitear (lo hace la persona).
+- Pendiente de la persona en `.env.example` (el agente no puede leerlo):
+  - Del paso 6: `AGED_PR_DAYS=3` y `STALE_TASK_DAYS=3`.
+  - De la tarea bloqueada: `BLOCKED_TAG=Blocked`, `BLOCKED_STATE=Locked` y `LOCK_REASON_FIELD=`.
 
 ## Próximo paso
 
-**Seguir por:** cerrar el paso 7. La persona revisa a mano `output/brief-2026-10-20.md` (IDs de A–L según
-`fixtures/demo-ids.json`; el cruce del agente ya coincide en A–L) y anota aquí el resultado. Con eso, paso 8: `scripts/verify-brief.ts` lee los IDs por encabezado de la plantilla
-de la skill.
+**Seguir por:** paso 8, en una sesión nueva:
+- `scripts/verify-brief.ts` lee los IDs por encabezado de la plantilla, dentro de enlaces `[PR #n](…)` /
+  `[WI #n](…)`, y los compara con `fixtures/expected.json`.
+- Debe contar con los casos P y Q y con la línea "tarea bloqueada" de Mis tareas y de Riesgos.
+- Antes, la persona hace el commit de los pasos 7 y de la tarea bloqueada.
 
 **Decisiones pendientes**
-- Si "PR bloqueada" (de Mis PRs) va en la sección Riesgos del informe. El glosario solo define como señales de
-  riesgo "tarea estancada" y "PR envejecida pendiente de mi revisión"; el agente la añadió por el orden de
-  Sugerencias del plan, sin avisar. Afecta al verificador del paso 8, que cuenta los IDs por sección.
-- Fecha del informe: la skill usa `generatedAt` (UTC) para el nombre del archivo y para "es de hoy". Una
-  recogida entre las 00:00 y las 02:00 en España saldría con la fecha del día anterior. ¿UTC o hora local?
 - Nombre del siguiente paso para una PR en borrador: "PR en borrador" (frase de la persona, describe un estado)
   o una acción como los demás pasos ("Publicar la PR").
 - Dos extensiones del agente sin confirmar: con varias PRs vinculadas, si la de mayor ID no se encuentra cuenta la
@@ -101,6 +105,9 @@ Detectados, sin corregir; ninguno rompe los checks.
   de `src/domain/dates.ts` (DRY). Detectado en la reflexión; fuera del alcance de esta ronda.
 - Lo que hay en una carpeta `tests/` de `src/` se salta las reglas de capas. Mitigado: el código de `src/` no puede
   importar de `tests/` ni de `#test-helpers` (check y lint), así que nada de ahí llega a producción.
+- Tarea bloqueada sin comprobar contra el proceso del cliente: si `Locked` tiene allí categoría *Completed* o
+  *Removed*, esas tareas no entran en "Mis tareas" y no salen como bloqueadas (en fixtures se supone *InProgress*).
+  Si Lock reason es un campo de texto enriquecido, el motivo llega con HTML.
 
 ## Registro
 
@@ -429,6 +436,34 @@ Detectados, sin corregir; ninguno rompe los checks.
   snapshot y no las recalcula; encabezados fijos para el verificador del paso 8; se añade la sección "PRs
   pendientes del equipo", que la lista de Hechos del plan no nombra pero existe en el glosario y el snapshot desde
   el paso 6; lista vacía → "Ninguna.", y `pullRequest: null` en una tarea es "sin PR", no "sin datos".
+- Cierre del paso 7 (decisiones de la persona tras revisar el informe):
+  - "me gustaría que también dejara los links a las tareas y PRs": cada ID del informe va enlazado. Como la skill
+    no llama a la API, el adaptador pone `webUrl` en `PullRequest` y `WorkItem` (dominio) y el snapshot lo hereda.
+    Real: `{orgUrl}/{proyecto}/_git/{repositorio}/pullrequest/{id}` y `{orgUrl}/{proyecto}/_workitems/edit/{id}`,
+    con proyecto y repositorio codificados; `AzdoSource` recibe `orgUrl`. Falso: dominio reservado
+    `fixture.invalid`. Si falta `webUrl`, la skill pone el ID sin enlace y no construye la URL. Descartado que la
+    skill construya las URLs a partir de una base: necesitaría el repositorio de cada PR.
+  - "PR bloqueada" de Mis PRs va en Riesgos: nuevo término "PR propia bloqueada" en "Señales de riesgo".
+  - La fecha del informe queda en UTC (`generatedAt` tal cual); la limitación de 00:00–02:00 en España se
+    documenta en la skill.
+  - "¿También dice si una tarea está bloqueada?": hoy no (el glosario no tiene "tarea bloqueada"; si su PR es una
+    PR bloqueada, sale "Atender cambios solicitados"). La persona quiere la marca de Azure DevOps, la etiqueta
+    `Blocked`, en una sesión aparte.
+- Tarea bloqueada (sesión aparte; decisiones de la persona en modo plan):
+  - En el proyecto real hay dos marcas: una etiqueta ("bloqueada" en el cliente) y el estado `Locked`, con un
+    campo personalizado "Lock reason". **Tarea bloqueada** = tarea de "Mis tareas" con la etiqueta o con el
+    estado. Descartados: solo el estado y dos términos distintos.
+  - Etiqueta y estado configurables en `.env` (`BLOCKED_TAG`, por defecto `Blocked`; `BLOCKED_STATE`, por defecto
+    `Locked`), porque los nombres del cliente no son los de la demo. Primero se había elegido la etiqueta fija; se
+    cambió al conocer la etiqueta del cliente.
+  - El motivo se lee de un campo cuyo nombre de referencia va en `.env` (`LOCK_REASON_FIELD`); sin él, "sin
+    datos". Descartado fijar el nombre en el código.
+  - Es señal de riesgo: va en Riesgos y en las Sugerencias, después de "PR propia bloqueada" y antes de "tarea
+    estancada" (`docs/plan.md`, paso 7).
+  - Casos P (etiqueta) y Q (estado `Locked` con motivo) solo en fixtures: la demo es Agile, sin `Locked` ni Lock
+    reason, y el seed se niega en un proyecto con work items. `validateCases` rechaza esos datos fuera de fixtures.
+  - El dominio recibe `tags` (lista) y la regla vive en `rules.ts`, no en los adaptadores. La etiqueta se compara
+    entera y sin distinguir mayúsculas, porque el seed ya pone `tfm-seed` en `System.Tags`.
 
 **Hechos comprobados**
 - Correcciones tras la reflexión del paso 6 (pedidas por la persona, con las skills `testing` y
@@ -566,6 +601,33 @@ Detectados, sin corregir; ninguno rompe los checks.
 - Correcciones del reflect del paso 7 (pedidas por la persona: "aplica"): quitada de la skill la regla "Mis PRs
   con `isDraft` → PR en borrador", que contradecía al snapshot (Mis PRs ya excluye los borradores) y al glosario;
   la plantilla usa marcadores `PR #<id>` / `WI #<id>` en vez de IDs de ejemplo, para que no se copien al informe.
+- Revisión a mano de la persona de `output/brief-2026-10-20.md` (demo): se lee bien y los IDs coinciden con
+  `fixtures/demo-ids.json` en A–L.
+- Enlaces (`webUrl`): 2 tests nuevos en `src/adapters/azdo/tests/azdo-source.test.ts` (PR con proyecto y
+  repositorio con espacios codificados; work item a `_workitems/edit/{id}`), y el de traducción de PRs incluye la
+  URL. Mutación sobre una copia, restaurada desde la copia: sin `encodeURIComponent` en el repositorio fallan 2
+  tests. `npm run verify` en verde (134/134). Con el adaptador falso en memoria (sin escribir en `output/`), las 8
+  tareas y las 6 PRs llevan su URL de `fixture.invalid`. `npm run list:prs` y `list:tasks` contra la demo siguen
+  en "Todo coincide", así que la respuesta de PRs trae `repository` (si no, `toPullRequest` fallaría al leer
+  `repository.name`). Tras un nuevo `npm run collect` de la persona (27 comprobaciones A–L en `OK`), el agente
+  regeneró `output/brief-2026-10-20.md` con la skill: 1 PR pendiente de mi revisión, 0 del equipo, 3 mías, 7 tareas
+  y 1 riesgo (PR #3, PR propia bloqueada), todos los IDs enlazados. Pendiente: que la persona abra los enlaces.
+- Tarea bloqueada: `npm run verify` en verde (153/153; antes 134). Mutaciones de control sobre una copia de
+  `rules.ts`, restaurada desde la copia:
+  - Si `isBlockedTask` ignora el estado, fallan el caso Q y 2 tests de la regla.
+  - Si ignora la etiqueta, fallan el caso P, el test de criterios de la recogida y 2 tests de la regla.
+
+  Con `npm run collect -- --fixtures`, WI #116 (P, etiqueta `Blocked`) y WI #117 (Q, `Locked`, con motivo) salen
+  con `blocked: true`, y el snapshot lleva `blockedTaskCriteria`.
+- Tarea bloqueada contra la demo: en el `npm run collect` de la persona salen 27 comprobaciones A–L en `OK`.
+  Las 7 tareas llegan con `tags: ["tfm-seed"]` (la etiqueta del seed, leída de la API real) y `blocked: false`.
+  Sin comprobar contra la API real: una tarea con la etiqueta `Blocked` (en la demo no hay ninguna) y el campo del
+  motivo (la demo no lo tiene); solo están probados con el lector falso. Con ese snapshot, el agente regeneró
+  `output/brief-2026-10-20.md` con la skill (`/daily-brief` de la persona). Tiene la línea nueva "Tarea bloqueada:
+  etiqueta Blocked o estado Locked", 1 PR pendiente de mi revisión, 0 del equipo, 3 mías, 7 tareas y 1 riesgo
+  (PR #3, PR propia bloqueada); ninguna tarea bloqueada.
+- Cierre del paso 7: la persona abrió los enlaces del informe de la demo y todos funcionan (lo dice ella; el
+  agente no puede abrirlos).
 
 **Errores y correcciones**
 - Comentario `/** … src/**/tests/ … */` en `test/architecture.test.ts` → el `*/` de `**/` cerró el comentario y el
@@ -596,6 +658,15 @@ Detectados, sin corregir; ninguno rompe los checks.
 - Paso 7: tras el `npm run collect` de la persona, el agente generó el informe de la demo sin contarlo antes
   ("Antes de implementar", `CLAUDE.md`) y en contra de lo que había escrito ("en una sesión nueva"); la acción
   admitía dos lecturas y había que preguntar (Criterios, "Ambigüedad"). Detectado en el reflect.
+- Tarea bloqueada: la verificación del plan aprobado ejecutó `npm run collect -- --fixtures` sin avisar antes de
+  que sobrescribía el `output/snapshot.json` de la demo, en contra de lo aprendido arriba ("antes de sobrescribir
+  algo en `output/`, el agente avisa") → hay que repetir `npm run collect` sobre la demo para cerrar el paso 7.
+  Que se repita apoya pasarlo a una regla comprobable: el campo `source` propuesto, o que `--fixtures` escriba
+  en otro archivo (opcional, sin hacer).
+- Tarea bloqueada: fuera del plan aprobado y avisado después, no antes ("Desviación del plan aprobado"):
+  - `AGILE_CATEGORIES` pasa a llamarse `STATE_CATEGORIES` en el adaptador falso, porque ahora incluye `Locked`,
+    que no es de Agile.
+  - Se amplía la descripción de `verifiedIn.fixtures` en `expected.json`.
 
 **Aprendizajes**
 - Los errores recurrentes del agente se corrigen con límites que impone la herramienta (modo plan) y con criterios

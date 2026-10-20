@@ -1,6 +1,6 @@
 // Utilidades compartidas por los scripts que trabajan sobre el proyecto demo (list-prs, list-tasks, collect, seed-demo).
 import { existsSync, readFileSync } from "node:fs";
-import { loadConfig } from "../../src/config.js";
+import { loadConfig, loadLockReasonField } from "../../src/config.js";
 import { AzdoReadOnlyClient } from "../../src/adapters/azdo/read-only-client.js";
 import { AzdoSource } from "../../src/adapters/azdo/azdo-source.js";
 import { FixtureSource } from "../../src/adapters/fixtures/fixture-source.js";
@@ -31,7 +31,7 @@ export function sourceFromArguments(
 
 function createRealSource(): DevOpsSource {
   const config = loadConfig("AZDO_PAT");
-  return new AzdoSource(new AzdoReadOnlyClient(config), config.project);
+  return new AzdoSource(new AzdoReadOnlyClient(config), config.project, config.orgUrl, loadLockReasonField());
 }
 
 /** Lee `fixtures/demo-ids.json`, o avisa y devuelve `undefined` si el seed no se ha ejecutado. */

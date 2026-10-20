@@ -10,6 +10,9 @@ import { daysBefore } from "../../domain/dates.js";
 export const FIXTURE_ME: User = { id: "fixture-me", displayName: "Yo (fixture)" };
 export const FIXTURE_TEAMMATE: User = { id: "fixture-teammate", displayName: "Compañero (fixture)" };
 export const FIXTURE_TEAM: Team = { id: "fixture-team", name: "Equipo (fixture)" };
+/** Dominio `.invalid` (reservado): los enlaces de fixtures nunca apuntan a nada real. */
+const FIXTURE_WEB_BASE_URL = "https://fixture.invalid/proyecto";
+const FIXTURE_REPOSITORY = "repositorio";
 
 /** IDs deterministas por posición del caso: PR #1, #2… y WI #101, #102… */
 export function fixturePullRequestId(index: number): number {
@@ -35,15 +38,17 @@ export const FIXTURE_ITERATIONS: Record<WorkItemSetup["iteration"], Iteration> =
 };
 
 /**
- * Categorías del proceso Agile para los estados que usan los casos. El adaptador real no las fija:
+ * Categorías de los estados que usan los casos: los del proceso Agile y `Locked`. El adaptador real no las fija:
  * las lee de la API, porque cambian según el proceso y el tipo de work item.
  */
-const AGILE_CATEGORIES: Record<string, StateCategory> = {
+const STATE_CATEGORIES: Record<string, StateCategory> = {
   New: "Proposed",
   Active: "InProgress",
   Resolved: "Resolved",
   Closed: "Completed",
   Removed: "Removed",
+  // Estado del proceso del cliente (glosario: "Tarea bloqueada"). Su categoría allí no está comprobada.
+  Locked: "InProgress",
 };
 
 export class FixtureSource implements DevOpsSource {
@@ -104,7 +109,7 @@ export class FixtureSource implements DevOpsSource {
 }
 
 function toWorkItem(testCase: Case, setup: WorkItemSetup, index: number, now: Date): WorkItem {
-  const category = AGILE_CATEGORIES[setup.state];
+  const category = STATE_CATEGORIES[setup.state];
   if (!category) throw new Error(`Estado "${setup.state}" sin categoría en el adaptador falso.`);
   const { pullRequestId } = fixtureCaseIds(testCase, index);
   return {
@@ -116,7 +121,14 @@ function toWorkItem(testCase: Case, setup: WorkItemSetup, index: number, now: Da
     assignedTo: setup.assignedToMe ? FIXTURE_ME : undefined,
     changedAt: daysBefore(now, setup.changedDaysAgo ?? 0),
     pullRequestIds: pullRequestId === undefined ? [] : [pullRequestId],
+    tags: setup.tags ?? [],
+    lockReason: setup.lockReason,
+    webUrl: `${FIXTURE_WEB_BASE_URL}/_workitems/edit/${fixtureWorkItemId(index)}`,
   };
+}
+
+function fixturePullRequestUrl(id: number): string {
+  return `${FIXTURE_WEB_BASE_URL}/_git/${FIXTURE_REPOSITORY}/pullrequest/${id}`;
 }
 
 function toPullRequest(testCase: Case, index: number, now: Date): PullRequest | undefined {
@@ -134,6 +146,7 @@ function toPullRequest(testCase: Case, index: number, now: Date): PullRequest | 
       createdAt: daysBefore(now, setup.createdDaysAgo ?? 0),
       sourceBranch: `feat/revision-${testCase.key.toLowerCase()}`,
       reviewers: reviewersFor(setup),
+      webUrl: fixturePullRequestUrl(id),
     };
   }
 
@@ -148,6 +161,7 @@ function toPullRequest(testCase: Case, index: number, now: Date): PullRequest | 
     createdAt: now.toISOString(),
     sourceBranch: `feat/${fixtureWorkItemId(index)}_${testCase.key.toLowerCase()}`,
     reviewers: setup.pr.vote === null ? [] : [{ ...FIXTURE_TEAMMATE, vote: setup.pr.vote }],
+    webUrl: fixturePullRequestUrl(id),
   };
 }
 

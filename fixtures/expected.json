@@ -4,7 +4,7 @@
   "verifiedIn": {
     "demo": "Se crea en el proyecto demo con AZDO_PAT_SEED.",
     "demo-teammate": "Se crea en el proyecto demo solo si existe AZDO_PAT_TEAMMATE (segunda cuenta).",
-    "fixtures": "Solo con el adaptador falso: Azure DevOps no permite crear datos con fechas pasadas."
+    "fixtures": "Solo con el adaptador falso: Azure DevOps no permite crear datos con fechas pasadas, el seed no sabe crear el caso o depende del proceso del cliente (estado Locked, motivo del bloqueo)."
   },
   "cases": [
     {
@@ -96,6 +96,18 @@
       "verifiedIn": "fixtures",
       "setup": { "entity": "pullRequest", "author": "teammate", "title": "[O] Textos del checkout", "reviewer": "myTeam" },
       "expected": { "pendingMyReview": false, "pendingTeamReview": true }
+    },
+    {
+      "key": "P",
+      "verifiedIn": "fixtures",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[P] Integración con pasarela de pago", "state": "Active", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null, "tags": ["Blocked"] },
+      "expected": { "inMyTasks": true, "nextStep": null, "taskBlocked": true }
+    },
+    {
+      "key": "Q",
+      "verifiedIn": "fixtures",
+      "setup": { "entity": "workItem", "type": "Task", "title": "[Q] Despliegue en preproducción", "state": "Locked", "iteration": "current", "assignedToMe": true, "branch": false, "pr": null, "lockReason": "Esperando credenciales del entorno de pruebas" },
+      "expected": { "inMyTasks": true, "nextStep": null, "taskBlocked": true, "lockReason": "Esperando credenciales del entorno de pruebas" }
     }
   ]
 }
