@@ -19,6 +19,16 @@ export function fixtureWorkItemId(index: number): number {
   return index + 101;
 }
 
+/** IDs con los que aparece un caso: su work item (si es una tarea) y su PR (si es una PR o la tarea tiene una). */
+export function fixtureCaseIds(testCase: Case, index: number): { workItemId?: number; pullRequestId?: number } {
+  const setup = testCase.setup;
+  const hasPullRequest = setup.entity === "pullRequest" || setup.pr !== null;
+  return {
+    workItemId: setup.entity === "workItem" ? fixtureWorkItemId(index) : undefined,
+    pullRequestId: hasPullRequest ? fixturePullRequestId(index) : undefined,
+  };
+}
+
 export const FIXTURE_ITERATIONS: Record<WorkItemSetup["iteration"], Iteration> = {
   current: { id: "fixture-current", name: "Sprint actual" },
   previous: { id: "fixture-previous", name: "Sprint anterior" },
@@ -47,7 +57,7 @@ export class FixtureSource implements DevOpsSource {
     });
     this.workItems = cases.flatMap((testCase, index) =>
       testCase.setup.entity === "workItem"
-        ? [{ iterationId: FIXTURE_ITERATIONS[testCase.setup.iteration].id, workItem: toWorkItem(testCase.setup, index, now) }]
+        ? [{ iterationId: FIXTURE_ITERATIONS[testCase.setup.iteration].id, workItem: toWorkItem(testCase, testCase.setup, index, now) }]
         : [],
     );
   }
@@ -93,9 +103,10 @@ export class FixtureSource implements DevOpsSource {
   }
 }
 
-function toWorkItem(setup: WorkItemSetup, index: number, now: Date): WorkItem {
+function toWorkItem(testCase: Case, setup: WorkItemSetup, index: number, now: Date): WorkItem {
   const category = AGILE_CATEGORIES[setup.state];
   if (!category) throw new Error(`Estado "${setup.state}" sin categoría en el adaptador falso.`);
+  const { pullRequestId } = fixtureCaseIds(testCase, index);
   return {
     id: fixtureWorkItemId(index),
     title: setup.title,
@@ -104,7 +115,7 @@ function toWorkItem(setup: WorkItemSetup, index: number, now: Date): WorkItem {
     stateCategory: category,
     assignedTo: setup.assignedToMe ? FIXTURE_ME : undefined,
     changedAt: daysBefore(now, setup.changedDaysAgo ?? 0),
-    pullRequestIds: setup.pr ? [fixturePullRequestId(index)] : [],
+    pullRequestIds: pullRequestId === undefined ? [] : [pullRequestId],
   };
 }
 

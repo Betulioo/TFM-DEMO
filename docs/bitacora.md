@@ -53,7 +53,7 @@ Reglas de uso:
 - Hecho sin commitear: tipo `Snapshot` en `src/domain/types.ts`, `src/application/collect-snapshot.ts`,
   `loadThresholds()` en `src/config.ts`, `scripts/collect.ts` (`npm run collect`), comprobación por caso en
   `scripts/lib/snapshot-check.ts` y sus tests (los 15 casos A–O pasan con el adaptador falso).
-  `npm run verify` en verde (129/129).
+  `npm run verify` en verde (132/132).
 - "Hecho si" de `docs/plan.md` cumplido: 15 casos en `npm test` y `npm run collect` contra la demo con A–L en `OK`.
 - Pendiente de la persona: añadir `AGED_PR_DAYS=3` y `STALE_TASK_DAYS=3` a `.env.example` (el agente no puede
   leer ese archivo).
@@ -61,7 +61,8 @@ Reglas de uso:
 ## Próximo paso
 
 **Seguir por:** paso 7, skill de informe diario en `.claude/skills/` (sección del paso 7 de `docs/plan.md`): lee
-solo `output/snapshot.json` y redacta Hechos (con ID) y Sugerencias con los términos del glosario.
+solo `output/snapshot.json` y redacta Hechos (con ID) y Sugerencias con los términos del glosario. Un campo
+`null` o ausente en el snapshot es "sin datos" (comentario de `Snapshot` en `src/domain/types.ts`).
 
 **Decisiones pendientes**
 - Nombre del siguiente paso para una PR en borrador: "PR en borrador" (frase de la persona, describe un estado)
@@ -91,9 +92,8 @@ Detectados, sin corregir; ninguno rompe los checks.
 - `azdo-source.ts` convierte `status`, `vote` y `category` de la API con `as`, sin validar el valor.
 - El paso 0 (medir la rutina manual en el cliente) sigue pendiente y lo hace la persona.
 - PRs del equipo sin comprobar con datos reales: que `searchCriteria.reviewerId={teamId}` devuelva las PRs con el
-  equipo como revisor, que el revisor lleve el mismo `id` que `teams?$mine=true`, y si `reviewerId={miId}` ya
-  incluye las PRs de mis equipos (habría duplicados entre las dos listas). En la demo ninguna PR tiene un equipo
-  como revisor.
+  equipo como revisor, y que el revisor lleve el mismo `id` que `teams?$mine=true`. En la demo ninguna PR tiene un
+  equipo como revisor.
 - `myTeams()` no pagina: la API devuelve 100 equipos por defecto (según la documentación; no comprobado).
 - `scripts/lib/seed.ts` escribe la duración de un día a mano (`86_400_000`) en vez de usar `MILLISECONDS_PER_DAY`
   de `src/domain/dates.ts` (DRY). Detectado en la reflexión; fuera del alcance de esta ronda.
@@ -409,7 +409,8 @@ Detectados, sin corregir; ninguno rompe los checks.
   (demo, IDs de `demo-ids.json`) y su test (fixtures), para no duplicarla. Una clave de `expected` sin comprobación
   definida cuenta como fallo, para que un caso nuevo no pase sin comprobarse.
 - Umbrales: `loadThresholds()` carga `.env` y llama a `thresholdsFrom(environment)`, que es pura y se prueba sin
-  `.env`. Sin valor, 3 días (glosario); un valor que no es entero ≥ 1 es un error.
+  `.env`. Sin valor, 3 días (glosario); un valor que no es entero ≥ 1 es un error. Decisión del agente fuera del
+  plan aprobado (el plan decía solo `loadThresholds()` con `optionalEnv`); se avisó después, no antes.
 - Tras el reflect del cierre del paso 6, la persona pidió aplicar las seis propuestas del agente ("aplica tú las
   opciones que propones"): categoría "Incumplimiento" y criterio "Desviación del plan aprobado" en `CLAUDE.md`
   (Criterios); regla de lint `no-non-null-assertion`; "Límites del agente en este entorno" en `CLAUDE.md` (Reglas);
@@ -529,6 +530,19 @@ Detectados, sin corregir; ninguno rompe los checks.
   `test/architecture.test.ts`. Sustituidos por comprobaciones con error explicado (`caseByKey`, `requestedIds`) o
   por el tipo ya acotado. Un archivo temporal con `values[0]!` falla el lint (borrado después). `npm run verify`
   en verde (129/129).
+- Correcciones del reflect del cierre del paso 6 (pedidas por la persona; clasificadas como hueco e
+  incumplimientos según los Criterios de `CLAUDE.md`):
+  - Hueco (glosario: umbrales configurables): 2 tests nuevos en `src/application/tests/collect-snapshot.test.ts`
+    con `{ agedPrDays: 5, staleTaskDays: 2 }`. Mutaciones sobre una copia de `collect-snapshot.ts`, restaurada
+    desde la copia: intercambiar los umbrales hace fallar los 2 tests; un 3 fijo en `isAged` e `isStale`, también.
+  - DRY: `DEFAULT_THRESHOLDS` exportado de `src/config.ts` y usado en los 4 archivos de test que repetían el 3;
+    `fixtureCaseIds` en `fixture-source.ts`, que el adaptador usa para las PRs vinculadas y el test de casos
+    reutiliza; `optionalEnv(name, environment)` reutilizado por `thresholdDays`.
+  - Glosario: dos constantes por defecto (`DEFAULT_AGED_PR_DAYS`, `DEFAULT_STALE_TASK_DAYS`) en vez de una.
+  - Skill `testing` (un test por comportamiento): "con varias PRs vinculadas…" separado en dos tests.
+  - Ambigüedad resuelta por la persona: el comentario de `Snapshot` dice que "sin datos" es `null` o un campo
+    ausente; la skill del paso 7 debe tratar los dos igual. No cambia el JSON.
+  - `npm run verify` en verde (132/132).
 
 **Errores y correcciones**
 - Comentario `/** … src/**/tests/ … */` en `test/architecture.test.ts` → el `*/` de `**/` cerró el comentario y el
@@ -547,7 +561,11 @@ Detectados, sin corregir; ninguno rompe los checks.
   tabla y reclasificación de todas las entradas.
 - El primer test de los umbrales cambiaba `process.env` y llamaba a `loadThresholds()`, que carga `.env` → el
   proceso de tests habría cargado los tokens, aunque los tests no deben usar `.env` (skill `testing`) → se separa
-  `thresholdsFrom(environment)` y el test le pasa un objeto.
+  `thresholdsFrom(environment)` y el test le pasa un objeto. No llegó a ejecutarse: se vio antes de lanzar los
+  tests. (dudoso: Errores y correcciones o Decisiones)
+- El primer test de que la recogida usa los umbrales ponía una tarea de 4 días con `staleTaskDays: 2` → con un 3
+  fijo en `isStale` la tarea seguía estancada y el test pasaba (mutación) → la tarea pasa a 2 días, que solo está
+  estancada con el umbral 2.
 
 **Aprendizajes**
 - Los errores recurrentes del agente se corrigen con límites que impone la herramienta (modo plan) y con criterios

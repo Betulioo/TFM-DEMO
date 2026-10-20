@@ -83,7 +83,10 @@ export type SnapshotPullRequest = PullRequest & { aged: boolean; blocked: boolea
 /** Una de "Mis tareas" con su PR (`null` si no tiene), su siguiente paso y si es una tarea estancada. */
 export type SnapshotTask = WorkItem & { pullRequest: SnapshotPullRequest | null; nextStep: NextStep | null; stale: boolean };
 
-/** Lo que la recogida escribe en `output/snapshot.json` y la skill de síntesis interpreta. `null` = sin datos. */
+/**
+ * Lo que la recogida escribe en `output/snapshot.json` y la skill de síntesis interpreta. "Sin datos" es `null` o
+ * un campo ausente: los opcionales (`startDate`, `finishDate`, `assignedTo`) no aparecen en el JSON si faltan.
+ */
 export interface Snapshot {
   /** Fecha ISO 8601 de la recogida: el "ahora" de todas las reglas. */
   generatedAt: string;

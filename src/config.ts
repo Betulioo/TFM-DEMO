@@ -27,8 +27,10 @@ export function loadConfig(patVariable: PatVariable = "AZDO_PAT"): AzdoConfig {
   };
 }
 
-/** Valor por defecto de los dos umbrales (docs/glosario.md). */
-const DEFAULT_THRESHOLD_DAYS = 3;
+/** Valores por defecto de docs/glosario.md: son dos umbrales independientes aunque hoy valgan lo mismo. */
+const DEFAULT_AGED_PR_DAYS = 3;
+const DEFAULT_STALE_TASK_DAYS = 3;
+export const DEFAULT_THRESHOLDS: Thresholds = { agedPrDays: DEFAULT_AGED_PR_DAYS, staleTaskDays: DEFAULT_STALE_TASK_DAYS };
 
 /** Umbrales del glosario, configurables en `.env` (`AGED_PR_DAYS`, `STALE_TASK_DAYS`). */
 export function loadThresholds(): Thresholds {
@@ -39,14 +41,14 @@ export function loadThresholds(): Thresholds {
 /** Umbrales a partir de unas variables de entorno; separado de `loadThresholds` para probarlo sin `.env`. */
 export function thresholdsFrom(environment: NodeJS.ProcessEnv): Thresholds {
   return {
-    agedPrDays: thresholdDays(environment, "AGED_PR_DAYS"),
-    staleTaskDays: thresholdDays(environment, "STALE_TASK_DAYS"),
+    agedPrDays: thresholdDays(environment, "AGED_PR_DAYS", DEFAULT_AGED_PR_DAYS),
+    staleTaskDays: thresholdDays(environment, "STALE_TASK_DAYS", DEFAULT_STALE_TASK_DAYS),
   };
 }
 
-function thresholdDays(environment: NodeJS.ProcessEnv, name: string): number {
-  const value = environment[name]?.trim();
-  if (!value) return DEFAULT_THRESHOLD_DAYS;
+function thresholdDays(environment: NodeJS.ProcessEnv, name: string, defaultDays: number): number {
+  const value = optionalEnv(name, environment);
+  if (value === undefined) return defaultDays;
   const days = Number(value);
   if (!Number.isInteger(days) || days < 1) {
     throw new Error(`${name} debe ser un número entero de días, 1 o más (valor actual: "${value}").`);
@@ -54,8 +56,8 @@ function thresholdDays(environment: NodeJS.ProcessEnv, name: string): number {
   return days;
 }
 
-export function optionalEnv(name: string): string | undefined {
-  const value = process.env[name]?.trim();
+export function optionalEnv(name: string, environment: NodeJS.ProcessEnv = process.env): string | undefined {
+  const value = environment[name]?.trim();
   return value ? value : undefined;
 }
 

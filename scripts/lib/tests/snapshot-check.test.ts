@@ -2,26 +2,15 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { loadCases, type Case } from "../../../src/adapters/fixtures/cases.js";
-import { FixtureSource, fixturePullRequestId, fixtureWorkItemId } from "../../../src/adapters/fixtures/fixture-source.js";
+import { FixtureSource, fixtureCaseIds, fixturePullRequestId } from "../../../src/adapters/fixtures/fixture-source.js";
 import { collectSnapshot } from "../../../src/application/collect-snapshot.js";
-import { checkCase, type CaseIds } from "../snapshot-check.js";
+import { DEFAULT_THRESHOLDS } from "../../../src/config.js";
+import { checkCase } from "../snapshot-check.js";
 import { NOW_ISO } from "#test-helpers/test-data.js";
 
 const NOW = new Date(NOW_ISO);
-/** Umbrales por defecto del glosario. */
-const THRESHOLDS = { agedPrDays: 3, staleTaskDays: 3 };
 const cases = loadCases();
-const snapshot = await collectSnapshot(new FixtureSource(cases, NOW), NOW, THRESHOLDS);
-
-/** IDs deterministas del adaptador falso para el caso en la posición `index`. */
-function fixtureIds(testCase: Case, index: number): CaseIds {
-  const setup = testCase.setup;
-  const hasPullRequest = setup.entity === "pullRequest" || setup.pr !== null;
-  return {
-    workItemId: setup.entity === "workItem" ? fixtureWorkItemId(index) : undefined,
-    pullRequestId: hasPullRequest ? fixturePullRequestId(index) : undefined,
-  };
-}
+const snapshot = await collectSnapshot(new FixtureSource(cases, NOW), NOW, DEFAULT_THRESHOLDS);
 
 /** Caso de expected.json por su clave, con su posición. Falla si la clave no existe. */
 function caseByKey(key: string): { testCase: Case; index: number } {
@@ -32,7 +21,7 @@ function caseByKey(key: string): { testCase: Case; index: number } {
 }
 
 function failedChecks(testCase: Case, index: number, checkedSnapshot = snapshot): string[] {
-  return checkCase(checkedSnapshot, testCase, fixtureIds(testCase, index))
+  return checkCase(checkedSnapshot, testCase, fixtureCaseIds(testCase, index))
     .filter((check) => !check.passed)
     .map((check) => check.description);
 }

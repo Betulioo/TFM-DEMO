@@ -14,6 +14,7 @@ import {
 } from "../rules.js";
 import { daysBefore } from "../dates.js";
 import { NOW_ISO } from "#test-helpers/test-data.js";
+import { DEFAULT_THRESHOLDS } from "../../config.js";
 import type { PullRequest, PullRequestStatus, StateCategory, User, Vote, WorkItem } from "../types.js";
 
 const CURRENT_USER = { id: "me", displayName: "Yo" };
@@ -23,8 +24,8 @@ const MY_TEAM = { id: "my-team", name: "Mi equipo" };
 const OTHER_TEAM = { id: "other-team", name: "Otro equipo" };
 const MY_TEAM_REVIEWER = { id: MY_TEAM.id, displayName: MY_TEAM.name };
 const NOW = new Date(NOW_ISO);
-const AGED_PR_DAYS = 3;
-const STALE_TASK_DAYS = 3;
+/** Umbrales por defecto del glosario: los límites de 2, 3 y 4 días se prueban contra ellos. */
+const { agedPrDays: AGED_PR_DAYS, staleTaskDays: STALE_TASK_DAYS } = DEFAULT_THRESHOLDS;
 
 interface WorkItemOptions {
   stateCategory?: StateCategory;

@@ -5,11 +5,12 @@ import { FIXTURE_ME, FixtureSource, fixturePullRequestId } from "../fixture-sour
 import { loadCases } from "../cases.js";
 import { isPendingMyReview, isPendingTeamReview, isStale, myTasks, nextStep, taskPullRequest } from "../../../domain/rules.js";
 import type { WorkItem } from "../../../domain/types.js";
+import { DEFAULT_THRESHOLDS } from "../../../config.js";
 import { NOW_ISO } from "#test-helpers/test-data.js";
 
 const NOW = new Date(NOW_ISO);
 /** Umbral por defecto del glosario ("Tarea estancada"). */
-const STALE_TASK_DAYS = 3;
+const STALE_TASK_DAYS = DEFAULT_THRESHOLDS.staleTaskDays;
 const cases = loadCases();
 const source = new FixtureSource(cases, NOW);
 
