@@ -13,7 +13,7 @@ sigue la lista de cierre.
 - Cuenta en 2-3 líneas qué vas a hacer, también cuando la persona ya te da la lista de tareas.
 - Busca lo que ya existe (`grep` en `CLAUDE.md`, `docs/`, `.claude/`, `eslint.config.js`, `src/`, `test/`) antes de
   añadir una regla, una skill o un check. Si algo ya lo cubre, dilo y propón ampliarlo en vez de duplicarlo.
-- No amplíes el alcance sin avisar. Si algo extra parece útil, propónlo y no lo hagas.
+- No amplíes el alcance: aplica "Hueco frente a opcional" (en Criterios, abajo).
 
 **Lista de cierre** (al terminar cada paso o bloque, antes de darlo por hecho)
 
@@ -24,8 +24,8 @@ corregir cuando se usa porque el contexto está fallando ([`traspaso-sesion`](.c
 2. `git diff --stat` para listar los archivos cambiados. Si alguno no debería haberse tocado, revísalo y avisa.
    La revisión línea a línea la hace la persona antes de su commit.
 3. Relee las instrucciones de la persona en ese turno y comprueba cada una; di cuál queda pendiente y por qué.
-4. Bitácora al día, con entradas cortas: Estado, **Próximo paso** (al terminar, no al empezar) y hechos comprobados.
-   Comprueba que el Estado y el README siguen siendo ciertos.
+4. Bitácora al día según [su formato](docs/bitacora.md#cómo-se-escribe-esta-bitácora); el Próximo paso, al terminar
+   y no al empezar. Comprueba que el Estado y el README siguen siendo ciertos.
 5. En el mensaje final, no solo en el resumen de cierre: archivos cambiados, cómo verificarlo la persona y lo que
    haya pedido expresamente (por ejemplo, un mensaje de commit).
 
@@ -33,13 +33,19 @@ corregir cuando se usa porque el contexto está fallando ([`traspaso-sesion`](.c
 - Se trabaja una sesión por paso. Si la persona avisa de que va a cambiar de sesión, deja la bitácora lista para
   que otra sesión continúe sin esta conversación: qué está hecho, qué falta del paso actual y decisiones pendientes.
   
+### Criterios
+
+**Ambigüedad.** Si una petición admite dos lecturas que llevan a cambios distintos, no elijas: pregunta con las dos
+opciones y lo que implica cada una. Si solo cambia un detalle menor, elige la lectura más literal y dilo.
+
+**Hueco frente a opcional.**
+- Hueco: falta algo que exige `docs/plan.md`, `docs/glosario.md`, `fixtures/expected.json` o `docs/enunciado-tfm.md`.
+  Se presenta como pendiente, citando la fuente que lo exige. Nunca se ofrece como opcional.
+- Opcional: algo útil que ninguna de esas fuentes exige. Se propone y no se hace.
+
 ### Bitácora (`docs/bitacora.md`)
 
-- **Estado** (casillas) y **Próximo paso**: foto vigente; se reemplazan, no se acumulan.
-- **Registro**: una entrada por fecha con *Progreso* (resultados concretos), *Decisiones* (qué y por qué),
-  *Aprendizajes* (hechos comprobados) y *Errores y correcciones* (intento → por qué falló → qué cambia).
-- El registro es historial y evidencia del TFM: no se poda ni se reescribe; solo se corrige lo que sea falso.
-- Distingue hechos de inferencias. No escribas motivos que la persona no ha dado. Nunca tokens ni datos de cliente.
+El formato y sus reglas están en un solo sitio: [Cómo se escribe esta bitácora](docs/bitacora.md#cómo-se-escribe-esta-bitácora).
 
 ## Arquitectura
 
