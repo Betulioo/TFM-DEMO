@@ -14,6 +14,7 @@
     "test": "tsx --test test/*.test.ts",
     "list:prs": "tsx scripts/list-prs.ts",
     "lint": "eslint .",
+    "verify": "npm run typecheck && npm run lint && npm test",
     "prepare": "git config core.hooksPath .githooks",
     "list:tasks": "tsx scripts/list-tasks.ts"
   },

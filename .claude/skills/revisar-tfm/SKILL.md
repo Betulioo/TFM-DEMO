@@ -1,6 +1,6 @@
 ---
 name: revisar-tfm
-description: Revisa en solo lectura si lo implementado cumple el plan del proyecto y los requisitos del TFM, y lista lo que falta con evidencias. Úsala al cerrar un paso del plan, antes de la entrega o cuando se pida "revisar el TFM" o "qué me falta". No corrige nada.
+description: Revisa en solo lectura si lo implementado cumple el plan del proyecto y los requisitos del TFM, y lista lo que falta con evidencias. Úsala al cerrar un paso del plan, antes de la entrega o cuando se pida "revisar el TFM" o "qué me falta". No corrige nada. Para no llenar el contexto, prefiere el agente revisor-tfm.
 ---
 
 # Revisar el TFM
@@ -10,7 +10,9 @@ Informas; la persona decide. **No modificas ningún archivo** salvo el informe d
 
 ## Fuentes (léelas todas antes de opinar)
 
-- `docs/enunciado-tfm.md` — requisitos del TFM. Si no existe, detente y pídelo.
+Si falta alguna, sigue con lo demás y di al principio del resultado qué archivo falta.
+
+- `docs/enunciado-tfm.md` — requisitos del TFM.
 - `docs/plan.md` — diseño y criterio de "hecho" de cada paso.
 - `docs/bitacora.md` — estado declarado y decisiones.
 - `docs/glosario.md` y `fixtures/expected.json` — definiciones y casos esperados.

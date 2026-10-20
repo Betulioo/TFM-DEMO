@@ -5,9 +5,11 @@ description: Deja la bitácora lista para que otra sesión continúe sin esta co
 
 # Traspaso de sesión
 
-No implementes ni corrijas nada: solo registra el estado.
+Si se usa al terminar un paso, manda la lista de cierre de [`CLAUDE.md`](../../../CLAUDE.md) (que pide corregir
+lo que falle) y esta skill solo añade los pasos 3 a 5. Si se usa porque el contexto está fallando, no implementes
+ni corrijas nada: solo registra el estado.
 
-1. Ejecuta `npm run typecheck`, `npm run lint` y `npm test`. Anota el resultado; si algo falla, copia el error exacto.
+1. Ejecuta `npm run verify`. Anota el resultado; si algo falla, copia el error exacto.
 2. Ejecuta `git diff --stat` y anota los archivos sin commit.
 3. Actualiza `docs/bitacora.md` con entradas cortas:
    - **Estado** del paso actual: qué está hecho y verificado, qué falta.

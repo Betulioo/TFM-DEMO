@@ -58,6 +58,16 @@ export default tseslint.config(
 
   // node:test gestiona las promesas que devuelve test(): no hace falta esperarlas.
   { files: ["test/**/*.ts"], rules: { "@typescript-eslint/no-floating-promises": "off" } },
+  // Un test que lee la hora real pasa hoy y falla mañana (skill tests-semanticos, criterio 3).
+  {
+    files: ["test/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", {
+        selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+        message: "Fecha fija en tests: usa NOW o una fecha ISO literal.",
+      }],
+    },
+  },
   // Los dobles (adaptador falso y lectores de los tests) tienen los datos en memoria: `async` sin `await`
   // es intencionado y se lee mejor que `Promise.resolve(...)`. En el resto, la regla detecta `await` olvidados.
   { files: ["src/adapters/fixtures/**/*.ts", "test/**/*.ts"], rules: { "@typescript-eslint/require-await": "off" } },

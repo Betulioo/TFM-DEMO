@@ -13,7 +13,7 @@ Las normas de cada sección están en `CLAUDE.md`.
 - [x] 4. Puerto, adaptador falso y adaptador Azure DevOps: PRs donde el usuario es revisor
 - [x] 4.5. Seguridad y calidad: capas hexagonales, lint, pre-push y salvaguardas
 - [x] 5. Work items de la iteración actual
-- [ ] 6. Vinculación work item ↔ rama ↔ PR, `output/snapshot.json` y tests unitarios
+- [ ] 6. Vinculación work item ↔ PR (sin ramas), PRs del equipo, `output/snapshot.json` y tests unitarios
 - [ ] 7. Skill de informe diario (Hechos / Sugerencias)
 - [ ] 8. Verificador y eval: skill frente a prompt plano, mismo snapshot, chats nuevos
 - [ ] 8b. (Opcional) CLI `npm run brief` con `claude -p`
@@ -31,6 +31,7 @@ PR en `src/domain/rules.ts` (`isActive`, `isPendingMyReview`, `isPendingTeamRevi
 `isAged`), días naturales en `src/domain/dates.ts`, `myTeams()` y `pullRequestsToReviewByTeam()` en el puerto y los
 dos adaptadores, caso O en `expected.json` (validado en `validateCases`) y glosario sin ramas. Sin commitear.
 `npm run typecheck`, `npm run lint` y `npm test` (65/65) en verde.
+Arreglos de la auditoría del arnés del 2026-10-20 hechos y sin commitear (ver Registro); `npm run verify` en verde.
 
 **Seguir por:** reglas "tarea estancada" (con `hasElapsedDays`) y "siguiente paso" (solo tareas con PR) en
 `src/domain/rules.ts`. Después: `src/application/collect-snapshot.ts` y `npm run collect`, que debe quitar
@@ -46,8 +47,6 @@ duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abierto
 - Si se añaden al `CLAUDE.md` las instrucciones de trabajo dadas solo en el chat (ver propuesta del traspaso).
 
 **Problemas abiertos** (detectados, sin corregir; ninguno rompe los checks)
-- Las skills `testing` y `tests-semanticos` se solapan: `testing` aún contiene reglas de "qué" (nombres con
-  términos del glosario, fechas fijas, comparar IDs).
 - `test/architecture.test.ts` no detecta `fetch` usado sin llamar directamente (`const f = fetch`) ni un `method`
   pasado en una variable; el lint sí marca cualquier uso de `fetch`. Límite no documentado en el test.
 - `azdo-source.ts` convierte `status`, `vote` y `category` de la API con `as`, sin validar el valor.
@@ -321,6 +320,43 @@ duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abierto
     test; quitar la condición de fixtures en `validateCases` hace fallar su test (y rechaza `expected.json`).
   - Comentarios de `Team` y del puerto: ya no afirman lo que no se ha comprobado.
   - Skills `testing` y `tests-semanticos`: casos A–O. README: preguntas 1 y 3 al día con el alcance revisado.
+- Auditoría del arnés (`harness-audit` v0.57.1; informe en `harness-audits/2026-10-20.md`): 13 problemas (3 altos,
+  5 medios, 5 bajos) y 7 observaciones. Arreglado, con las decisiones de la persona:
+  - ISSUE-1: al terminar un paso manda la lista de cierre de `CLAUDE.md` (corregir); `traspaso-sesion` solo
+    registra cuando se usa porque el contexto falla. Cada archivo lo dice y enlaza al otro.
+  - ISSUE-2: `docs/enunciados-tfm.md` renombrado a `docs/enunciado-tfm.md`, la ruta que cita `revisar-tfm`.
+  - ISSUE-3: el agente `revisor-tfm` tiene `Write` y el check de arquitectura en su lista de Bash.
+  - ISSUE-4: `npm run verify` (typecheck + lint + test) en `package.json`; lo usan el pre-push, la lista de cierre
+    y las skills `iniciar-sesion` y `traspaso-sesion`. Sin hook `Stop`.
+  - ISSUE-5: "nunca llama a la API" se acota a la skill de síntesis; el agente de desarrollo puede ejecutar los
+    scripts de solo lectura contra la demo. "Ningún dato de cliente pasa por la IA" pasa a práctica explícita.
+    Regla de lint contra `new Date()` sin argumentos en `test/`.
+  - ISSUE-7 y 11: `revisar-tfm` sigue si falta un archivo y lo dice al principio del resultado; su descripción
+    pide preferir el agente `revisor-tfm` para no llenar el contexto.
+  - ISSUE-8: `deny` de `Read(./.env.*)`, `Bash(cat .env*)`, `Bash(source .env*)` y `Bash(grep * .env*)`;
+    `CLAUDE.md` copia la lista real.
+  - ISSUE-9: `CLAUDE.md` remite a `iniciar-sesion` al empezar; quitadas las repeticiones de "no commits" y de
+    "checks en verde".
+  - ISSUE-10: Estado del paso 6 sin ramas y README (Uso y Estructura) al día; el punto 4 de la lista de cierre
+    pide comprobar que el Estado y el README siguen siendo ciertos.
+  - ISSUE-11: `testing` queda con el cómo y enlaza `tests-semanticos` para el qué. Cierra el problema abierto
+    del solapamiento entre las dos skills.
+  - O-6: `.claude/skills/harness-audit-pape/` en `.gitignore`.
+
+**Decisiones**
+- ISSUE-11: de las dos opciones propuestas (fusionar o separar cómo y qué), la persona eligió separar.
+- Se dejan para el paso 10: la CI que ejecute `npm run verify`, con lint (ISSUE-6 y O-5), y que compruebe los
+  commits que se suben en vez del árbol de trabajo, como hace el pre-push (ISSUE-12).
+- Limitaciones documentadas, sin arreglo: los `deny` son patrones de prefijo, así que otras formas de git
+  (`git -C . commit`) o de leer `.env` no quedan bloqueadas (ISSUE-13; inferencia, no probado). No se añaden
+  hooks (`Stop` ni `PreToolUse`).
+
+**Aprendizajes**
+- La regla `no-restricted-syntax` con `NewExpression[callee.name='Date'][arguments.length=0]` marca `new Date()`
+  y no `new Date("2026-10-19T09:00:00Z")`: comprobado con un archivo temporal en `test/` (1 error, en la línea de
+  `new Date()`), borrado después.
+- Inferencia, no probada: `Read(./.env.*)` y `Bash(cat .env*)` también deberían bloquear `.env.example`, así que
+  el agente no podría leer la plantilla.
 
 **Errores y correcciones**
 - En la bitácora del 2026-10-19 se escribió como hecho que la persona ya tiene la rama en Obsidian; era una

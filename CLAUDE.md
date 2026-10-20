@@ -4,27 +4,28 @@ Herramienta que genera un **informe diario** para un desarrollador a partir de A
 PRs que esperan su revisión, sus tareas de la iteración actual y qué le falta a cada una.
 Es el caso práctico de un TFM: el código debe ser simple, verificable y reutilizable.
 
-**Al empezar cada sesión** lee `docs/bitacora.md` (estado y decisiones) y `docs/plan.md` (diseño de los
-pasos pendientes). Se trabaja un paso cada vez; al terminar uno, actualiza la bitácora.
+**Al empezar cada sesión**, sigue la skill `iniciar-sesion`. Se trabaja un paso cada vez; al terminar uno,
+sigue la lista de cierre.
 
 ### Forma de trabajar
-
-**Al empezar una sesión**
-- Lee `docs/bitacora.md` y, de `docs/plan.md`, solo la sección del paso actual. Lee más solo si el paso lo necesita.
 
 **Antes de implementar**
 - Cuenta en 2-3 líneas qué vas a hacer, también cuando la persona ya te da la lista de tareas.
 - Busca lo que ya existe (`grep` en `CLAUDE.md`, `docs/`, `.claude/`, `eslint.config.js`, `src/`, `test/`) antes de
   añadir una regla, una skill o un check. Si algo ya lo cubre, dilo y propón ampliarlo en vez de duplicarlo.
 - No amplíes el alcance sin avisar. Si algo extra parece útil, propónlo y no lo hagas.
-- No hagas commits: los hace la persona a mano.
 
 **Lista de cierre** (al terminar cada paso o bloque, antes de darlo por hecho)
-1. `npm run typecheck`, `npm run lint` y `npm test` en verde. Si algo falla, corrígelo antes de seguir.
+
+Al terminar un paso manda esta lista, también si se usa la skill `traspaso-sesion`. Esa skill solo registra sin
+corregir cuando se usa porque el contexto está fallando ([`traspaso-sesion`](.claude/skills/traspaso-sesion/SKILL.md)).
+
+1. `npm run verify` (typecheck, lint y tests) en verde. Si algo falla, corrígelo antes de seguir.
 2. `git diff --stat` para listar los archivos cambiados. Si alguno no debería haberse tocado, revísalo y avisa.
    La revisión línea a línea la hace la persona antes de su commit.
 3. Relee las instrucciones de la persona en ese turno y comprueba cada una; di cuál queda pendiente y por qué.
 4. Bitácora al día, con entradas cortas: Estado, **Próximo paso** (al terminar, no al empezar) y hechos comprobados.
+   Comprueba que el Estado y el README siguen siendo ciertos.
 5. En el mensaje final, no solo en el resumen de cierre: archivos cambiados, cómo verificarlo la persona y lo que
    haya pedido expresamente (por ejemplo, un mensaje de commit).
 
@@ -50,7 +51,9 @@ pasos pendientes). Se trabaja un paso cada vez; al terminar uno, actualiza la bi
 2. **Síntesis (IA)** — skill en `.claude/skills/`: lee `output/snapshot.json` y redacta el informe.
 3. **Verificación** — `scripts/` y tests: compara el informe con `fixtures/expected.json`.
 
-Mantén esta separación: la IA nunca llama a la API directamente; solo interpreta el snapshot.
+Mantén esta separación: la skill de síntesis nunca llama a la API; solo interpreta el snapshot.
+El agente de desarrollo sí puede ejecutar los scripts de solo lectura (`check:conn`, `list:prs`, `list:tasks`)
+contra el proyecto demo.
 Los términos de dominio ("PR envejecida", "bloqueada"…) se definen en `docs/glosario.md`; úsalos tal cual.
 
 ### Reglas de arquitectura (comprobadas)
@@ -71,12 +74,15 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 - **Solo lectura** contra Azure DevOps. El cliente HTTP de `src/` solo implementa GET; no le añadas
   otros métodos. El único código que escribe es el seed del proyecto demo (`scripts/seed-*`),
   que usa su propio token y nunca debe apuntar a una organización real.
-- **Ningún dato de cliente pasa por la IA.** Las cuentas de IA de este proyecto son personales:
-  la skill solo se ejecuta sobre el proyecto demo o fixtures.
+- **Práctica: los datos de cliente no se pasan a la IA.** Las cuentas de IA de este proyecto son personales:
+  la skill solo se ejecuta sobre el proyecto demo o fixtures, y no se pega material de clientes en el chat.
+  Ninguna herramienta lo comprueba; depende de la persona.
 - **Nunca** imprimir, registrar ni commitear tokens. Las credenciales viven solo en `.env`.
 - `output/` no se sube ni se copia a `docs/`.
 - **No hagas commit ni push.** Los hace siempre la persona; tú deja los cambios sin commitear.
-  `.claude/settings.json` lo bloquea (`deny` de `git commit`, `git push` y leer `.env`).
+  Lista `deny` de `.claude/settings.json` (copiada tal cual): `Bash(git commit *)`, `Bash(git push *)`,
+  `Read(./.env)`, `Read(./.env.*)`, `Bash(cat .env*)`, `Bash(source .env*)`, `Bash(grep * .env*)`.
+  Son patrones de prefijo: otras formas del mismo comando no quedan bloqueadas.
 - El informe separa **Hechos** (siempre con ID: `PR #12`, `WI #345`) de **Sugerencias**.
   Si falta un dato, escribe "sin datos"; no lo deduce.
 
@@ -99,10 +105,10 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 
 ## Comandos
 
-- `npm install` — instala dependencias y activa el hook `.githooks/pre-push` (typecheck + lint + tests).
+- `npm install` — instala dependencias y activa el hook `.githooks/pre-push` (`npm run verify`).
+- `npm run verify` — typecheck, lint y tests seguidos; es el "terminado" de la lista de cierre.
 - `npm run typecheck` — comprueba tipos.
 - `npm run lint` — ESLint con las reglas de capas y de solo lectura (`eslint.config.js`).
-  `typecheck`, `lint` y `npm test` deben pasar antes de dar un paso por terminado.
 - `npm test` — tests con `node:test` (sin red). Convenciones en la skill `.claude/skills/testing/`.
 - `npm run list:prs` — lista las PRs de la demo y las compara con `fixtures/demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run list:tasks` — lista los work items de la iteración actual, marca "Mis tareas" y compara con `demo-ids.json` (`-- --fixtures` usa el adaptador falso).

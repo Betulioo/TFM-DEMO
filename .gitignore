@@ -8,3 +8,6 @@ dist/
 
 # Salidas generadas (pueden contener datos reales del cliente)
 output/
+
+# Skill de auditoría descargada: no es del proyecto
+.claude/skills/harness-audit-pape/

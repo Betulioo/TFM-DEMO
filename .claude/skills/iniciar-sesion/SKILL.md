@@ -9,7 +9,7 @@ No implementes nada hasta que la persona confirme.
 
 1. Lee `docs/bitacora.md` y, de `docs/plan.md`, solo la sección del paso actual.
 2. Ejecuta `git status` y `git log --oneline -3`.
-3. Ejecuta `npm run typecheck`, `npm run lint` y `npm test`.
+3. Ejecuta `npm run verify`.
 4. Responde en 10 líneas como máximo:
    - Paso actual, qué está hecho y qué falta.
    - Próximo paso concreto según la bitácora.

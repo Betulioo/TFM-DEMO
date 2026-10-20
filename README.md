@@ -34,7 +34,16 @@ npm run typecheck
 
 ## Uso
 
-*Pendiente (pasos 4–7).*
+De momento hay scripts de consulta (solo lectura). La recogida completa (`output/snapshot.json`) y la skill del
+informe están *pendientes* (pasos 6 y 7).
+
+```bash
+npm run check:conn              # comprueba la conexión con Azure DevOps (.env)
+npm run list:prs                # PRs de la demo comparadas con fixtures/demo-ids.json
+npm run list:tasks              # work items de la iteración actual y "Mis tareas"
+npm run list:prs -- --fixtures  # lo mismo con el adaptador falso, sin red
+npm run verify                  # typecheck, lint y tests
+```
 
 ## Verificación
 
@@ -43,10 +52,12 @@ npm run typecheck
 ## Estructura
 
 ```
-src/               Recogida de datos de Azure DevOps
-scripts/           Seed del proyecto demo y verificación
+src/               Recogida de datos de Azure DevOps (domain, ports, adapters)
+scripts/           Scripts de consulta y seed del proyecto demo
+test/              Tests con node:test, sin red
 fixtures/          Casos esperados del proyecto demo
-.claude/skills/    Skill que genera el informe
+.claude/           Skills y agente de trabajo; la skill del informe llega en el paso 7
+docs/              Plan, bitácora, glosario y enunciado del TFM
 docs/evidencias/   Capturas para el documento del TFM
 output/            Salidas generadas (no se versiona)
 ```

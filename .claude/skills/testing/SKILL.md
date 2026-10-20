@@ -1,12 +1,13 @@
 ---
 name: testing
-description: Convenciones para escribir y revisar tests de este proyecto (node:test + assert/strict, sin red ni tokens) — reglas del dominio, adaptador real con lector falso, adaptador falso desde expected.json y salvaguardas del seed. Úsala al añadir o cambiar código en src/ o scripts/, al escribir tests nuevos o cuando se pida "testear" algo.
+description: Cómo escribir tests de este proyecto: herramientas y dobles (node:test + assert/strict, sin red ni tokens) — reglas del dominio, adaptador real con lector falso, adaptador falso desde expected.json y salvaguardas del seed. Úsala al añadir o cambiar código en src/ o scripts/, al escribir tests nuevos o cuando se pida "testear" algo. Qué debe comprobar cada test está en la skill tests-semanticos.
 ---
 
 # Tests del proyecto
 
 Los tests son la comprobación de que la recogida es determinista y correcta **sin depender de la API real**.
-Antes de escribir uno, lee `docs/glosario.md` (definiciones) y el caso en `fixtures/expected.json` si aplica.
+Esta skill cubre el **cómo** (herramientas, dobles y estructura). El **qué** (qué protege cada test, nombres,
+aserciones, tiempo y negativos) está en la skill [`tests-semanticos`](../tests-semanticos/SKILL.md): aplica las dos.
 
 ## Reglas comunes (todas obligatorias)
 
@@ -15,16 +16,14 @@ Antes de escribir uno, lee `docs/glosario.md` (definiciones) y el caso en `fixtu
 - **Sin red, sin `.env`, sin tokens.** Ningún test crea `AzdoReadOnlyClient` ni `AzdoWriteClient`: se les pasa
   un doble que implementa la interfaz real (`AzdoReader`, `SeedClient`, `DevOpsSource`). Así, si la interfaz
   cambia, el test deja de compilar.
-- **Fechas fijas:** `const NOW = new Date("2026-10-19T09:00:00Z")` y fechas ISO literales. Nunca `new Date()`
-  sin argumento dentro de un test.
-- **Nombres en español y con los términos del glosario tal cual:** `"mis tareas: sin asignar no cuenta"`,
-  `"PR por ID: devuelve undefined si no existe (404)"`. El nombre dice la regla, no la implementación.
-- **Comparar IDs o claves de caso, no objetos enteros**, salvo en los tests de traducción API → dominio, donde
-  sí se compara el objeto completo con `assert.deepEqual`.
+- **Fechas:** `const NOW = new Date("2026-10-19T09:00:00Z")` y fechas ISO literales. El lint rechaza
+  `new Date()` sin argumento en `test/` (el porqué: `tests-semanticos`, criterio 3).
+- **Nombres de test en español.** Qué deben citar: `tests-semanticos`, criterio 1.
+- **Aserciones:** criterios 2 y 4 de `tests-semanticos`. Excepción de forma: en los tests de traducción
+  API → dominio se compara el objeto completo con `assert.deepEqual`.
 - **Casos A–O:** salen de `fixtures/expected.json`. No copies la lista de casos en un test.
 - **Datos explícitos y mínimos:** cada test construye solo lo que importa para su regla con un helper local
   (`buildWorkItem(...)`, `buildApiPullRequest(...)`, `buildApiWorkItem(...)`). Si un helper se usa en 2+ archivos, muévelo a `test/helpers/`.
-- **Antes de dar el trabajo por terminado:** `npm run typecheck`, `npm run lint` y `npm test` en verde.
 
 ## 1. Dominio (`src/domain/rules.ts`)
 
@@ -148,6 +147,6 @@ un fallo antes de las salvaguardas haría pasar todos los tests sin probar nada.
 
 ## Lint en los tests
 
-`eslint.config.js` desactiva en `test/` dos reglas, a propósito: `no-floating-promises` (porque `node:test`
+`eslint.config.js` añade en `test/` la regla contra `new Date()` sin argumento y desactiva dos, a propósito: `no-floating-promises` (porque `node:test`
 gestiona las promesas de `test()`) y `require-await` (los dobles devuelven datos en memoria con `async`).
 No desactives otras reglas con comentarios `eslint-disable`; si una regla molesta, coméntalo con la persona.
