@@ -3,6 +3,8 @@
     "deny": [
       "Bash(git commit *)",
       "Bash(git push *)",
+      "Bash(git -C * commit *)",
+      "Bash(git -C * push *)",
       "Read(./.env)",
       "Read(./.env.*)",
       "Bash(cat .env*)",

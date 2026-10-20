@@ -348,8 +348,8 @@ duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abierto
 - Se dejan para el paso 10: la CI que ejecute `npm run verify`, con lint (ISSUE-6 y O-5), y que compruebe los
   commits que se suben en vez del árbol de trabajo, como hace el pre-push (ISSUE-12).
 - Limitaciones documentadas, sin arreglo: los `deny` son patrones de prefijo, así que otras formas de git
-  (`git -C . commit`) o de leer `.env` no quedan bloqueadas (ISSUE-13; inferencia, no probado). No se añaden
-  hooks (`Stop` ni `PreToolUse`).
+  (`git -C . commit`) o de leer `.env` no quedan bloqueadas (ISSUE-13; inferencia, no probado). En esta ronda no
+  se añaden hooks: `Stop` descartado por la persona; `PreToolUse` (para `.env` e ISSUE-13) queda para más adelante.
 
 **Aprendizajes**
 - La regla `no-restricted-syntax` con `NewExpression[callee.name='Date'][arguments.length=0]` marca `new Date()`
@@ -357,6 +357,14 @@ duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abierto
   `new Date()`), borrado después.
 - Inferencia, no probada: `Read(./.env.*)` y `Bash(cat .env*)` también deberían bloquear `.env.example`, así que
   el agente no podría leer la plantilla.
+- Pruebas de los `deny` (con la salida a `/dev/null` para que un fallo no imprimiera el token):
+  `cat .env` denegado; `cat .env.example` también denegado, lo que confirma la inferencia anterior;
+  `git -C . commit --dry-run` **no** se bloqueó (se ejecutó sin crear commit), lo que confirma ISSUE-13.
+  La persona acepta que el agente no lea `.env.example`: si hace falta, la persona la pega.
+- Para ISSUE-13 la persona elige añadir al `deny` `Bash(git -C * commit *)` y `Bash(git -C * push *)`, y dejar
+  el hook `PreToolUse` para más adelante. Con los patrones nuevos, `git -C . commit --dry-run` y
+  `git -C . push --dry-run` quedan denegados. Siguen sin cubrir formas como `git -c x=y commit` o
+  `sh -c "git commit"` (inferencia por la forma del patrón; no probado).
 
 **Errores y correcciones**
 - En la bitácora del 2026-10-19 se escribió como hecho que la persona ya tiene la rama en Obsidian; era una

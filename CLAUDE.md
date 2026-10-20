@@ -81,7 +81,8 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 - `output/` no se sube ni se copia a `docs/`.
 - **No hagas commit ni push.** Los hace siempre la persona; tú deja los cambios sin commitear.
   Lista `deny` de `.claude/settings.json` (copiada tal cual): `Bash(git commit *)`, `Bash(git push *)`,
-  `Read(./.env)`, `Read(./.env.*)`, `Bash(cat .env*)`, `Bash(source .env*)`, `Bash(grep * .env*)`.
+  `Bash(git -C * commit *)`, `Bash(git -C * push *)`, `Read(./.env)`, `Read(./.env.*)`, `Bash(cat .env*)`,
+  `Bash(source .env*)`, `Bash(grep * .env*)`.
   Son patrones de prefijo: otras formas del mismo comando no quedan bloqueadas.
 - El informe separa **Hechos** (siempre con ID: `PR #12`, `WI #345`) de **Sugerencias**.
   Si falta un dato, escribe "sin datos"; no lo deduce.
