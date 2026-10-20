@@ -1,4 +1,4 @@
-// Utilidades compartidas por los scripts que trabajan sobre el proyecto demo (list-prs, list-tasks, seed-demo).
+// Utilidades compartidas por los scripts que trabajan sobre el proyecto demo (list-prs, list-tasks, collect, seed-demo).
 import { existsSync, readFileSync } from "node:fs";
 import { loadConfig } from "../../src/config.js";
 import { AzdoReadOnlyClient } from "../../src/adapters/azdo/read-only-client.js";
@@ -17,10 +17,16 @@ export interface DemoIds {
   skipped: string[];
 }
 
-/** `--fixtures` elige el adaptador falso; si no, el real con el token de solo lectura. */
-export function sourceFromArguments(argumentList: string[]): { source: DevOpsSource; usesFixtures: boolean } {
+/**
+ * `--fixtures` elige el adaptador falso; si no, el real con el token de solo lectura. `now` fija las fechas del
+ * adaptador falso: quien también calcule con fechas (la recogida) debe pasar el mismo.
+ */
+export function sourceFromArguments(
+  argumentList: string[],
+  now = new Date(),
+): { source: DevOpsSource; usesFixtures: boolean } {
   const usesFixtures = argumentList.includes("--fixtures");
-  return { source: usesFixtures ? FixtureSource.fromFile(new Date()) : createRealSource(), usesFixtures };
+  return { source: usesFixtures ? FixtureSource.fromFile(now) : createRealSource(), usesFixtures };
 }
 
 function createRealSource(): DevOpsSource {

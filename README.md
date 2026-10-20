@@ -34,13 +34,14 @@ npm run typecheck
 
 ## Uso
 
-De momento hay scripts de consulta (solo lectura). La recogida completa (`output/snapshot.json`) y la skill del
-informe están *pendientes* (pasos 6 y 7).
+La recogida (`npm run collect`) escribe `output/snapshot.json` con solo lectura contra Azure DevOps. La skill del
+informe está *pendiente* (paso 7).
 
 ```bash
 npm run check:conn              # comprueba la conexión con Azure DevOps (.env)
 npm run list:prs                # PRs de la demo comparadas con fixtures/demo-ids.json
 npm run list:tasks              # work items de la iteración actual y "Mis tareas"
+npm run collect                 # output/snapshot.json, comparado con expected.json en la demo
 npm run list:prs -- --fixtures  # lo mismo con el adaptador falso, sin red
 npm run verify                  # typecheck, lint y tests
 ```
@@ -52,8 +53,8 @@ npm run verify                  # typecheck, lint y tests
 ## Estructura
 
 ```
-src/               Recogida de datos de Azure DevOps (domain, ports, adapters); tests junto al código en tests/
-scripts/           Scripts de consulta y seed del proyecto demo; tests del seed en lib/tests/
+src/               Recogida de datos de Azure DevOps (domain, ports, application, adapters); tests junto al código en tests/
+scripts/           Recogida (collect), scripts de consulta y seed del proyecto demo; tests en lib/tests/
 test/              Checks transversales (arquitectura, que npm test vea todos los tests) y helpers compartidos
 fixtures/          Casos esperados del proyecto demo
 .claude/           Skills y agente de trabajo; la skill del informe llega en el paso 7

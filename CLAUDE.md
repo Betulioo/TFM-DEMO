@@ -122,6 +122,7 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 - `npm test` — tests con `node:test` (sin red): junto al código en carpetas `tests/` y, en `test/`, los checks de arquitectura y de que `npm test` encuentra todos los tests. Convenciones en la skill `.claude/skills/testing/`.
 - `npm run list:prs` — lista las PRs de la demo y las compara con `fixtures/demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run list:tasks` — lista los work items de la iteración actual, marca "Mis tareas" y compara con `demo-ids.json` (`-- --fixtures` usa el adaptador falso).
+- `npm run collect` — recogida: escribe `output/snapshot.json` y, sobre la demo, compara cada caso con `expected.json` usando `demo-ids.json` (`-- --fixtures` usa el adaptador falso). Umbrales en `.env`: `AGED_PR_DAYS` y `STALE_TASK_DAYS` (3 por defecto).
 - `npm run check:conn` — comprueba la conexión con Azure DevOps usando `.env` (solo lectura).
 - `npm run seed:demo` — siembra el proyecto demo con los casos de `fixtures/expected.json`. Solo para la demo:
   pide confirmar organización y proyecto, y se niega si el proyecto ya tiene work items o el compañero no

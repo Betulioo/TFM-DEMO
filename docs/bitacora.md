@@ -35,7 +35,7 @@ Reglas de uso:
 - [x] 4. Puerto, adaptador falso y adaptador Azure DevOps: PRs donde el usuario es revisor
 - [x] 4.5. Seguridad y calidad: capas hexagonales, lint, pre-push y salvaguardas
 - [x] 5. Work items de la iteración actual
-- [ ] 6. Vinculación work item ↔ PR (sin ramas), PRs del equipo, `output/snapshot.json` y tests unitarios
+- [x] 6. Vinculación work item ↔ PR (sin ramas), PRs del equipo, `output/snapshot.json` y tests unitarios
 - [ ] 7. Skill de informe diario (Hechos / Sugerencias)
 - [ ] 8. Verificador y eval: skill frente a prompt plano, mismo snapshot, chats nuevos
 - [ ] 8b. (Opcional) CLI `npm run brief` con `claude -p`
@@ -46,21 +46,22 @@ Reglas de uso:
 - [ ] 12. Documento técnico
 - [ ] 13. Vídeo (opcional) y comprobación de accesos
 
-**Paso 6, en curso (2026-10-20).** Alcance revisado: sin ramas y con PRs del equipo.
-- Hecho y commiteado: reglas de PR en `src/domain/rules.ts`, días naturales en `src/domain/dates.ts`, `myTeams()` y
-  `pullRequestsToReviewByTeam()` en el puerto y los dos adaptadores, caso O, arreglos de la auditoría del arnés,
-  reglas `isStale` y `nextStep`, y tests con `describe`/`it` junto al código (commit `ab04ea8`).
-- Hecho sin commitear: mejoras tras la reflexión (alias `#test-helpers/*`, `NOW_ISO`, `print` en el seed, regla
-  "src no importa de tests/", `test/test-discovery.test.ts`, test con `expected.json`), siguiente paso
-  "PR en borrador" y `taskPullRequest` (PRs vinculadas no encontradas ignoradas). `npm run verify` en verde (99/99).
-- Pendiente: `src/application/collect-snapshot.ts`, `npm run collect` y comprobar el snapshot de la demo con
-  `expected.json` ("Hecho si" de `docs/plan.md`).
+**Paso 6, hecho (2026-10-20).** Alcance revisado: sin ramas y con PRs del equipo.
+- Hecho y commiteado (`ab04ea8`, `e13dd60`, `810e748`): reglas del glosario en `src/domain/rules.ts` y
+  `src/domain/dates.ts`, `myTeams()` y `pullRequestsToReviewByTeam()` en el puerto y los dos adaptadores, caso O,
+  siguiente paso "PR en borrador", `taskPullRequest` y tests junto al código.
+- Hecho sin commitear: tipo `Snapshot` en `src/domain/types.ts`, `src/application/collect-snapshot.ts`,
+  `loadThresholds()` en `src/config.ts`, `scripts/collect.ts` (`npm run collect`), comprobación por caso en
+  `scripts/lib/snapshot-check.ts` y sus tests (los 15 casos A–O pasan con el adaptador falso).
+  `npm run verify` en verde (129/129).
+- "Hecho si" de `docs/plan.md` cumplido: 15 casos en `npm test` y `npm run collect` contra la demo con A–L en `OK`.
+- Pendiente de la persona: añadir `AGED_PR_DAYS=3` y `STALE_TASK_DAYS=3` a `.env.example` (el agente no puede
+  leer ese archivo).
 
 ## Próximo paso
 
-**Seguir por:** `src/application/collect-snapshot.ts` (buscar por ID con el puerto todas las PRs vinculadas de cada
-tarea, elegir la suya con `taskPullRequest` y aplicar `nextStep` e `isStale`) y `npm run collect`, que debe quitar
-duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abiertos).
+**Seguir por:** paso 7, skill de informe diario en `.claude/skills/` (sección del paso 7 de `docs/plan.md`): lee
+solo `output/snapshot.json` y redacta Hechos (con ID) y Sugerencias con los términos del glosario.
 
 **Decisiones pendientes**
 - Nombre del siguiente paso para una PR en borrador: "PR en borrador" (frase de la persona, describe un estado)
@@ -74,6 +75,10 @@ duplicados si una PR sale a la vez como mía y del equipo (ver Problemas abierto
 - Si las comprobaciones usadas al renombrar (textos literales sin cambios y regresión de peticiones del seed) pasan
   a ser un script del repo (`scripts/check-rename.ts`). Propuesto, no hecho.
 - Si se añaden al `CLAUDE.md` las instrucciones de trabajo dadas solo en el chat (ver propuesta del traspaso).
+- Si `collect` entra en la lista de scripts de solo lectura que el agente puede ejecutar contra la demo
+  (`CLAUDE.md`, Arquitectura). Escribe `output/snapshot.json` en local, pero contra Azure DevOps solo lee.
+- Si `test/architecture.test.ts` comprueba también la regla de `src/application` (no importa adaptadores ni
+  `config.js`), que ahora solo comprueba el lint. Propuesto, no hecho.
 
 ## Problemas abiertos
 
@@ -394,6 +399,17 @@ Detectados, sin corregir; ninguno rompe los checks.
   secciones globales sin fechas, porque se perdería cuándo pasó cada cosa. "Progreso" desaparece: sus puntos pasan a
   Hechos comprobados (o a Estado); los que no citan cómo se comprobaron llevan "(dudoso)". Las "Decisiones
   pendientes" van en Próximo paso (lectura del agente: son lo que falta decidir para seguir).
+- Snapshot (decisiones del agente, aprobadas en el plan de la sesión): cada PR lleva ya calculadas `aged`,
+  `blocked` y `approved`; cada tarea es su work item con `pullRequest`, `nextStep` y `stale`; un dato que falta
+  va como `null`. Para no repetir PRs, se juntan las de "soy revisor" y las de cada equipo, se quitan las
+  repetidas por ID y se clasifican con las reglas: "pendiente de mi revisión" y "pendiente del equipo" son
+  excluyentes por definición, así que una PR no sale en las dos listas. Mis PRs se filtran con `isActive`
+  (glosario: "PRs activas"), así que las de borrador no aparecen.
+- La comprobación snapshot ↔ `expected` vive en `scripts/lib/snapshot-check.ts` y la usan `npm run collect`
+  (demo, IDs de `demo-ids.json`) y su test (fixtures), para no duplicarla. Una clave de `expected` sin comprobación
+  definida cuenta como fallo, para que un caso nuevo no pase sin comprobarse.
+- Umbrales: `loadThresholds()` carga `.env` y llama a `thresholdsFrom(environment)`, que es pura y se prueba sin
+  `.env`. Sin valor, 3 días (glosario); un valor que no es entero ≥ 1 es un error.
 
 **Hechos comprobados**
 - Correcciones tras la reflexión del paso 6 (pedidas por la persona, con las skills `testing` y
@@ -492,6 +508,13 @@ Detectados, sin corregir; ninguno rompe los checks.
   `git -C . commit --dry-run` **no** se bloqueó (se ejecutó sin crear commit), lo que confirma ISSUE-13.
   La persona acepta que el agente no lea `.env.example`: si hace falta, la persona la pega. (Movido desde
   Aprendizajes.)
+- Recogida (paso 6): `npm run verify` en verde, 129/129. Con el adaptador falso, los 15 casos A–O coinciden con
+  `expected.json` (`scripts/lib/tests/snapshot-check.test.ts`, un test por caso más dos de control). Mutación:
+  cambiar en `nextStep` "Completar la PR" por "Esperar revisión" hace fallar solo el caso F; deshecha.
+  `npm run collect -- --fixtures` escribe `output/snapshot.json` con 8 tareas, 2 PRs pendientes de mi revisión,
+  1 del equipo y 3 mías.
+- `npm run collect` contra la demo (lo ejecutó la persona): 7 tareas, 1 PR pendiente de mi revisión, 0 del equipo
+  y 3 mías; las 27 comprobaciones de A–L en `OK` ("Todo coincide"). M, N y O no existen en la demo.
 
 **Errores y correcciones**
 - Comentario `/** … src/**/tests/ … */` en `test/architecture.test.ts` → el `*/` de `**/` cerró el comentario y el
@@ -508,6 +531,9 @@ Detectados, sin corregir; ninguno rompe los checks.
 - Bitácora mal clasificada en tres turnos seguidos (avances en Decisiones, errores en Aprendizajes) → no había un
   criterio escrito de qué va en cada sección, solo los nombres → bloque "Cómo se escribe esta bitácora" con la
   tabla y reclasificación de todas las entradas.
+- El primer test de los umbrales cambiaba `process.env` y llamaba a `loadThresholds()`, que carga `.env` → el
+  proceso de tests habría cargado los tokens, aunque los tests no deben usar `.env` (skill `testing`) → se separa
+  `thresholdsFrom(environment)` y el test le pasa un objeto.
 
 **Aprendizajes**
 - Los errores recurrentes del agente se corrigen con límites que impone la herramienta (modo plan) y con criterios

@@ -70,3 +70,29 @@ export type NextStep =
   | "Atender cambios solicitados"
   | "Esperar revisión"
   | "Revisar estado";
+
+/** Umbrales en días naturales (glosario: "PR envejecida" y "Tarea estancada"). */
+export interface Thresholds {
+  agedPrDays: number;
+  staleTaskDays: number;
+}
+
+/** PR del snapshot con las señales del glosario ya calculadas. */
+export type SnapshotPullRequest = PullRequest & { aged: boolean; blocked: boolean; approved: boolean };
+
+/** Una de "Mis tareas" con su PR (`null` si no tiene), su siguiente paso y si es una tarea estancada. */
+export type SnapshotTask = WorkItem & { pullRequest: SnapshotPullRequest | null; nextStep: NextStep | null; stale: boolean };
+
+/** Lo que la recogida escribe en `output/snapshot.json` y la skill de síntesis interpreta. `null` = sin datos. */
+export interface Snapshot {
+  /** Fecha ISO 8601 de la recogida: el "ahora" de todas las reglas. */
+  generatedAt: string;
+  thresholds: Thresholds;
+  user: User;
+  teams: Team[];
+  iteration: Iteration | null;
+  myTasks: SnapshotTask[];
+  pullRequestsPendingMyReview: SnapshotPullRequest[];
+  pullRequestsPendingTeamReview: SnapshotPullRequest[];
+  myPullRequests: SnapshotPullRequest[];
+}
