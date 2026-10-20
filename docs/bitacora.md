@@ -410,6 +410,15 @@ Detectados, sin corregir; ninguno rompe los checks.
   definida cuenta como fallo, para que un caso nuevo no pase sin comprobarse.
 - Umbrales: `loadThresholds()` carga `.env` y llama a `thresholdsFrom(environment)`, que es pura y se prueba sin
   `.env`. Sin valor, 3 días (glosario); un valor que no es entero ≥ 1 es un error.
+- Tras el reflect del cierre del paso 6, la persona pidió aplicar las seis propuestas del agente ("aplica tú las
+  opciones que propones"): categoría "Incumplimiento" y criterio "Desviación del plan aprobado" en `CLAUDE.md`
+  (Criterios); regla de lint `no-non-null-assertion`; "Límites del agente en este entorno" en `CLAUDE.md` (Reglas);
+  la skill `testing` remite a `package.json` en vez de copiar los patrones de `npm test`; "Al editar" en `CLAUDE.md`
+  (Edit tras leer; copia en vez de `git checkout`) y `deny` de `Bash(git checkout *)` y `Bash(git restore *)`.
+  `git restore` lo añadió el agente porque descarta cambios igual que `git checkout`.
+- Orden (opción de la persona): esperar a su commit del paso 6 (`327cf49`) antes de aplicarlas, para no mezclar
+  cambios con los de la otra sesión. Descartado aplicarlas encima de sus cambios sin commitear o dejar `verify` en
+  rojo hasta que esa sesión quitara sus `!`.
 
 **Hechos comprobados**
 - Correcciones tras la reflexión del paso 6 (pedidas por la persona, con las skills `testing` y
@@ -515,6 +524,11 @@ Detectados, sin corregir; ninguno rompe los checks.
   1 del equipo y 3 mías.
 - `npm run collect` contra la demo (lo ejecutó la persona): 7 tareas, 1 PR pendiente de mi revisión, 0 del equipo
   y 3 mías; las 27 comprobaciones de A–L en `OK` ("Todo coincide"). M, N y O no existen en la demo.
+- `no-non-null-assertion` encontró 8 `!` (`npx eslint . --rule …`): 2 en `scripts/lib/seed.ts`, 2 en
+  `scripts/lib/tests/snapshot-check.test.ts`, 2 en `azdo-source.test.ts`, 1 en `fixture-source.test.ts` y 1 en
+  `test/architecture.test.ts`. Sustituidos por comprobaciones con error explicado (`caseByKey`, `requestedIds`) o
+  por el tipo ya acotado. Un archivo temporal con `values[0]!` falla el lint (borrado después). `npm run verify`
+  en verde (129/129).
 
 **Errores y correcciones**
 - Comentario `/** … src/**/tests/ … */` en `test/architecture.test.ts` → el `*/` de `**/` cerró el comentario y el
@@ -540,3 +554,10 @@ Detectados, sin corregir; ninguno rompe los checks.
   con definición (hueco frente a opcional, ambigüedad, tabla de la bitácora), no con más órdenes (decisión de la
   persona). Hecho comprobable que lo apoya: `CLAUDE.md` ya decía "No amplíes el alcance sin avisar" y el agente
   amplió el alcance en varios turnos de este día.
+- El reflect del cierre del paso 6 mostró que el modo plan controla el inicio pero no las desviaciones a mitad de
+  ejecución (`thresholdsFrom` y un patrón nuevo de `npm test`, avisados después), y que "Hueco frente a opcional"
+  dejaba fuera las reglas de `CLAUDE.md` y de las skills (DRY o "un test, una comprobación" salieron como
+  opcionales). Por eso se añaden "Desviación del plan aprobado" e "Incumplimiento".
+- Una corrección anotada en la bitácora no impide que se repita (`iteration!` volvió a aparecer): lo que se repite
+  pasa al lint. Y un dato copiado en dos sitios acaba siendo falso en uno (patrones de `npm test` en la skill
+  `testing`): se enlaza a la fuente en vez de copiarlo.

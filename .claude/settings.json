@@ -6,6 +6,8 @@
       "Bash(git push *)",
       "Bash(git -C * commit *)",
       "Bash(git -C * push *)",
+      "Bash(git checkout *)",
+      "Bash(git restore *)",
       "Read(./.env)",
       "Read(./.env.*)",
       "Bash(cat .env*)",

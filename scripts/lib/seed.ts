@@ -260,7 +260,8 @@ async function seedWorkItemCase(context: SeedContext, testCase: Case, setup: Wor
   if (!setup.pr) return { workItemId: workItem.id };
 
   // Revisor: el compañero si existe; si no, tú mismo.
-  const reviewer = setup.pr.vote === null ? undefined : context.teammate ? { client: context.teammateClient!, user: context.teammate } : { client: context.currentUserClient, user: context.currentUser };
+  const teammateReviewer = context.teammate && context.teammateClient ? { client: context.teammateClient, user: context.teammate } : undefined;
+  const reviewer = setup.pr.vote === null ? undefined : (teammateReviewer ?? { client: context.currentUserClient, user: context.currentUser });
 
   const pullRequest = await context.currentUserClient.request<CreatedPullRequest>("POST", `${context.encodedProject}/_apis/git/repositories/${context.repositoryId}/pullrequests`, {
     body: {
@@ -283,7 +284,9 @@ async function seedTeammatePrCase(context: SeedContext, testCase: Case, setup: P
   // `validateCases` ya rechaza este caso fuera de fixtures; aquí solo acota el tipo para leer `myVote`.
   if (setup.reviewer === "myTeam") throw new Error(`Caso ${testCase.key}: el seed no crea PRs con el equipo como revisor (solo fixtures).`);
   context.print(progress(`Caso ${testCase.key}: PR del compañero "${setup.title}"`));
-  const teammateClient = context.teammateClient!;
+  // `runSeed` salta estos casos sin compañero; el error solo acota el tipo.
+  const teammateClient = context.teammateClient;
+  if (!teammateClient) throw new Error(`Caso ${testCase.key}: necesita AZDO_PAT_TEAMMATE.`);
   // Sin ID en la rama: no está vinculada a ninguna de tus tareas.
   const branch = `feat/revision-${testCase.key.toLowerCase()}_${slug(setup.title)}`;
   await createBranch(teammateClient, context, branch, slug(setup.title));

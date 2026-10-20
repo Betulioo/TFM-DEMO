@@ -32,10 +32,12 @@ function sourceFiles(directory = "src"): SourceFile[] {
 /** Módulos importados (import/export … from, import "x", import("x")), resueltos a ruta del repo si son relativos. */
 function imports(file: SourceFile): string[] {
   const pattern = /(?:import|export)\s[^;]*?from\s*["']([^"']+)["']|import\s*\(?\s*["']([^"']+)["']/g;
-  return [...file.text.matchAll(pattern)].map((match) => {
-    const specifier = (match[1] ?? match[2])!;
-    if (!specifier.startsWith(".")) return specifier;
-    return relative(ROOT, resolve(ROOT, dirname(file.path), specifier)).split("\\").join("/");
+  return [...file.text.matchAll(pattern)].flatMap((match) => {
+    // El patrón siempre captura uno de los dos grupos; si no, no hay import que mirar.
+    const specifier = match[1] ?? match[2];
+    if (specifier === undefined) return [];
+    if (!specifier.startsWith(".")) return [specifier];
+    return [relative(ROOT, resolve(ROOT, dirname(file.path), specifier)).split("\\").join("/")];
   });
 }
 

@@ -23,6 +23,14 @@ function fixtureIds(testCase: Case, index: number): CaseIds {
   };
 }
 
+/** Caso de expected.json por su clave, con su posición. Falla si la clave no existe. */
+function caseByKey(key: string): { testCase: Case; index: number } {
+  const index = cases.findIndex((testCase) => testCase.key === key);
+  const testCase = cases[index];
+  if (testCase === undefined) throw new Error(`No existe el caso ${key} en fixtures/expected.json`);
+  return { testCase, index };
+}
+
 function failedChecks(testCase: Case, index: number, checkedSnapshot = snapshot): string[] {
   return checkCase(checkedSnapshot, testCase, fixtureIds(testCase, index))
     .filter((check) => !check.passed)
@@ -45,22 +53,23 @@ describe("Snapshot con el adaptador falso: casos de expected.json", () => {
   });
 
   it("control: si K falta de pendientes de mi revisión, el caso K falla", () => {
-    const indexK = cases.findIndex((testCase) => testCase.key === "K");
+    const { testCase: caseK, index: indexK } = caseByKey("K");
     const pullRequestIdK = fixturePullRequestId(indexK);
     const withoutK = {
       ...snapshot,
       pullRequestsPendingMyReview: snapshot.pullRequestsPendingMyReview.filter((pullRequest) => pullRequest.id !== pullRequestIdK),
     };
 
-    const result = failedChecks(cases[indexK]!, indexK, withoutK);
+    const result = failedChecks(caseK, indexK, withoutK);
 
     assert.deepEqual(result, ["K → pendingMyReview: esperado true, obtenido false"]);
   });
 
   it("una clave de expected sin comprobación definida es un fallo, no se salta", () => {
-    const unknownCase: Case = { ...cases[0]!, expected: { claveNueva: true } };
+    const { testCase: caseA, index: indexA } = caseByKey("A");
+    const unknownCase: Case = { ...caseA, expected: { claveNueva: true } };
 
-    const result = failedChecks(unknownCase, 0);
+    const result = failedChecks(unknownCase, indexA);
 
     assert.deepEqual(result, ["A → claveNueva: sin comprobación definida"]);
   });

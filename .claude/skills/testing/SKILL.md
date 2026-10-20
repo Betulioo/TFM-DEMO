@@ -17,9 +17,9 @@ aserciones, tiempo y negativos) está en la skill [`tests-semanticos`](../tests-
   `src/domain/tests/rules.test.ts`, `scripts/lib/seed.ts` → `scripts/lib/tests/seed.test.ts`. Las carpetas
   `tests/` de `src/` quedan fuera de las reglas de capas (`CLAUDE.md`): en ellas solo van tests y sus helpers.
   En `test/` queda lo que no prueba un módulo concreto (`architecture.test.ts`, `test-discovery.test.ts`) y los
-  helpers compartidos. `npm test` busca en `test/*.test.ts`, `src/*/tests/`, `src/*/*/tests/` y `scripts/*/tests/`
-  (globs de la shell): una carpeta `tests/` a otra profundidad necesita su patrón en `package.json`, y
-  `test/test-discovery.test.ts` falla si falta.
+  helpers compartidos. Los patrones que ejecuta `npm test` están solo en el script `test` de `package.json` (no se
+  copian aquí): una carpeta `tests/` nueva que no encaje necesita su patrón allí, y `test/test-discovery.test.ts`
+  falla si falta.
 - **Helpers:** locales en el archivo. Si tests de carpetas distintas comparten un helper, va a `test/helpers/` y se
   importa con el alias `#test-helpers/…` (campo `imports` de `package.json`), no con rutas `../../../`.
 - **Sin red, sin `.env`, sin tokens.** Ningún test crea `AzdoReadOnlyClient` ni `AzdoWriteClient`: se les pasa

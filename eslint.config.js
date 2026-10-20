@@ -42,6 +42,10 @@ export default tseslint.config(
   },
   { files: ["eslint.config.js"], ...tseslint.configs.disableTypeChecked },
 
+  // Sin `!`: oculta un `undefined` posible en vez de tratarlo. Se corrigió una vez (docs/bitacora.md, 2026-10-20) y
+  // volvió a aparecer; una corrección que se repite la comprueba el lint, no la memoria del agente.
+  { rules: { "@typescript-eslint/no-non-null-assertion": "error" } },
+
   // --- Nombres legibles (CLAUDE.md, "Código limpio") ---
   {
     rules: {

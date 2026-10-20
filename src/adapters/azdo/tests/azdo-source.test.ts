@@ -40,6 +40,12 @@ function fakeReader(respond: (call: Call) => unknown): { reader: AzdoReader; cal
 /** Lista de `count` números consecutivos desde `first`. */
 const numbersFrom = (first: number, count: number) => listOf(count, (position) => first + position);
 
+/** IDs del parámetro `ids` de una petición de detalle de work items. Falla si la petición no lo lleva. */
+function requestedIds(params: Record<string, string>): string[] {
+  if (params.ids === undefined) throw new Error("La petición de detalle no lleva el parámetro ids");
+  return params.ids.split(",");
+}
+
 describe("Adaptador Azure DevOps: pull requests", () => {
   it("PRs donde soy revisor: pide las PRs activas del proyecto con mi ID como revisor", async () => {
     const { reader, calls } = fakeReader(() => ({ value: [] }));
@@ -132,7 +138,7 @@ function iterationReader(workItemIds: number[], workItemsFor: (ids: number[]) =>
       // Un mismo WI puede aparecer varias veces (relaciones padre-hijo): se deduplica.
       return { workItemRelations: [...workItemIds, workItemIds[0]].map((id) => ({ target: { id } })) };
     }
-    if (path.endsWith("/_apis/wit/workitems")) return { value: workItemsFor(params.ids!.split(",").map(Number)) };
+    if (path.endsWith("/_apis/wit/workitems")) return { value: workItemsFor(requestedIds(params).map(Number)) };
     if (path.endsWith("/User%20Story/states")) return { value: [{ name: "New", category: "Proposed" }, { name: "Resolved", category: "InProgress" }] };
     if (path.endsWith("/Bug/states")) return { value: [{ name: "Resolved", category: "Resolved" }] };
     throw new Error(`ruta inesperada: ${path}`);
@@ -172,7 +178,7 @@ describe("Adaptador Azure DevOps: iteración y work items", () => {
     const workItems = await new AzdoSource(reader, "TFM Demo").workItemsInIteration("it-1");
 
     const detailCalls = calls.filter((call) => call.path.endsWith("/_apis/wit/workitems"));
-    assert.deepEqual(detailCalls.map((call) => call.params.ids!.split(",").length), [200, 1]);
+    assert.deepEqual(detailCalls.map((call) => requestedIds(call.params).length), [200, 1]);
     assert.equal(workItems.length, 201);
   });
 

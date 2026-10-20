@@ -13,7 +13,13 @@ sigue la lista de cierre.
 - Cuenta en 2-3 líneas qué vas a hacer, también cuando la persona ya te da la lista de tareas.
 - Busca lo que ya existe (`grep` en `CLAUDE.md`, `docs/`, `.claude/`, `eslint.config.js`, `src/`, `test/`) antes de
   añadir una regla, una skill o un check. Si algo ya lo cubre, dilo y propón ampliarlo en vez de duplicarlo.
-- No amplíes el alcance: aplica "Hueco frente a opcional" (en Criterios, abajo).
+- No amplíes el alcance: aplica "Hueco, incumplimiento u opcional" (en Criterios, abajo).
+
+**Al editar**
+- Edita con la herramienta Edit después de leer el archivo, no con scripts (Python, `sed`): así no se pisan cambios
+  ajenos ni se edita a ciegas.
+- Para una prueba temporal (mutación, archivo de control), guarda antes una copia y restáurala. No deshagas cambios
+  con `git checkout` ni `git restore`: descartan también lo que no es tuyo (están en la lista `deny`).
 
 **Lista de cierre** (al terminar cada paso o bloque, antes de darlo por hecho)
 
@@ -38,10 +44,15 @@ corregir cuando se usa porque el contexto está fallando ([`traspaso-sesion`](.c
 **Ambigüedad.** Si una petición admite dos lecturas que llevan a cambios distintos, no elijas: pregunta con las dos
 opciones y lo que implica cada una. Si solo cambia un detalle menor, elige la lectura más literal y dilo.
 
-**Hueco frente a opcional.**
+**Hueco, incumplimiento u opcional.**
 - Hueco: falta algo que exige `docs/plan.md`, `docs/glosario.md`, `fixtures/expected.json` o `docs/enunciado-tfm.md`.
   Se presenta como pendiente, citando la fuente que lo exige. Nunca se ofrece como opcional.
-- Opcional: algo útil que ninguna de esas fuentes exige. Se propone y no se hace.
+- Incumplimiento: algo hecho contradice una regla de este `CLAUDE.md` o de una skill del proyecto. Se corrige en el
+  mismo paso, citando la regla. Nunca se ofrece como opcional.
+- Opcional: algo útil que ninguna de esas fuentes ni reglas exige. Se propone y no se hace.
+
+**Desviación del plan aprobado.** Si al ejecutar hay que salirse del plan (una función, un archivo o un patrón que
+no estaban), para y pregunta antes de seguir, con lo que cambia y por qué. Avisar después no basta.
 
 ### Bitácora (`docs/bitacora.md`)
 
@@ -90,9 +101,14 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 - `output/` no se sube ni se copia a `docs/`.
 - **No hagas commit ni push.** Los hace siempre la persona; tú deja los cambios sin commitear.
   Lista `deny` de `.claude/settings.json` (copiada tal cual): `Bash(git commit *)`, `Bash(git push *)`,
-  `Bash(git -C * commit *)`, `Bash(git -C * push *)`, `Read(./.env)`, `Read(./.env.*)`, `Bash(cat .env*)`,
-  `Bash(source .env*)`, `Bash(grep * .env*)`.
+  `Bash(git -C * commit *)`, `Bash(git -C * push *)`, `Bash(git checkout *)`, `Bash(git restore *)`, `Read(./.env)`,
+  `Read(./.env.*)`, `Bash(cat .env*)`, `Bash(source .env*)`, `Bash(grep * .env*)`.
   Son patrones de prefijo: otras formas del mismo comando no quedan bloqueadas.
+- **Límites del agente en este entorno** (no lo intentes; pídeselo a la persona):
+  - No puede leer `.env` ni ningún `.env.*`, tampoco `.env.example`: si hace falta su contenido, la persona lo pega.
+  - Contra el proyecto demo solo ejecuta los scripts de solo lectura de "Arquitectura" (`check:conn`, `list:prs`,
+    `list:tasks`). Cualquier otro (p. ej. `collect` sin `--fixtures`) lo ejecuta la persona.
+  - No hace commit, push, `git checkout` ni `git restore` (lista `deny`).
 - El informe separa **Hechos** (siempre con ID: `PR #12`, `WI #345`) de **Sugerencias**.
   Si falta un dato, escribe "sin datos"; no lo deduce.
 
@@ -111,7 +127,9 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
   Dentro de un archivo, una constante o función con nombre en vez de repetir el literal.
 - **Funciones pequeñas con un solo propósito**, con nombre que diga qué hacen. Si necesitan un comentario
   para explicar *qué* hacen, el nombre no es bueno; los comentarios explican el *porqué*.
-- Lo comprobable lo comprueba el lint (`id-length`, `id-denylist` en `eslint.config.js`).
+- **Sin `!` (aserción de no nulo):** si un valor puede faltar, se comprueba y se lanza un error con explicación.
+- Lo comprobable lo comprueba el lint (`id-length`, `id-denylist` y `no-non-null-assertion` en `eslint.config.js`).
+  Una corrección que se repite pasa a ser una regla del lint, no una nota en la bitácora.
 
 ## Comandos
 

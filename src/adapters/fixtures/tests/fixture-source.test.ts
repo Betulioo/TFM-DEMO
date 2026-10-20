@@ -20,7 +20,8 @@ const hasCaseKey = (key: string) => (item: { title: string }) => item.title.star
 
 async function currentIterationWorkItems() {
   const iteration = await source.currentIteration();
-  return source.workItemsInIteration(iteration!.id);
+  if (iteration === undefined) throw new Error("El adaptador falso no tiene iteración actual");
+  return source.workItemsInIteration(iteration.id);
 }
 
 describe("Adaptador falso: pull requests", () => {
