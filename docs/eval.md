@@ -118,8 +118,8 @@ es unas dos veces el coste por informe.
 - Verificador: salida completa de `npm run verify:brief -- --fixtures` sobre a-1
   ([`eval-a-1-verify.md`](evidencias/eval-a-1-verify.md)) y b-1 ([`eval-b-1-verify.md`](evidencias/eval-b-1-verify.md)).
   Las otras dos de cada variante dan los mismos números (tabla de arriba).
-- Uso: [`eval-uso.md`](evidencias/eval-uso.md), con tiempo, tokens y coste de las 6 ejecuciones y la media de cada
-  variante.
+- Uso: [`eval-uso.md`](evidencias/eval-uso.md) (captura en `eval-uso.png`), con tiempo, tokens y coste de las 6
+  ejecuciones y la media de cada variante.
 
 ## Límites
 

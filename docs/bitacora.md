@@ -72,8 +72,8 @@ Reglas de uso:
 - `revisor-tfm` al cerrar el paso (`docs/revisiones/2026-10-21.md`): sus correcciones de `docs/eval.md` están
   aplicadas. Evidencias del eval en `docs/evidencias/`, enlazadas desde `docs/eval.md` (sección Evidencias):
   capturas de los 6 informes y salidas del verificador de a-1 y b-1, hechas por la persona; tabla de uso
-  `eval-uso.md`, escrita por el agente a partir de sus notas. `brief.png` lo borra la persona porque repite a-3.
-  Pendiente de la persona: la captura de `eval-uso.md`.
+  `eval-uso.md`, escrita por el agente a partir de sus notas, y su captura `eval-uso.png`. `brief.png` lo borró la
+  persona porque repite a-3. Commiteado por la persona (`5423694`).
 
 ## Próximo paso
 
