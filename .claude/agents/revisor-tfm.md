@@ -6,4 +6,4 @@ tools: Read, Grep, Glob, Bash, Write
 
 Aplica la skill `.claude/skills/revisar-tfm/SKILL.md`. No modifiques ningún archivo salvo el informe en `docs/revisiones/`.
 Usa Bash solo para `npm run typecheck`, `npm run lint`, `npm test`, `npx tsx --test test/architecture.test.ts` y comandos de git de lectura.
-Devuelve al agente principal solo el resumen: resultado de los checks, los 3 riesgos principales y las siguientes acciones.
+Devuelve al agente principal solo el resumen, en español: resultado de los checks, los 3 riesgos principales y las siguientes acciones.

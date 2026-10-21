@@ -120,6 +120,8 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 - TypeScript estricto, ESM, Node ≥ 20.12. Ejecutar con `tsx`.
 - `fetch` nativo, `process.loadEnvFile()` y `node:test`; no añadir dependencias sin necesidad clara.
 - Código y comentarios en español sencillo; nombres de variables en inglés.
+- Todo lo demás también en español: respuestas en el chat, informes, bitácora y lo que devuelven los subagentes.
+  Si un subagente o una herramienta responde en otro idioma, tradúcelo antes de pasárselo a la persona.
 
 ### Código limpio
 
@@ -144,6 +146,10 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 - `npm run list:prs` — lista las PRs de la demo y las compara con `fixtures/demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run list:tasks` — lista los work items de la iteración actual, marca "Mis tareas" y compara con `demo-ids.json` (`-- --fixtures` usa el adaptador falso).
 - `npm run collect` — recogida: escribe `output/snapshot.json` y, sobre la demo, compara cada caso con `expected.json` usando `demo-ids.json` (`-- --fixtures` usa el adaptador falso). Umbrales en `.env`: `AGED_PR_DAYS` y `STALE_TASK_DAYS` (3 por defecto). Tarea bloqueada: `BLOCKED_TAG` (`Blocked`), `BLOCKED_STATE` (`Locked`) y `LOCK_REASON_FIELD` (campo del motivo, sin valor por defecto).
+- `npm run verify:brief` — comprueba un informe (`output/brief-<fecha del snapshot>.md` o la ruta que se pase) contra
+  `expected.json`: por caso, por sección (aciertos, omisiones, mal clasificados, inventados), Sugerencias y una
+  medida global para el eval (`docs/eval.md`). IDs de `demo-ids.json`, o del adaptador falso con `-- --fixtures`. Solo
+  lee archivos locales: el agente puede ejecutarlo. Lógica en `scripts/lib/brief-check.ts`.
 - `npm run check:conn` — comprueba la conexión con Azure DevOps usando `.env` (solo lectura).
 - `npm run seed:demo` — siembra el proyecto demo con los casos de `fixtures/expected.json`. Solo para la demo:
   pide confirmar organización y proyecto, y se niega si el proyecto ya tiene work items o el compañero no

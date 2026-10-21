@@ -15,8 +15,8 @@ el proyecto demo o sobre fixtures (práctica de datos de cliente de [`CLAUDE.md`
    `npm run collect -- --fixtures`. No ejecutes ningún otro script.
 2. **Lee solo `output/snapshot.json`.** No leas `fixtures/`, `expected.json`, `demo-ids.json` ni el código: el
    informe sale únicamente del snapshot.
-3. **Escribe `output/brief-AAAA-MM-DD.md`** con la plantilla de abajo, sin cambiar los encabezados: el verificador
-   del paso 8 busca los IDs por sección. La fecha es la de `generatedAt` tal cual, en UTC, también para "es de
+3. **Escribe `output/brief-AAAA-MM-DD.md`** con la plantilla de abajo, sin cambiar los encabezados ni los textos de
+   las señales: el verificador (`npm run verify:brief`) busca los IDs por sección y las señales en su línea. La fecha es la de `generatedAt` tal cual, en UTC, también para "es de
    hoy" del paso 1 (decisión de la persona): una recogida entre las 00:00 y las 02:00 en España sale con la fecha
    del día anterior.
 4. Al terminar, di la ruta del archivo y cuántos elementos hay en cada sección de Hechos.

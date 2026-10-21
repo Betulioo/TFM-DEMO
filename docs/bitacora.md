@@ -37,7 +37,7 @@ Reglas de uso:
 - [x] 5. Work items de la iteración actual
 - [x] 6. Vinculación work item ↔ PR (sin ramas), PRs del equipo, `output/snapshot.json` y tests unitarios
 - [x] 7. Skill de informe diario (Hechos / Sugerencias)
-- [ ] 8. Verificador y eval: skill frente a prompt plano, mismo snapshot, chats nuevos
+- [x] 8. Verificador y eval: skill frente a prompt plano, mismo snapshot, chats nuevos
 - [ ] 8b. (Opcional) CLI `npm run brief` con `claude -p`
 - [ ] 8c. (Opcional) Integración con Obsidian por archivos
 - [ ] 9. Medición del uso de la herramienta en la demo
@@ -57,22 +57,37 @@ Reglas de uso:
   - Regla `isBlockedTask`; `tags` y `lockReason` en `WorkItem`; `blocked` en las tareas del snapshot y
     `blockedTaskCriteria` en el snapshot.
   - Casos P y Q (fixtures) y skill (Mis tareas, Riesgos, Sugerencias).
-- Todo lo anterior está sin commitear (lo hace la persona).
+- Commiteado por la persona (`3389820` y `ad5063e`).
 - Pendiente de la persona en `.env.example` (el agente no puede leerlo):
   - Del paso 6: `AGED_PR_DAYS=3` y `STALE_TASK_DAYS=3`.
   - De la tarea bloqueada: `BLOCKED_TAG=Blocked`, `BLOCKED_STATE=Locked` y `LOCK_REASON_FIELD=`.
 
+**Paso 8, cerrado (2026-10-21).**
+- Verificador `npm run verify:brief` (`scripts/verify-brief.ts`, lógica en `scripts/lib/brief-check.ts`, 14
+  tests). Probado con informes de la skill sobre la demo (A–L) y sobre fixtures (A–Q): todo coincide.
+- Eval hecho y analizado en `docs/eval.md`: 3 ejecuciones con la skill y 3 con el prompt plano sobre el snapshot de
+  fixtures. Informes en `output/eval/` (no se versionan).
+- Parte del verificador entró en el commit `ad5063e`. El resto del paso está sin commitear: correcciones,
+  documentación (README, `CLAUDE.md`, skill), `docs/eval.md` y `docs/revisiones/`.
+- `revisor-tfm` al cerrar el paso (`docs/revisiones/2026-10-21.md`): sus correcciones de `docs/eval.md` están
+  aplicadas. Evidencias del eval en `docs/evidencias/`, enlazadas desde `docs/eval.md` (sección Evidencias):
+  capturas de los 6 informes y salidas del verificador de a-1 y b-1, hechas por la persona; tabla de uso
+  `eval-uso.md`, escrita por el agente a partir de sus notas. `brief.png` lo borra la persona porque repite a-3.
+  Pendiente de la persona: la captura de `eval-uso.md`.
+
 ## Próximo paso
 
-**Seguir por:** paso 8, en una sesión nueva:
-- `scripts/verify-brief.ts` lee los IDs por encabezado de la plantilla, dentro de enlaces `[PR #n](…)` /
-  `[WI #n](…)`, y los compara con `fixtures/expected.json`.
-- Debe contar con los casos P y Q y con la línea "tarea bloqueada" de Mis tareas y de Riesgos.
-- Antes, la persona hace el commit de los pasos 7 y de la tarea bloqueada.
-- Lanzar el agente `revisor-tfm`: su descripción pide usarlo al cerrar el paso 6 y no se hizo (no existe
-  `docs/revisiones/`). Se puede hacer ahora o junto al cierre del paso 8.
+**Seguir por:** el paso 9 ([`docs/plan.md`](plan.md)): cronometrar 3 usos completos sobre la demo y escribir
+`docs/medicion.md`. Necesita el paso 0 (tiempo de la rutina manual en el cliente, lo mide la persona) para
+compararlo. Antes, la persona decide si hace los pasos opcionales 8b u 8c.
 
 **Decisiones pendientes**
+- Si se versiona un informe de la skill sobre fixtures (p. ej. `scripts/lib/tests/data/brief-fixtures.md`) como
+  dato de prueba del verificador, para cubrir el problema abierto de `renderBrief`. Propuesto por `revisor-tfm`;
+  no hecho. El informe de fixtures de esta sesión está fuera del repo, en el scratchpad del agente.
+- Si "PR sin revisores" pasa a ser una señal del glosario y de la skill. Los tres informes del prompt plano
+  avisan de que `PR #4` no tiene revisores (cierto en el snapshot) y la skill solo dice "sin votos"
+  (`docs/eval.md`, Análisis). Propuesto por el agente; no hecho.
 - Nombre del siguiente paso para una PR en borrador: "PR en borrador" (frase de la persona, describe un estado)
   o una acción como los demás pasos ("Publicar la PR").
 - Dos extensiones del agente sin confirmar: con varias PRs vinculadas, si la de mayor ID no se encuentra cuenta la
@@ -110,6 +125,12 @@ Detectados, sin corregir; ninguno rompe los checks.
 - Tarea bloqueada sin comprobar contra el proceso del cliente: si `Locked` tiene allí categoría *Completed* o
   *Removed*, esas tareas no entran en "Mis tareas" y no salen como bloqueadas (en fixtures se supone *InProgress*).
   Si Lock reason es un campo de texto enriquecido, el motivo llega con HTML.
+- El test del verificador genera su informe "correcto" con `renderBrief`, que copia la plantilla de `daily-brief`.
+  Si la plantilla cambia, el test y el verificador pueden seguir de acuerdo entre sí y en verde. Ningún test usa un
+  informe escrito por la skill (detectado por `revisor-tfm`, `docs/revisiones/2026-10-20.md`).
+- La medida global solo reconoce `PR #n` y `WI #n`. En el eval pasó: el prompt plano sacó 0/16, 0/16 y 6/16, y
+  a mano tiene 16/16 en los tres (`docs/eval.md`). Para comparar con un informe sin plantilla, hay que contar a
+  mano.
 
 ## Registro
 
@@ -678,6 +699,10 @@ Detectados, sin corregir; ninguno rompe los checks.
   - `AGILE_CATEGORIES` pasa a llamarse `STATE_CATEGORIES` en el adaptador falso, porque ahora incluye `Locked`,
     que no es de Agile.
   - Se amplía la descripción de `verifiedIn.fixtures` en `expected.json`.
+- Primera revisión con `revisor-tfm`: el informe salió en español, pero el agente devolvió el resumen en inglés y
+  el agente principal lo pasó a la persona sin traducir. Ninguna regla pedía español fuera del código y los
+  comentarios → `CLAUDE.md` (Convenciones) pide ahora español en todo, incluidos los subagentes, y
+  `revisor-tfm` pide el resumen en español.
 
 **Aprendizajes**
 - Los errores recurrentes del agente se corrigen con límites que impone la herramienta (modo plan) y con criterios
@@ -691,3 +716,70 @@ Detectados, sin corregir; ninguno rompe los checks.
 - Una corrección anotada en la bitácora no impide que se repita (`iteration!` volvió a aparecer): lo que se repite
   pasa al lint. Y un dato copiado en dos sitios acaba siendo falso en uno (patrones de `npm test` en la skill
   `testing`): se enlaza a la fuente en vez de copiarlo.
+
+### 2026-10-21
+
+**Decisiones**
+- Verificador del paso 8 (opciones de la persona en modo plan, sesión del 2026-10-20 al 21):
+  - "Inventado" (el ID no está en el snapshot) y "mal clasificado" (existe, pero no toca en esa sección) van
+    separados, para distinguir alucinar de clasificar mal. Descartado contarlo todo como inventado.
+  - Se comprueban los IDs y además las señales de cada línea (siguiente paso, "PR envejecida", "PR bloqueada" o
+    "PR aprobada", "tarea estancada", "tarea bloqueada" con su motivo). Descartado comprobar solo IDs.
+  - Dos medidas: por sección (decide el código de salida) y global (IDs en cualquier parte), para comparar con el
+    prompt plano, que no usa los encabezados. Descartado medir solo por sección.
+  - Alcance de la sesión: verificador y protocolo del eval; las ejecuciones las hace la persona.
+- Decisiones del agente, aprobadas en el plan: cada clave de `expected` tiene una regla en `brief-check.ts`, como
+  `OBSERVERS` en `snapshot-check.ts`, y una clave sin regla es un fallo. El ID de una línea es su primer
+  `PR #n`/`WI #n`, con o sin enlace. En la demo se saltan los casos sin ID, como en `collect`.
+- DRY (aprobado en el plan): `allPullRequests` sale de `snapshot-check.ts` y `caseIdsFromDemo` y `SNAPSHOT_PATH`
+  pasan a `scripts/lib/demo.ts`; los usan `collect` y `verify-brief`.
+- La variante (b) del eval va en una carpeta vacía con solo el snapshot. En el repo, "resume mi día" carga la skill
+  (está en su descripción) y además se leen `CLAUDE.md` y el glosario. Decisión del agente en `docs/eval.md`; la
+  persona puede revisarla.
+- Eval (decisiones del agente, aprobadas en el plan de la sesión): el número global del verificador se deja como
+  sale y el recuento a mano va en una columna aparte ("Global a mano"). El eval usa el snapshot de fixtures (A–Q),
+  como proponía `docs/eval.md`. Las 6 ejecuciones valen tal cual, aunque los prompts variaron; se anota en Límites.
+
+**Hechos comprobados**
+- `npm run verify:brief` sobre el informe de la demo del 2026-10-20 (`output/brief-2026-10-20.md`, escrito por la
+  skill): 28 comprobaciones de caso A–L en OK; 0 omisiones, mal clasificados e inventados; global 11/11.
+- De punta a punta sobre fixtures: `npm run collect -- --fixtures`, skill `daily-brief` y
+  `npm run verify:brief -- --fixtures` → todo coincide en A–Q, incluidos P y Q con "tarea bloqueada" y su motivo
+  en Mis tareas y en Riesgos; global 16/16. Control con una copia sin la línea de P: 5 fallos (4 de caso y la
+  omisión de WI #116 en Mis tareas). Después se restauró `output/` desde una copia (snapshot de la demo).
+- 14 tests en `scripts/lib/tests/brief-check.test.ts`. Mutaciones de control: no mirar el texto de la línea hace
+  fallar los 3 tests de señales; contar todo lo que sobra como inventado hace fallar el de mal clasificado.
+  Restaurado desde una copia: 14/14. `npm run verify`: 167 tests en verde.
+- Correcciones de la revisión de `revisor-tfm` (`docs/revisiones/2026-10-20.md`), por incumplir la skill
+  `daily-brief` y la skill `testing`: `renderBrief` marcaba "tarea estancada" también en tareas con PR; el test de
+  la medida global comprobaba dos comportamientos y pasa a ser dos.
+- Documentación: `verify:brief` en `CLAUDE.md` (Comandos) y README (Uso, Verificación con el recorrido sin red,
+  Estructura). La skill `daily-brief` nombra el verificador y pide no cambiar los textos de las señales.
+- Eval (`docs/eval.md`):
+  - Preparación y ejecución: snapshot de `npm run collect -- --fixtures` (11:31 UTC). La persona hizo 6 chats
+    nuevos (3 en el repositorio, 3 en `~/Desktop/eval-prompt-plano/` con solo una copia del snapshot; `cmp` dice que
+    es idéntica). Copió los informes y los datos de uso a mano. El agente los copió a `output/eval/a-1.md` … `b-3.md`.
+  - `npm run verify:brief -- --fixtures output/eval/<x>.md`: a-1, a-2 y a-3 dan "Todo coincide" (16/16, 0
+    inventados). b-1, b-2 y b-3 dan 60 comprobaciones fallidas y 0/16, 0/16 y 6/16 global.
+  - Recuento del agente, leyendo los informes b enteros contra el snapshot: 16/16 IDs y ningún inventado en los tres.
+    b-1 y b-2 ponen siguientes pasos donde el snapshot tiene `nextStep: null` (p. ej. "Empezar" en `WI #101`).
+  - Los Hechos de a-1, a-2 y a-3 son idénticos (`diff`: solo cambian las Sugerencias 6–10).
+  - Coste por informe: 0,47–0,66 $ con la skill y 0,25–0,32 $ con el prompt plano (informe de uso de Claude Code).
+
+**Errores y correcciones**
+- Cambios fuera del plan aprobado, avisados después y no antes (incumple "Desviación del plan aprobado"):
+  - `reportFailures` recibe la unidad (`"comprobación(es)"`), porque decía "caso(s)" y aquí se cuentan
+    comprobaciones.
+  - `verify-brief` se niega si el snapshot y `--fixtures` no coinciden, porque si no todos los IDs fallarían sin
+    decir por qué.
+  - `main` es síncrona y se pasa a `runScript` con `Promise.resolve().then(main)` (lo pide `require-await`).
+  - La frase de la skill pasó de "sin cambiar los encabezados" a incluir también "ni los textos de las señales".
+  Son pequeños, pero la regla pide preguntar antes. Cambia: ante un detalle que no está en el plan, preguntar en el
+  momento, aunque parezca menor.
+- El cierre de la app interrumpió la sesión a mitad del paso, y la persona commiteó el verificador en `ad5063e`
+  antes de que estuviera terminado. Al retomar, `git status` y `git log` lo mostraron; no se perdió nada.
+- Eval: el agente puso 19 en "Casos que fallan" de (b). Contó sobre la salida del verificador cortada con
+  `tail -40`, que no mostraba los fallos de A–H. Lo detectó `revisor-tfm` (`docs/revisiones/2026-10-21.md`); con
+  `grep -c` sobre la salida entera da 39. Además, la conclusión decía "los mismos hechos" y no cuadraba con los
+  siguientes pasos inventados de b-1 y b-2, y la frase sobre `PR #5` en b-3 era falsa. Corregido en `docs/eval.md`.
+  Cambia: los números de una tabla se cuentan sobre la salida entera, nunca sobre un `tail`.

@@ -54,7 +54,8 @@ function renderBrief(source: Snapshot): string {
 
 function taskLine(task: SnapshotTask): string {
   const pullRequestPart = task.pullRequest ? `${link("PR", task.pullRequest)} — Siguiente paso: ${task.nextStep ?? "sin datos"}` : "sin PR";
-  const stalePart = task.stale ? " — tarea estancada" : "";
+  // La skill marca "tarea estancada" solo en las tareas sin PR (tabla "Qué va en cada sección").
+  const stalePart = task.stale && !task.pullRequest ? " — tarea estancada" : "";
   const blockedPart = task.blocked ? ` — tarea bloqueada (motivo: ${task.lockReason ?? "sin datos"})` : "";
   return `- ${link("WI", task)} — ${task.title} (${task.state}) — ${pullRequestPart}${stalePart}${blockedPart}`;
 }
@@ -80,6 +81,11 @@ function lineOf(markdown: string, section: string, id: string): string {
   const line = sectionText.split("\n").find((text) => text.startsWith(`- [${id}]`));
   if (line === undefined) throw new Error(`No hay línea de ${id} en «${section}»`);
   return line;
+}
+
+/** El informe como lo dejaría un prompt sin la plantilla: los mismos datos, sin encabezados. */
+function withoutHeadings(markdown: string): string {
+  return markdown.replace(/^#.*$/gm, "");
 }
 
 function failedChecks(report: BriefReport): string[] {
@@ -221,12 +227,20 @@ describe("Claves de expected", () => {
 });
 
 describe("Medida global (sin encabezados, para el prompt plano)", () => {
-  it("un texto sin la plantilla con todos los IDs esperados no tiene omisiones; uno inventado se cuenta", () => {
-    const plainText = `Hoy: ${correctBrief.replace(/^#.*$/gm, "")}\nAdemás, WI #999.`;
+  it("un texto sin los encabezados de la plantilla con todos los IDs esperados no tiene omisiones", () => {
+    const plainText = withoutHeadings(correctBrief);
 
     const result = verifyBrief(plainText, snapshot, casesWithIds);
 
-    assert.deepEqual({ omissions: result.global.omissions, invented: result.global.invented }, { omissions: [], invented: ["WI #999"] });
+    assert.deepEqual(result.global.omissions, []);
+  });
+
+  it("un ID que no existe en el snapshot cuenta como inventado aunque no haya encabezados", () => {
+    const plainText = `${withoutHeadings(correctBrief)}\nAdemás, WI #999.`;
+
+    const result = verifyBrief(plainText, snapshot, casesWithIds);
+
+    assert.deepEqual(result.global.invented, ["WI #999"]);
   });
 
   it("sin la línea de K, K es una omisión global", () => {
