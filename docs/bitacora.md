@@ -75,11 +75,23 @@ Reglas de uso:
   `eval-uso.md`, escrita por el agente a partir de sus notas, y su captura `eval-uso.png`. `brief.png` lo borró la
   persona porque repite a-3. Commiteado por la persona (`5423694`).
 
+**Paso 10, en curso (2026-10-22).** Adelantado por decisión de la persona, antes del 8b y del 9.
+- Hecho, sin commitear: CI `.github/workflows/ci.yml` (`npm ci`, `npm run verify`, `npm run collect -- --fixtures`;
+  Node 20.19, sin secretos ni red) y `docs/adr/001-recogida-determinista.md`. README (Verificación, Estructura) y
+  comentario de `.githooks/pre-push` al día. Node mínimo pasa a 20.19 (`package.json`, `package-lock.json`,
+  `CLAUDE.md`, README).
+- Falta: que la CI salga en verde en GitHub tras el push de la persona y su captura en `docs/evidencias/ci.png`;
+  README final (instalación, uso, qué se reutiliza o adapta); tag `v1.0` (lo pone la persona).
+
 ## Próximo paso
 
-**Seguir por:** el paso 9 ([`docs/plan.md`](plan.md)): cronometrar 3 usos completos sobre la demo y escribir
-`docs/medicion.md`. Necesita el paso 0 (tiempo de la rutina manual en el cliente, lo mide la persona) para
-compararlo. Antes, la persona decide si hace los pasos opcionales 8b u 8c.
+**Seguir por:** el paso 8b ([`docs/plan.md`](plan.md)), en una sesión nueva: `npm run brief` = `npm run collect` +
+`claude -p` con la skill `daily-brief` + guardado en `output/brief-AAAA-MM-DD.md`. Primero hay que comprobar que la
+skill funciona en modo no interactivo y qué permisos necesita; las reglas `deny` siguen aplicando. El "hecho si" pide
+ejecutarlo sobre la demo, y eso lo hace la persona: el agente no puede ejecutar `collect` contra la demo. Con
+`-- --fixtures` sí puede probarlo él. Después, el paso 9, que necesita el paso 0 (lo mide la persona).
+Antes, la persona hace commit y push del paso 10 (CI y ADR) y comprueba en la pestaña Actions de GitHub que `CI` sale
+en verde; si falla, se corrige con su log antes de seguir.
 
 **Decisiones pendientes**
 - Si se versiona un informe de la skill sobre fixtures (p. ej. `scripts/lib/tests/data/brief-fixtures.md`) como
@@ -739,6 +751,9 @@ Detectados, sin corregir; ninguno rompe los checks.
 - Eval (decisiones del agente, aprobadas en el plan de la sesión): el número global del verificador se deja como
   sale y el recuento a mano va en una columna aparte ("Global a mano"). El eval usa el snapshot de fixtures (A–Q),
   como proponía `docs/eval.md`. Las 6 ejecuciones valen tal cual, aunque los prompts variaron; se anota en Límites.
+- Pasos opcionales (decisión de la persona): se hace el 8b en una sesión nueva. El 8c no se hace por ahora. Los dos
+  son independientes. El agente recomendó el 8b porque es más pequeño, no toca `src/` y refuerza el eval; el 8c
+  añade un puerto nuevo y un riesgo nuevo (el texto de "Contexto" pasa por la IA).
 
 **Hechos comprobados**
 - `npm run verify:brief` sobre el informe de la demo del 2026-10-20 (`output/brief-2026-10-20.md`, escrito por la
@@ -783,3 +798,24 @@ Detectados, sin corregir; ninguno rompe los checks.
   `grep -c` sobre la salida entera da 39. Además, la conclusión decía "los mismos hechos" y no cuadraba con los
   siguientes pasos inventados de b-1 y b-2, y la frase sobre `PR #5` en b-3 era falsa. Corregido en `docs/eval.md`.
   Cambia: los números de una tabla se cuentan sobre la salida entera, nunca sobre un `tail`.
+
+### 2026-10-22
+
+**Decisiones**
+- Material del máster (`~/Desktop/master-ia-material`, sesiones 1–5) revisado frente a los pasos pendientes. Ya
+  estaba aprovechado: bitácora, `reflect`, tests semánticos, `harness-audit` y el resumen de `docs/contexto-track.md`.
+  Útil para lo que falta: workflow del buscador (sesión 4) para la CI, plantilla de ADR (sesión 2), ficha y registro
+  de evaluación (sesión 3) para los pasos 9 y 11, y fichas de delegación (sesiones 4 y 5) para el documento.
+- La persona eligió seguir con el paso 10 (CI y ADR) antes del 8b.
+- CI: patrones de la sesión 4 (permisos `contents: read`, `persist-credentials: false`, acciones fijadas por SHA,
+  `concurrency`, `timeout-minutes`). `verify:brief` no va en la CI: necesita un informe de la IA y `output/` no se
+  versiona.
+- Node mínimo 20.19 en vez de 20.12 (decisión de la persona entre subir el mínimo o usar Node 22 solo en la CI):
+  ESLint 10 y `@eslint/js` declaran `^20.19.0 || ^22.13.0 || >=24`, así que con 20.12 `npm run lint` no está
+  garantizado.
+
+**Hechos comprobados**
+- SHAs de las acciones con `git ls-remote`: `actions/checkout` v6.1.0 = `d23441a…`, `actions/setup-node`
+  v7.1.0 = `949feb2…`.
+- En local (Node 22.22): `npm run verify` con 167 tests en verde y `npm run collect -- --fixtures` correcto. Sin
+  comprobar: la CI en GitHub y la ejecución con Node 20.19.

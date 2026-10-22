@@ -20,7 +20,7 @@ Responde a tres preguntas al empezar el día:
 
 ## Requisitos
 
-- Node.js ≥ 20.12
+- Node.js ≥ 20.19
 - Claude Code
 - Una organización de Azure DevOps y un Personal Access Token de solo lectura
 
@@ -67,6 +67,11 @@ npm run verify:brief -- --fixtures   # o -- --fixtures <ruta> para otro informe
 
 Sobre la demo, después de `npm run collect` y de la skill: `npm run verify:brief` (IDs de `fixtures/demo-ids.json`).
 
+La CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) se ejecuta en cada push a `main` y en cada PR:
+`npm ci`, `npm run verify` y `npm run collect -- --fixtures`, sin secretos ni red. `verify:brief` no va en la CI
+porque necesita un informe escrito por la IA. Por qué la IA no llama a la API:
+[ADR 001](docs/adr/001-recogida-determinista.md).
+
 ## Estructura
 
 ```
@@ -76,6 +81,8 @@ test/              Checks transversales (arquitectura, que npm test vea todos lo
 fixtures/          Casos esperados del proyecto demo
 .claude/           Skills y agente de trabajo; daily-brief es la skill del informe
 docs/              Plan, bitácora, glosario, eval y enunciado del TFM
+docs/adr/          Decisiones de arquitectura (ADR)
 docs/evidencias/   Capturas para el documento del TFM
+.github/workflows/ CI: typecheck, lint, tests y recogida con fixtures
 output/            Salidas generadas (no se versiona)
 ```

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Antes de subir: el mismo "terminado" que pide la lista de cierre de CLAUDE.md (`npm run verify`).
 # Se activa con `npm install` (script "prepare"). Se puede saltar con `git push --no-verify`;
-# la comprobación que no se puede saltar será la CI del paso 10.
+# por eso la CI (.github/workflows/ci.yml) repite la comprobación en GitHub en cada push a main y en cada PR.
 set -e
 
 echo "pre-push: npm run verify (typecheck, lint y tests)…"

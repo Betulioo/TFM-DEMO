@@ -117,7 +117,7 @@ Las comprueban `test/architecture.test.ts` (en `npm test` y en el pre-push) y `e
 
 ## Convenciones
 
-- TypeScript estricto, ESM, Node ≥ 20.12. Ejecutar con `tsx`.
+- TypeScript estricto, ESM, Node ≥ 20.19 (lo exige ESLint 10). Ejecutar con `tsx`.
 - `fetch` nativo, `process.loadEnvFile()` y `node:test`; no añadir dependencias sin necesidad clara.
 - Código y comentarios en español sencillo; nombres de variables en inglés.
 - Todo lo demás también en español: respuestas en el chat, informes, bitácora y lo que devuelven los subagentes.
