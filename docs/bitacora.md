@@ -76,12 +76,17 @@ Reglas de uso:
   persona porque repite a-3. Commiteado por la persona (`5423694`).
 
 **Paso 10, en curso (2026-10-22).** Adelantado por decisión de la persona, antes del 8b y del 9.
-- Hecho, sin commitear: CI `.github/workflows/ci.yml` (`npm ci`, `npm run verify`, `npm run collect -- --fixtures`;
+- Hecho y commiteado por la persona (`305c777`, con push; el pre-push salió en verde con 167 tests): CI `.github/workflows/ci.yml` (`npm ci`, `npm run verify`, `npm run collect -- --fixtures`;
   Node 20.19, sin secretos ni red) y `docs/adr/001-recogida-determinista.md`. README (Verificación, Estructura) y
   comentario de `.githooks/pre-push` al día. Node mínimo pasa a 20.19 (`package.json`, `package-lock.json`,
   `CLAUDE.md`, README).
-- Falta: que la CI salga en verde en GitHub tras el push de la persona y su captura en `docs/evidencias/ci.png`;
-  README final (instalación, uso, qué se reutiliza o adapta); tag `v1.0` (lo pone la persona).
+- CI en verde en GitHub: ejecución `CI #1` del commit `305c777`, 37 s.
+- Evidencias (capturas de la persona, sin commitear): `docs/evidencias/ci.png` (pestaña Actions, CI #1 en verde) y
+  `pre-push-1.png` / `pre-push-2.png` (tests del pre-push y `git push` a `main`).
+- README final, sin commitear: requisitos, instalación con la tabla de variables de `.env`, proyecto demo, uso con
+  y sin Azure DevOps, tabla de verificación, dónde está la aportación, reutilización (tal cual / se configura /
+  hay que adaptar) y límites.
+- Falta: revisión del README por la persona y tag `v1.0` (lo pone la persona tras su commit).
 
 ## Próximo paso
 
@@ -90,8 +95,8 @@ Reglas de uso:
 skill funciona en modo no interactivo y qué permisos necesita; las reglas `deny` siguen aplicando. El "hecho si" pide
 ejecutarlo sobre la demo, y eso lo hace la persona: el agente no puede ejecutar `collect` contra la demo. Con
 `-- --fixtures` sí puede probarlo él. Después, el paso 9, que necesita el paso 0 (lo mide la persona).
-Antes, la persona hace commit y push del paso 10 (CI y ADR) y comprueba en la pestaña Actions de GitHub que `CI` sale
-en verde; si falla, se corrige con su log antes de seguir.
+Antes, cerrar el paso 10: la persona revisa el README final, hace commit y pone el tag `v1.0`
+(`git tag v1.0 && git push origin v1.0`). Si después cambia algo de la entrega, el tag se mueve o se crea `v1.1`.
 
 **Decisiones pendientes**
 - Si se versiona un informe de la skill sobre fixtures (p. ej. `scripts/lib/tests/data/brief-fixtures.md`) como
@@ -817,5 +822,9 @@ Detectados, sin corregir; ninguno rompe los checks.
 **Hechos comprobados**
 - SHAs de las acciones con `git ls-remote`: `actions/checkout` v6.1.0 = `d23441a…`, `actions/setup-node`
   v7.1.0 = `949feb2…`.
-- En local (Node 22.22): `npm run verify` con 167 tests en verde y `npm run collect -- --fixtures` correcto. Sin
-  comprobar: la CI en GitHub y la ejecución con Node 20.19.
+- En local (Node 22.22): `npm run verify` con 167 tests en verde y `npm run collect -- --fixtures` correcto.
+- CI en GitHub con Node 20.19: `CI #1` del commit `305c777` en verde, 37 s (captura `docs/evidencias/ci.png`).
+- README final: cada afirmación contrastada con el código. Las variables de `.env` salen de `src/config.ts` y
+  `scripts/seed-demo.ts`; el seed escribe `fixtures/demo-ids.json` (`scripts/lib/seed.ts`); el puerto es
+  `src/ports/devops-source.ts`; la vinculación no usa ramas (glosario). No se nombran los ámbitos del token: no
+  están documentados en el repositorio.
