@@ -41,7 +41,7 @@ Reglas de uso:
 - [ ] 8b. (Opcional) CLI `npm run brief` con `claude -p`
 - [ ] 8c. (Opcional) Integración con Obsidian por archivos
 - [ ] 9. Medición del uso de la herramienta en la demo
-- [ ] 10. CI (GitHub Actions), ADR, README final y tag `v1.0`
+- [x] 10. CI (GitHub Actions), ADR, README final y tag `v1.0`
 - [ ] 11. Cálculo de negocio (medido frente a estimado)
 - [ ] 12. Documento técnico
 - [ ] 13. Vídeo (opcional) y comprobación de accesos
@@ -75,18 +75,20 @@ Reglas de uso:
   `eval-uso.md`, escrita por el agente a partir de sus notas, y su captura `eval-uso.png`. `brief.png` lo borró la
   persona porque repite a-3. Commiteado por la persona (`5423694`).
 
-**Paso 10, en curso (2026-10-22).** Adelantado por decisión de la persona, antes del 8b y del 9.
+**Paso 10, cerrado (2026-10-22).** Adelantado por decisión de la persona, antes del 8b y del 9.
 - Hecho y commiteado por la persona (`305c777`, con push; el pre-push salió en verde con 167 tests): CI `.github/workflows/ci.yml` (`npm ci`, `npm run verify`, `npm run collect -- --fixtures`;
   Node 20.19, sin secretos ni red) y `docs/adr/001-recogida-determinista.md`. README (Verificación, Estructura) y
   comentario de `.githooks/pre-push` al día. Node mínimo pasa a 20.19 (`package.json`, `package-lock.json`,
   `CLAUDE.md`, README).
 - CI en verde en GitHub: ejecución `CI #1` del commit `305c777`, 37 s.
-- Evidencias (capturas de la persona, sin commitear): `docs/evidencias/ci.png` (pestaña Actions, CI #1 en verde) y
+- Evidencias (capturas de la persona): `docs/evidencias/ci.png` (pestaña Actions, CI #1 en verde) y
   `pre-push-1.png` / `pre-push-2.png` (tests del pre-push y `git push` a `main`).
-- README final, sin commitear: requisitos, instalación con la tabla de variables de `.env`, proyecto demo, uso con
-  y sin Azure DevOps, tabla de verificación, dónde está la aportación, reutilización (tal cual / se configura /
-  hay que adaptar) y límites.
-- Falta: revisión del README por la persona y tag `v1.0` (lo pone la persona tras su commit).
+- README final: requisitos, instalación con la tabla de variables de `.env`, proyecto demo, uso con y sin Azure
+  DevOps, tabla de verificación, dónde está la aportación, reutilización (tal cual / se configura / hay que
+  adaptar) y límites.
+- Commiteado por la persona (`eec1b6c`) con tag `v1.0` en ese commit, subidos los dos (pre-push en verde, 167
+  tests; `git ls-remote` confirma el tag en `origin`). Sin comprobar todavía: la CI de `eec1b6c` en Actions.
+- Los pasos 11–13 cambiarán `docs/`: si la entrega cambia después de `v1.0`, se crea `v1.1`.
 
 ## Próximo paso
 
@@ -95,8 +97,7 @@ Reglas de uso:
 skill funciona en modo no interactivo y qué permisos necesita; las reglas `deny` siguen aplicando. El "hecho si" pide
 ejecutarlo sobre la demo, y eso lo hace la persona: el agente no puede ejecutar `collect` contra la demo. Con
 `-- --fixtures` sí puede probarlo él. Después, el paso 9, que necesita el paso 0 (lo mide la persona).
-Antes, cerrar el paso 10: la persona revisa el README final, hace commit y pone el tag `v1.0`
-(`git tag v1.0 && git push origin v1.0`). Si después cambia algo de la entrega, el tag se mueve o se crea `v1.1`.
+Antes, la persona comprueba en Actions que la CI de `eec1b6c` (`v1.0`) sale en verde.
 
 **Decisiones pendientes**
 - Si se versiona un informe de la skill sobre fixtures (p. ej. `scripts/lib/tests/data/brief-fixtures.md`) como
@@ -828,3 +829,12 @@ Detectados, sin corregir; ninguno rompe los checks.
   `scripts/seed-demo.ts`; el seed escribe `fixtures/demo-ids.json` (`scripts/lib/seed.ts`); el puerto es
   `src/ports/devops-source.ts`; la vinculación no usa ramas (glosario). No se nombran los ámbitos del token: no
   están documentados en el repositorio.
+- `v1.0` en `origin` apunta a `eec1b6c` (`git ls-remote --tags origin v1.0`).
+
+**Errores y correcciones**
+- El agente pidió una captura en `docs/evidencias/ci.png` sin decir el nombre de los archivos del pre-push, y
+  acabaron como `CI-1.png` / `CI-2.png`. Se detectó al abrirlas antes de anotarlas y se renombraron. Cambia: una
+  captura se abre y se comprueba qué muestra antes de citarla como evidencia.
+- El tag `v1.0` se creó antes del commit del README y quedó en `305c777`. `git log --decorate` lo mostró; como no se
+  había subido, se borró en local y se volvió a crear sobre `eec1b6c`. Cambia: el agente da el commit y el tag en
+  orden, y comprueba con `git log --decorate` a qué commit apunta el tag antes del push.
