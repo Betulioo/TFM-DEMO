@@ -41,7 +41,8 @@ Reglas de uso:
 - [x] 8. Verificador y eval: skill frente a prompt plano, mismo snapshot, chats nuevos
 - [ ] 8b. (Opcional) CLI `npm run brief` con `claude -p`
 - [ ] 8c. (Opcional) Integración con Obsidian por archivos
-- [ ] 9. Medición del uso de la herramienta en la demo
+- [x] 9. Medición del uso de la herramienta en la demo: 2 usos de los 3 previstos, en `docs/medicion.md`
+  (decisión de la persona; límite anotado allí)
 - [x] 10. CI (GitHub Actions), ADR, README final y tag `v1.0`
 - [ ] 11. Cálculo de negocio (medido frente a estimado)
 - [ ] 12. Documento técnico: en curso en `docs/documento-tecnico.md`; §2, §3, §4 y §6 escritos, faltan §1, §5 y
@@ -94,9 +95,11 @@ Reglas de uso:
 
 ## Próximo paso
 
-**Paso 9:** la persona cronometra 3 usos completos sobre la demo (`npm run collect`, "hazme el informe diario",
-leer el informe y decidir) y apunta las mismas columnas del paso 0 en `docs/medicion.md` (sección "Paso 9"). Con
-eso se completa "Beneficios además del tiempo" y se puede hacer el paso 11 (supuestos en "Supuestos y límites").
+**Paso 11:** cálculo de negocio en `docs/medicion.md` ("Supuestos y límites") y §5 del documento técnico.
+Faltan datos de la persona: perfil, coste por hora y cuántas veces al día o a la semana usaría el informe.
+Ya medido: tiempo (1,75 min a mano frente a 1,5 con la herramienta), coste por informe (0,25-0,66 $,
+`docs/evidencias/eval-uso.md`) y sitios (3 frente a 1). El beneficio principal es centralizar, no el tiempo.
+Hay que separar el esfuerzo de construcción del coste de uso (lo pide el enunciado §4).
 
 **Paso 12, en curso:** `docs/documento-tecnico.md` (Markdown; la persona lo exporta a PDF al final). Hecho: portada,
 índice, §2, §3, §4 y §6. Siguiente: §1 (con los datos del paso 0 de `docs/medicion.md`); §5 espera a los pasos 9 y
@@ -895,6 +898,14 @@ Detectados, sin corregir; ninguno rompe los checks.
   - Descartado partir la bitácora y llevar el Registro antiguo a otro archivo: obliga a cambiar enlaces (`CLAUDE.md`,
     `revisar-tfm`, documento técnico) y choca con "el Registro no se poda ni se reescribe".
   - `revisar-tfm` sigue leyendo la bitácora entera: comprueba que refleja el estado real y necesita el historial.
+- Paso 9 con 2 usos (mañana y tarde del 23 de octubre) en vez de 3, por decisión de la persona. Para la persona, el
+  tiempo es casi el mismo (1-2 min); la mejora está en centralizar, en lanzarlo en segundo plano (en una reunión,
+  al final de la tarde) y en dejar un registro. Cómo se pasaron sus notas a la tabla:
+  - Sitios = 1: la persona confirmó que solo leyó el informe. En sus notas había copiado el recorrido del paso 0.
+  - PRs, equipo y tareas ("los de la demo"): los del snapshot de la demo de las 11:29 UTC (1, 0 y 7).
+  - Cambios de contexto, interrupciones y omisiones: "sin datos".
+  - "En segundo plano" y "Registro" pasan a "Beneficios además del tiempo" como percibidos. El tiempo atento no
+    se midió por separado.
 
 **Hechos comprobados**
 - Prueba de la persona sobre la demo: tocó WI #8 (C) y WI #15 (J) y volvió a dejarlos como estaban. `npm run

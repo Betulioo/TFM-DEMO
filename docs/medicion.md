@@ -64,15 +64,26 @@ mediciones, la mediana es la media de las dos. Los minutos «2-3» cuentan como 
 
 ## Paso 9: con la herramienta sobre la demo
 
-Pendiente. Son 3 usos completos (ejecutar, leer el informe y decidir) con las mismas columnas, para comparar lo
-mismo. La demo tiene menos volumen que el cliente, así que la comparación se apoya en supuestos que se explican en
-el paso 11.
+Medido por la persona: 2 usos completos (ejecutar, leer el informe y decidir) de los 3 previstos, con las mismas
+columnas para comparar lo mismo. La demo tiene menos volumen que el cliente, así que la comparación se apoya en
+supuestos que se explican en el paso 11.
 
 | Fecha | Día | Minutos | PRs mías | PRs equipo | Tareas | Sitios | Cambios de contexto | Interrupciones | Omisiones | Dispersión (1–5) | Notas |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | | | | |
-| | | | | | | | | | | | |
-| | | | | | | | | | | | |
+| 2026-10-23 | viernes (mañana) | 1-2 | 1 | 0 | 7 | 1 | sin datos | sin datos | sin datos | 1 | Solo el informe, sin abrir nada más. Los volúmenes son los de la demo ese día, tomados del snapshot de las 11:29 UTC. |
+| 2026-10-23 | viernes (tarde) | 1-2 | 1 | 0 | 7 | 1 | sin datos | sin datos | sin datos | 1 | Como el de la mañana. |
+
+### Resumen del paso 9
+
+Con dos mediciones, la mediana es la media de las dos. Los minutos «1-2» cuentan como 1,5.
+
+| Columna | Mediciones | Mínimo | Mediana | Máximo | Paso 0 (mediana) |
+|---|---|---|---|---|---|
+| Minutos | 2 | 1,5 | 1,5 | 1,5 | 1,75 |
+| Sitios | 2 | 1 | 1 | 1 | 3 |
+| Dispersión (1–5) | 2 | 1 | 1 | 1 | 2,5 |
+
+Cambios de contexto, interrupciones y omisiones no se apuntaron ("sin datos").
 
 ## Beneficios además del tiempo
 
@@ -81,10 +92,12 @@ La herramienta no solo busca ahorrar minutos. También busca tener todo **centra
 
 | Beneficio | Indicador | Manual (paso 0) | Con la herramienta (paso 9) | Tipo |
 |---|---|---|---|---|
-| Centralización | Sitios consultados (mediana) | 3 | | Medido |
-| Menos distracciones | Cambios de contexto (mediana) | 1 | | Medido |
-| Menos omisiones | Omisiones (total) | 0 | | Medido |
-| Foco | Dispersión 1–5 (mediana) | 2,5 | | Percibido |
+| Centralización | Sitios consultados (mediana) | 3 | 1 | Medido |
+| Menos distracciones | Cambios de contexto (mediana) | 1 | sin datos | Medido |
+| Menos omisiones | Omisiones (total) | 0 | sin datos | Medido |
+| Foco | Dispersión 1–5 (mediana) | 2,5 | 1 | Percibido |
+| En segundo plano | Se puede lanzar mientras se hace otra cosa (en una reunión, al final de la tarde) y solo se dedica atención a leer el informe | No: hay que recorrer las pantallas | Sí | Percibido (no se midió el tiempo atento por separado) |
+| Registro | Cada informe queda guardado con su fecha (`output/brief-AAAA-MM-DD.md`) para comparar días o ver cómo cerró el sprint | No | Sí, en el equipo de la persona (`output/` no se versiona) | Percibido |
 
 ## Supuestos y límites
 
@@ -95,5 +108,10 @@ La herramienta no solo busca ahorrar minutos. También busca tener todo **centra
 - **Omisiones:** 0 en los dos días. La persona dice que a veces llega a la daily sin haber revisado las PRs, pero
   no pasó en los días medidos. Es percibido, no medido.
 - **Interrupciones:** no se apuntaron ("sin datos").
+- **Paso 9 con 2 usos, no 3,** los dos el mismo día. Cambios de contexto, interrupciones y omisiones no se
+  apuntaron, así que esos beneficios no se pueden comparar.
+- **El tiempo no mejora de forma relevante:** 1,5 min con la herramienta frente a 1,75 min a mano (medianas), con
+  pocos datos y volúmenes distintos (demo frente a cliente). Según la persona, la mejora está en centralizar y en
+  poder lanzarlo en segundo plano, no en el tiempo.
 - (Se completa en el paso 11: perfil, coste por hora, condiciones de la comparación y diferencias de volumen entre
   la demo y el cliente.)
