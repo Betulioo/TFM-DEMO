@@ -8,14 +8,14 @@ Responde a tres preguntas al empezar el día:
 3. ¿Qué riesgos tiene la iteración (tareas estancadas o bloqueadas, PRs envejecidas y PRs propias bloqueadas)?
 
 Es el caso práctico de un TFM ([enunciado](docs/enunciado-tfm.md)). La versión entregada se identifica con el tag
-`v1.2` (el código es el de `v1.0`; `v1.2` añade el [documento técnico](docs/documento-tecnico.md) y sus
+`v1.3` (el código es el de `v1.0`; `v1.3` añade el [documento técnico](docs/documento-tecnico.md) y sus
 evidencias). Todo se ha probado sobre un proyecto demo de Azure DevOps y sobre fixtures; ningún dato de cliente pasa por la IA.
 
 ## Para evaluar el TFM: empieza aquí
 
 - **Documento técnico:** [`docs/documento-tecnico.md`](docs/documento-tecnico.md) (unas 15 páginas, con las
   evidencias en [`docs/evidencias/`](docs/evidencias/)).
-- **Versión entregada:** tag `v1.2`.
+- **Versión entregada:** tag `v1.3`.
 
 ### Probarlo en 5 pasos, sin Azure DevOps ni tokens
 
@@ -24,7 +24,7 @@ cuenta de Azure DevOps, token ni `.env`. Solo se necesita **Node.js ≥ 20.19** 
 
 1. Descargar la versión entregada:
    ```bash
-   git clone --branch v1.2 https://github.com/Betulioo/TFM-DEMO.git && cd TFM-DEMO
+   git clone --branch v1.3 https://github.com/Betulioo/TFM-DEMO.git && cd TFM-DEMO
    ```
    Git avisa de que está en "detached HEAD": es lo normal al descargar un tag.
 2. Instalar y pasar los checks (typecheck, lint y tests, sin red):
@@ -55,6 +55,30 @@ El informe es personal: sale del usuario del token ("mis tareas", "PRs pendiente
 usuario, la demo daría un informe casi vacío, y el token del autor no se comparte. La ejecución contra la API real
 está en el documento técnico (§4.1 y figura 8), y la CI ([Actions](https://github.com/Betulioo/TFM-DEMO/actions))
 ejecuta los pasos 2 y 3 en cada push.
+
+### Del máster al repositorio
+
+El TFM tiene dos aportaciones: **la herramienta** (recogida, skill `daily-brief` y verificador) y **el arnés** con
+el que se desarrolló con un agente (Claude Code). Esta tabla relaciona cada concepto del máster con su
+aplicación; las sesiones y definiciones están en [`docs/contexto-track.md`](docs/contexto-track.md).
+
+| Sesión | Concepto del máster | Cómo se aplica | Dónde |
+|---|---|---|---|
+| 1 | Arnés y archivo de contexto escrito desde fallos reales | Reglas del proyecto, "Forma de trabajar" con lista de cierre y "Criterios" con definiciones, añadidos tras errores del agente | [`CLAUDE.md`](CLAUDE.md) |
+| 1 | Skills acotadas, con descripción de cuándo usarlas | 6 skills: el informe (`daily-brief`) y 5 de desarrollo (`iniciar-sesion`, `testing`, `tests-semanticos`, `reflect`, `revisar-tfm`) | [`.claude/skills/`](.claude/skills/) |
+| 1 | Bitácora frente a la compactación del contexto | Estado, próximo paso, decisiones, hechos, errores y aprendizajes; una sesión nueva continúa sin la anterior | [`docs/bitacora.md`](docs/bitacora.md) |
+| 1 | No confiar solo en el prompt para prohibir | Reglas `deny` (sin commit, push ni lectura de `.env`), modo plan por defecto y cliente HTTP que solo tiene GET | [`.claude/settings.json`](.claude/settings.json), `src/adapters/azdo/read-only-client.ts` |
+| 1 y 3 | Comprobación externa en CI | GitHub Actions ejecuta typecheck, lint, tests y la recogida con fixtures en cada push | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+| 2 | Human in the loop y nivel de supervisión | Apruebo cada plan, reviso el diff y hago todos los commits; las decisiones que cambiaron la solución están registradas | Documento técnico §3.6, bitácora |
+| 3 | Modelo del queso suizo | Tipos, lint, 167 tests, check de arquitectura, pre-push y CI como capas | `npm run verify`, [`.githooks/pre-push`](.githooks/pre-push) |
+| 3 | Arquitectura hexagonal y checks de integridad arquitectónica | Un puerto con dos adaptadores (API real y fixtures); reglas de capas comprobadas por lint y por un test con controles | `src/ports/`, `src/adapters/`, [`test/architecture.test.ts`](test/architecture.test.ts) |
+| 3 | Tests semánticos y mutation testing | Cada test protege una definición del glosario o un caso esperado; mutaciones de control para ver que fallan | [`.claude/skills/tests-semanticos/`](.claude/skills/tests-semanticos/), bitácora |
+| 3 y 4 | Eval de arnés: misma tarea, mismo punto de partida, chats nuevos | Skill frente a prompt plano, 3 ejecuciones de cada uno, medidas con el verificador | [`docs/eval.md`](docs/eval.md) |
+| 4 | Subagente con su propio contexto | `revisor-tfm` revisa el repositorio frente al plan y al enunciado en solo lectura | [`.claude/agents/revisor-tfm.md`](.claude/agents/revisor-tfm.md), [`docs/revisiones/`](docs/revisiones/) |
+| 4 | Workflow: transiciones conocidas en código, no en la IA | El siguiente paso de cada tarea y las señales se calculan en código; la IA solo redacta. Loops y subagentes descartados en el producto | `src/domain/rules.ts`, [ADR 001](docs/adr/001-recogida-determinista.md) |
+| 5 | Glosario de dominio | Términos con definición exacta que comparten el código, la skill y el verificador | [`docs/glosario.md`](docs/glosario.md) |
+| 5 | ADR y especificación de tareas | Decisión de arquitectura registrada; cada paso del plan con su criterio de "hecho" | [`docs/adr/`](docs/adr/), [`docs/plan.md`](docs/plan.md) |
+| 1 y 5 | Una sola fuente, enlazada en vez de copiada | Los casos solo están en `expected.json` (los lee el seed, el adaptador falso y el verificador); las reglas de capas, solo en `CLAUDE.md` | [`fixtures/expected.json`](fixtures/expected.json) |
 
 ### Qué mirar
 

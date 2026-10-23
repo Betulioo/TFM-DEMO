@@ -110,8 +110,10 @@ opcional) y el tag `v1.1`.
    se ha recortado después (ver Registro). El nuevo PDF sale en unas 15 páginas (lo comprobó la persona), así que
    la entrega pasa a `v1.2`; la portada y el README ya lo dicen.
 5. Hecho: commit `89b4f34` en `main` y tag `v1.2` en ese commit, los dos en `origin` (`git ls-remote`).
-6. Paso 13: comprobar que el profesor accede al repositorio; el vídeo es opcional.
-7. Volver a pasar `revisor-tfm` sobre `v1.2`.
+6. La entrega pasa a `v1.3` (README para quien evalúa y tabla "Del máster al repositorio"; ver Registro). Falta:
+   exportar el PDF de nuevo y comprobar que sigue en unas 15 páginas, commit y push, y crear y subir `v1.3`.
+7. Paso 13: comprobar que el profesor accede al repositorio; el vídeo es opcional.
+8. Volver a pasar `revisor-tfm` sobre `v1.3`.
 
 Los opcionales 8b y 8c no se hacen antes de la entrega.
 
@@ -1041,3 +1043,16 @@ Detectados, sin corregir; ninguno rompe los checks.
   que quitar `BLOCKED_TAG` del `.env` o dejarlo en `Blocked`. Anotado aquí; no se cambia el código.
 - Para la prueba de `collect -- --fixtures` en el repositorio se guardó una copia de `output/snapshot.json` y se
   restauró después (`cmp` sin diferencias).
+
+**Decisiones (del máster al repositorio)**
+- La persona quiere que se vea, además de la skill del informe, el uso del arnés y lo aprendido en el máster. El
+  agente propone una tabla que relaciona cada concepto de `docs/contexto-track.md` (sesiones 1–5) con su aplicación
+  y su archivo. La persona elige ponerla en los dos sitios:
+  - en el README, completa (15 filas, con enlaces), en la sección para quien evalúa;
+  - en §3.4 del documento, compacta (8 filas), en lugar de los párrafos "Contexto" y "Skills y agente".
+
+  El documento pasa de 4.361 a 4.463 palabras; hay que volver a comprobar las páginas. La entrega pasa a `v1.3`:
+  portada, README y `git clone --branch v1.3`.
+- Cada fila se comprobó en el repositorio antes de escribirla (skills, agente, `deny`, CI, `rules.ts`, ADR, plan
+  con "Hecho si", mutaciones en la bitácora). "Loops y subagentes descartados" se refiere al producto (bitácora del
+  2026-10-19); en el desarrollo sí se usa el subagente `revisor-tfm`.

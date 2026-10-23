@@ -4,7 +4,7 @@
 
 - Autor: Luis Alberto Nuñez Matute
 - Repositorio: `https://github.com/Betulioo/TFM-DEMO`
-- Versión entregada: tag `v1.2` (el código es el de `v1.0`; `v1.2` añade este documento y sus evidencias)
+- Versión entregada: tag `v1.3` (el código es el de `v1.0`; `v1.3` añade este documento y sus evidencias)
 - Dónde está la aportación: README, sección "Dónde está la aportación"
 
 ## Índice
@@ -144,13 +144,18 @@ El desarrollo se hizo con Claude Code como agente, con mi suscripción Pro y el 
 consta en el informe de uso del eval). Lo que aporto no es solo el código: es el **contexto y los controles** con
 los que el agente trabaja.
 
-**Contexto:** `CLAUDE.md` (arquitectura, reglas, "Forma de trabajar" con una lista de cierre de 5 puntos y
-"Criterios" para la ambigüedad, el alcance y las desviaciones del plan), `docs/plan.md` (pasos con su criterio de
-"hecho"), `docs/bitacora.md` (para que una sesión nueva continúe sin la anterior) y el contrato de §3.2.
+Cada pieza aplica un concepto del máster (la tabla completa, con enlaces, está en el README):
 
-**Skills y agente:** `iniciar-sesion` (lee el estado y ejecuta `npm run verify` al empezar), `testing` y
-`tests-semanticos` (cómo y qué probar), `reflect` (revisa el turno) y `revisar-tfm` con el agente `revisor-tfm`,
-que revisa el repositorio frente al plan y al enunciado en solo lectura y en un contexto aislado.
+| Sesión | Concepto | Cómo se aplica |
+|---|---|---|
+| 1 | Arnés y `CLAUDE.md` escrito desde fallos reales | Reglas, "Forma de trabajar" con lista de cierre y "Criterios" con definiciones |
+| 1 | Skills acotadas y bitácora | `iniciar-sesion`, `testing`, `tests-semanticos`, `reflect`, `revisar-tfm`; `docs/bitacora.md` para continuar entre sesiones |
+| 1 | No confiar solo en el prompt | Reglas `deny`, modo plan y cliente solo GET (§3.5) |
+| 2 | Human in the loop | Apruebo cada plan y hago los commits (§3.6) |
+| 3 | Queso suizo, hexagonal, checks de arquitectura y mutation testing | Tipos, lint, tests, check de capas, pre-push y CI; un puerto con dos adaptadores (§3.1, §3.5) |
+| 3 y 4 | Eval de arnés | Skill frente a prompt plano en chats nuevos (§4.2) |
+| 4 | Subagente y workflow con reglas en código | `revisor-tfm` en un contexto aislado; el siguiente paso, en código (ADR 001) |
+| 5 | Glosario, ADR y especificación de tareas | `docs/glosario.md`, ADR 001 y `docs/plan.md` con su criterio de "hecho" |
 
 <img src="evidencias/CLAUDE-criterios.png" alt="CLAUDE.md, sección Criterios" width="70%">
 
