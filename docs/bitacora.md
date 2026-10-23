@@ -104,11 +104,14 @@ opcional) y el tag `v1.1`.
 **Seguir por (entrega):** las correcciones de la revisión del 2026-10-23 están aplicadas. Falta lo que hace la persona:
 1. Hecho: la CI de `eec1b6c` (`v1.0`) está en verde (figura 7) y los cambios de la revisión están commiteados
    (`00f75d8`, `cc50637`).
-2. Hacer el commit de la figura 7 y de esta bitácora.
-3. Exportar `docs/documento-tecnico.md` a PDF y contar las páginas. Si pasa de unas 15, recortar.
-4. Crear el tag `v1.1` (el documento y el README ya lo nombran).
-5. Paso 13: comprobar que el profesor accede al repositorio; el vídeo es opcional.
-6. Volver a pasar `revisor-tfm` sobre `v1.1`.
+2. Hecho: commit de la figura 7 (`ab4b52e`).
+3. Hecho: PDF exportado y recortado (ver 4).
+4. Hecho: tag `v1.1` en `ab4b52e`, subido a `origin`. El PDF de `v1.1` salía en más de 24 páginas y el documento
+   se ha recortado después (ver Registro). El nuevo PDF sale en unas 15 páginas (lo comprobó la persona), así que
+   la entrega pasa a `v1.2`; la portada y el README ya lo dicen.
+5. Hacer commit y push, crear `v1.2`, comprobar que apunta al último commit y subirlo.
+6. Paso 13: comprobar que el profesor accede al repositorio; el vídeo es opcional.
+7. Volver a pasar `revisor-tfm` sobre `v1.2`.
 
 Los opcionales 8b y 8c no se hacen antes de la entrega.
 
@@ -990,3 +993,27 @@ Detectados, sin corregir; ninguno rompe los checks.
   - README: `v1.1`, enlaces al documento y a `medicion.md` (Aportación, Límites, Estructura), y Límites al día.
   - Bitácora: Próximo paso sin el precio de Pro, y "Seguir por" con la lista de entrega.
   - Sin hacer: la longitud (hay que exportar a PDF) y lo que depende de la persona.
+
+**Hechos comprobados (entrega)**
+- Tag `v1.1` (anotado: "v1.1: entrega del TFM (documento técnico y evidencias; código de v1.0)"), creado y
+  subido por la persona. `git log --decorate` lo muestra en `ab4b52e`, y `git ls-remote --tags origin` lo
+  confirma: `refs/tags/v1.1^{}` = `ab4b52e`. El pre-push salió en verde (167 tests).
+- Esta entrada de la bitácora es posterior al tag y no está en `v1.1`.
+
+**Errores y correcciones**
+- El agente dijo que el push de un tag no ejecuta el hook pre-push. Lo ejecuta: el hook corre en cualquier
+  `git push`, y la salida de la persona lo muestra. Lo que no lanza un tag es la CI, que solo se ejecuta con push a
+  `main` y con PRs.
+
+**Decisiones (recorte del documento)**
+- El PDF del documento técnico salía en más de 24 páginas, frente a "unas 15 como máximo" del enunciado. La
+  persona eligió "recortar y reducir" en lugar de llevar las figuras a un anexo; el anexo se descartó porque el
+  enunciado pide las evidencias "dentro del documento" y el total seguiría en ~22 páginas.
+  - Texto: de 6.233 a 4.361 palabras (−30 %). Se quitan las repeticiones: las tres preguntas (solo en §1), "Qué
+    incluye" de §2 y las restricciones de §2 (ya en §4.3). Se compactan las tablas de §3.4, §3.5 y §3.6, y se unen
+    §4.4 y §4.5. §6.2, §6.3 y §6.4 quedan más cortas.
+  - Figuras: se quedan las 10, pero las figuras 1 y 3 pasan a una sola captura (la plantilla y "Criterios"), y
+    todas se imprimen más pequeñas con `<img width>` (del 30 % al 80 % del ancho).
+  - El número de páginas no se ha comprobado: lo comprueba la persona al exportar de nuevo.
+- Resultado: unas 15 páginas, según la persona. La entrega pasa a `v1.2` (portada y README cambiados), y `v1.1`
+  queda en `origin` como la versión anterior al recorte.

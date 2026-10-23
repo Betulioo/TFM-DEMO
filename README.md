@@ -8,7 +8,7 @@ Responde a tres preguntas al empezar el día:
 3. ¿Qué riesgos tiene la iteración (tareas estancadas o bloqueadas, PRs envejecidas y PRs propias bloqueadas)?
 
 Es el caso práctico de un TFM ([enunciado](docs/enunciado-tfm.md)). La versión entregada se identifica con el tag
-`v1.1` (el código es el de `v1.0`; `v1.1` añade el [documento técnico](docs/documento-tecnico.md) y sus
+`v1.2` (el código es el de `v1.0`; `v1.2` añade el [documento técnico](docs/documento-tecnico.md) y sus
 evidencias). Todo se ha probado sobre un proyecto demo de Azure DevOps y sobre fixtures; ningún dato de cliente pasa por la IA.
 
 ## Cómo funciona
