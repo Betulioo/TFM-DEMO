@@ -278,10 +278,11 @@ bloqueado y se añadieron `Bash(git -C * commit *)` y `Bash(git -C * push *)`. O
 > "pre-push: todo en verde" y solo entonces sube a `main`. Permite comprobar que el código no se sube sin pasar
 > typecheck, lint y tests.
 
-![CI en GitHub Actions](evidencias/ci.png)
+![CI en GitHub Actions](evidencias/CI-GIT-2.png)
 
-> **Figura 7.** Ejecución `CI #1` en GitHub Actions, en verde en 37 s. Permite comprobar la verificación externa,
-> que no depende del equipo local.
+> **Figura 7.** Ejecuciones de la CI en GitHub Actions: `CI #1` (commit `305c777`) y `CI #2` (commit `eec1b6c`,
+> el del tag `v1.0`), las dos en verde en 37 s. Permite comprobar la verificación externa, que no depende del
+> equipo local, sobre la versión del código que se entrega.
 
 ### 3.6 Decisiones humanas (human in the loop)
 

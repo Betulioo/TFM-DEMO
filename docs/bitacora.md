@@ -90,7 +90,8 @@ Reglas de uso:
   DevOps, tabla de verificación, dónde está la aportación, reutilización (tal cual / se configura / hay que
   adaptar) y límites.
 - Commiteado por la persona (`eec1b6c`) con tag `v1.0` en ese commit, subidos los dos (pre-push en verde, 167
-  tests; `git ls-remote` confirma el tag en `origin`). Sin comprobar todavía: la CI de `eec1b6c` en Actions.
+  tests; `git ls-remote` confirma el tag en `origin`). CI de `eec1b6c` en verde: `CI #2`, 37 s
+  (captura `docs/evidencias/CI-GIT-2.png`, del 2026-10-23).
 - Los pasos 11–13 cambiarán `docs/`: si la entrega cambia después de `v1.0`, se crea `v1.1`.
 
 ## Próximo paso
@@ -101,8 +102,9 @@ la entrega (`CLAUDE.md`). Después: exportar a PDF, el paso 13 (acceso del profe
 opcional) y el tag `v1.1`.
 
 **Seguir por (entrega):** las correcciones de la revisión del 2026-10-23 están aplicadas. Falta lo que hace la persona:
-1. Comprobar en Actions que la CI de `eec1b6c` (`v1.0`) sale en verde.
-2. Hacer el commit de los documentos, las 7 capturas nuevas y `docs/revisiones/2026-10-23.md`.
+1. Hecho: la CI de `eec1b6c` (`v1.0`) está en verde (figura 7) y los cambios de la revisión están commiteados
+   (`00f75d8`, `cc50637`).
+2. Hacer el commit de la figura 7 y de esta bitácora.
 3. Exportar `docs/documento-tecnico.md` a PDF y contar las páginas. Si pasa de unas 15, recortar.
 4. Crear el tag `v1.1` (el documento y el README ya lo nombran).
 5. Paso 13: comprobar que el profesor accede al repositorio; el vídeo es opcional.
