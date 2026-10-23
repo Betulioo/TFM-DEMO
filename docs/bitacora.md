@@ -44,8 +44,8 @@ Reglas de uso:
 - [ ] 9. Medición del uso de la herramienta en la demo
 - [x] 10. CI (GitHub Actions), ADR, README final y tag `v1.0`
 - [ ] 11. Cálculo de negocio (medido frente a estimado)
-- [ ] 12. Documento técnico: en curso en `docs/documento-tecnico.md`; §2 y §3 escritos, faltan §1, §4, §5, §6 y
-  las capturas pendientes (figuras 1, 3, 4 y 5)
+- [ ] 12. Documento técnico: en curso en `docs/documento-tecnico.md`; §2, §3, §4 y §6 escritos, faltan §1, §5 y
+  las capturas pendientes (figuras 1, 3, 4, 5 y 8)
 - [ ] 13. Vídeo (opcional) y comprobación de accesos
 
 **Paso 7, cerrado (2026-10-20).**
@@ -99,12 +99,12 @@ leer el informe y decidir) y apunta las mismas columnas del paso 0 en `docs/medi
 eso se completa "Beneficios además del tiempo" y se puede hacer el paso 11 (supuestos en "Supuestos y límites").
 
 **Paso 12, en curso:** `docs/documento-tecnico.md` (Markdown; la persona lo exporta a PDF al final). Hecho: portada,
-índice, §2 y §3. Siguiente: §4 (material en README "Verificación", `docs/eval.md` y "Errores y correcciones") y §6
-(README "Reutilización" y "Límites", Aprendizajes). §1 ya tiene los datos del paso 0; §5 espera a los pasos 9 y
-11. Capturas que hace la
-persona en `docs/evidencias/`: `SKILL.md` de `daily-brief` (figura 1), `CLAUDE.md` "Forma de trabajar" y
-"Criterios" (figura 3), una revisión de `revisor-tfm` (figura 4) y `.claude/settings.json` con un `git commit`
-denegado (figura 5). Pendiente de la persona: su nombre completo en la portada.
+índice, §2, §3, §4 y §6. Siguiente: §1 (con los datos del paso 0 de `docs/medicion.md`); §5 espera a los pasos 9 y
+11, y la conclusión 4 de §6 se revisa con su resultado. Capturas que hace la persona en `docs/evidencias/`:
+`SKILL.md` de `daily-brief` (figura 1), `CLAUDE.md` "Forma de trabajar" y "Criterios" (figura 3), una revisión de
+`revisor-tfm` (figura 4), `.claude/settings.json` con un `git commit` denegado (figura 5) y la salida de
+`npm run collect` sobre la demo con "Todo coincide" (figura 8). Pendiente de la persona: su nombre completo en la
+portada.
 
 **Seguir por:** la persona elige el siguiente paso; no sigue con el 8b por ahora. El 8b ([`docs/plan.md`](plan.md)): `npm run brief` = `npm run collect` +
 `claude -p` con la skill `daily-brief` + guardado en `output/brief-AAAA-MM-DD.md`. Primero hay que comprobar que la
@@ -880,6 +880,14 @@ Detectados, sin corregir; ninguno rompe los checks.
   - Minutos «2-3»: cuentan como 2,5 en el resumen.
 - Sitios = 3 por día (lista de PRs, la PR, el tablero), contados por el agente a partir de la descripción de la
   persona (dudoso: 3 o 4 si "busco mi tarea" abre el work item).
+- Documento técnico: la persona pide §4 y §6 mientras hace el paso 9. Estructura propuesta por el agente:
+  - §4 en cinco partes: niveles de prueba, eval, probado / observado / simulado / pendiente (lo pide el
+    enunciado), dificultades y limitaciones.
+  - §6 en tres: reutilización (la tabla del README más el arnés), conclusiones y aprendizajes.
+  - Figuras nuevas: 8 (captura pendiente de `collect` sobre la demo), 9 (`eval-b-1-informe.png`) y 10
+    (`eval-uso.png`).
+  - La conclusión 4 de §6 dice que el beneficio está por demostrar y que, con el volumen del paso 0, el ahorro de
+    tiempo esperable es pequeño; se revisa con los pasos 9 y 11.
 
 **Hechos comprobados**
 - Prueba de la persona sobre la demo: tocó WI #8 (C) y WI #15 (J) y volvió a dejarlos como estaban. `npm run
