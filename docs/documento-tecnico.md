@@ -2,23 +2,72 @@
 
 **TFM — Desarrollo de software con IA: de una necesidad a una solución verificable**
 
-- Autor: Luis Alberto (nombre completo pendiente de confirmar)
+- Autor: Luis Alberto Nuñez Matute
 - Repositorio: `https://github.com/Betulioo/TFM-DEMO`
-- Versión entregada: tag `v1.0` (si la entrega cambia, `v1.1`)
+- Versión entregada: tag `v1.1` (el código es el de `v1.0`; `v1.1` añade este documento y sus evidencias)
 - Dónde está la aportación: README, sección "Dónde está la aportación"
 
 ## Índice
 
-1. Problema y contexto (pendiente)
+1. Problema y contexto
 2. Objetivo y alcance
 3. Solución paso a paso
 4. Verificación y resultados
-5. Justificación de negocio (pendiente: pasos 9 y 11)
+5. Justificación de negocio
 6. Reutilización y conclusiones
 
 ## 1. Problema y contexto
 
-*Pendiente.* Se redacta con la medición de la rutina manual (paso 0, `docs/medicion.md`).
+### La necesidad
+
+Trabajo como desarrollador en un proyecto de cliente que usa Azure DevOps (Repos para el código y las PRs, Boards
+para las tareas del sprint). Cada mañana, antes de la daily, tengo que responder a tres preguntas: qué PRs esperan
+mi revisión o la de mi equipo, en qué tareas estoy y qué les falta, y qué riesgos hay en la iteración.
+
+Azure DevOps tiene esa información, pero repartida:
+- Las PRs están en la lista de PRs del repositorio. Para saber si una está bloqueada, aprobada o lleva días
+  esperando, hay que entrar en ella y mirar los votos y la fecha.
+- Las tareas están en el tablero del sprint. Para saber qué le falta a cada una, hay que buscar su PR y
+  relacionar las dos cosas a mano.
+- Las señales que importan ("esta PR lleva días sin revisar", "esta tarea no se mueve", "esta tarea está
+  bloqueada") no aparecen en ningún sitio: las tiene que deducir quien mira.
+
+### A quién afecta
+
+A cualquier desarrollador de un equipo que trabaje con Azure DevOps y haga una daily, y en especial a quien
+revisa PRs de otros y lleva varias tareas a la vez. En mi caso, el proyecto del cliente usa un proceso
+personalizado, con tipos de work item propios. Por eso la solución no puede depender del proceso (§2).
+
+### Cómo se resuelve hoy
+
+Lo resuelvo a mano, recorriendo las pantallas. Lo medí en el proyecto del cliente durante 2 días, apuntando solo
+números (`docs/medicion.md`, paso 0):
+
+| | Día 1 | Día 2 |
+|---|---|---|
+| Minutos | 1 | 2–3 |
+| PRs pendientes de mi revisión / del equipo | 0 / 2 | 2 / 2 |
+| Mis tareas | 0 | 2 |
+| Sitios consultados | 3 | 3 |
+| Cambios de contexto | 1 | 1 |
+| Dispersión percibida (1–5) | 2 | 3 |
+
+El recorrido es siempre el mismo: lista de PRs, entro en la PR, salgo, voy al tablero y busco mi tarea. Por el
+camino acabo leyendo algún comentario de otra PR (un cambio de contexto cada día). Además, a veces llego a la
+daily sin haber revisado las PRs, aunque en los dos días medidos no pasó.
+
+### Qué muestra la medición
+
+**El problema no es el tiempo.** Con este volumen, la rutina dura menos de 3 minutos. El problema es que la
+información está **dispersa** (3 sitios para responder 3 preguntas), que el recorrido **invita a distraerse**, que
+**es fácil saltárselo** con prisa, y que **no queda registro** de cómo estaba el sprint cada día. Las mediciones son
+pocas (2 días en vez de los 5 previstos) y describen esos días, no una línea base fiable; lo trato en §5.
+
+### Restricción que condiciona la solución
+
+Mis cuentas de IA son personales, así que **ningún dato del cliente pasa por la IA**. La herramienta se construye y
+se prueba sobre un proyecto demo de Azure DevOps y sobre datos ficticios. Del cliente solo uso los números de la
+medición, sin IDs, títulos ni nombres.
 
 ## 2. Objetivo y alcance
 
@@ -56,7 +105,7 @@ El trabajo combina dos de las vías del enunciado:
 |---|---|
 | Datos de cliente | Las cuentas de IA del proyecto son personales. La herramienta solo se ejecuta sobre la demo y sobre fixtures. Del cliente solo se usa el tiempo medido de la rutina manual (sin datos) |
 | Escribir en Azure DevOps | El cliente HTTP de `src/` solo implementa GET. El único código que escribe es el seed de la demo, con su propio token |
-| Ramas, "crear rama", "abrir PR" | Retirado durante el paso 6 por decisión de la persona: traerse todas las ramas no escala en un proyecto grande y no aporta a las tres preguntas |
+| Ramas, "crear rama", "abrir PR" | Lo retiré durante el paso 6: traerse todas las ramas no escala en un proyecto grande y no aporta a las tres preguntas |
 | Que la IA consulte la API | Decisión de arquitectura (ADR 001): la IA solo interpreta el snapshot |
 | Despliegue y ejecución programada | No se pide. El informe se genera desde Claude Code. `npm run brief` con `claude -p` (paso 8b) e integración con Obsidian (paso 8c) son opcionales y no se han hecho |
 | Otras herramientas (GitHub, Jira) | Se puede añadir un adaptador nuevo, pero no se ha probado (ver §6) |
@@ -118,8 +167,8 @@ Antes de escribir código se fijaron dos fuentes. Las comparten el código, la s
   el adaptador falso los genera y el verificador lee `expected`. Así no hay dos listas que se puedan
   desincronizar.
 
-Cada término del glosario tiene su regla en `src/domain/rules.ts` y sus tests. Cuando la persona pidió una señal
-nueva, "tarea bloqueada", el orden fue siempre el mismo: término en el glosario, casos P y Q en `expected.json`,
+Cada término del glosario tiene su regla en `src/domain/rules.ts` y sus tests. Cuando pedí una señal nueva,
+"tarea bloqueada", el orden fue siempre el mismo: término en el glosario, casos P y Q en `expected.json`,
 regla y tests, y línea en la skill.
 
 ### 3.3 El papel de la IA en el producto: la skill `daily-brief`
@@ -137,8 +186,13 @@ principales son estas:
   Cada una cita el ID del hecho en que se basa.
 - **Plantilla fija** de encabezados y textos de señal. Es lo que permite que un script compruebe el informe.
 
-> **Figura 1.** *Captura pendiente:* `SKILL.md` de `daily-brief` (reglas y plantilla). Muestra el contexto que
-> recibe la IA y permite comprobar que no tiene acceso a la API.
+![Reglas de la skill daily-brief](evidencias/skill-daily-brief-reglas.png)
+
+![Plantilla de la skill daily-brief](evidencias/skill-daily-brief-plantilla.png)
+
+> **Figura 1.** `SKILL.md` de `daily-brief`: arriba, las reglas (no recalcular, hechos con ID, "sin datos");
+> abajo, la plantilla con marcadores. Muestra el contexto que recibe la IA y permite comprobar que solo
+> interpreta el snapshot, sin acceso a la API.
 
 ![Informe generado por la skill (ejecución a-1 del eval)](evidencias/eval-a-1-informe.png)
 
@@ -147,7 +201,8 @@ principales son estas:
 
 ### 3.4 El papel de la IA en el desarrollo: el arnés
 
-El desarrollo se hizo con Claude Code como agente. Lo que se aporta no es solo el código: es el **contexto y los
+El desarrollo se hizo con Claude Code como agente, con mi suscripción Pro y el modelo Claude Opus 5.5 (el que
+consta en el informe de uso del eval). Lo que se aporta no es solo el código: es el **contexto y los
 controles** con los que el agente trabaja en el repositorio.
 
 **Contexto que recibe el agente**
@@ -170,11 +225,19 @@ controles** con los que el agente trabaja en el repositorio.
 | `revisar-tfm` y agente `revisor-tfm` | Revisión del repositorio entero frente al plan y al enunciado, en solo lectura y en un contexto aislado. Deja un informe en `docs/revisiones/` |
 | `daily-brief` | La síntesis del producto (§3.3) |
 
-> **Figura 3.** *Captura pendiente:* `CLAUDE.md`, secciones "Forma de trabajar" y "Criterios". Muestra las
-> instrucciones que el agente carga en cada sesión.
+![CLAUDE.md, sección Forma de trabajar](evidencias/CLAUDE-forma-de-trabajar.png)
 
-> **Figura 4.** *Captura pendiente:* salida del agente `revisor-tfm` (por ejemplo, `docs/revisiones/2026-10-22.md`).
-> Muestra una revisión aislada frente al enunciado, con huecos, incumplimientos y opcionales.
+![CLAUDE.md, sección Criterios](evidencias/CLAUDE-criterios.png)
+
+> **Figura 3.** `CLAUDE.md`: "Forma de trabajar" (antes de implementar, al editar, lista de cierre de 5 puntos y
+> contexto) y "Criterios" (ambigüedad; hueco, incumplimiento u opcional; desviación del plan aprobado). Muestra
+> las instrucciones que el agente carga en cada sesión.
+
+![Tabla del TFM de la revisión de revisor-tfm](evidencias/TFM-tabla-hallazgos.png)
+
+> **Figura 4.** "Tabla del TFM" de la revisión de `revisor-tfm` del 2026-10-22 (`docs/revisiones/2026-10-22.md`):
+> cada requisito del enunciado con su estado, su evidencia y lo que falta. Muestra una revisión aislada frente al
+> enunciado. Es la foto de ese día: lo que marcaba como "Falta" (§5 y el documento) se hizo después.
 
 ### 3.5 Controles: lo comprobable se comprueba con código
 
@@ -203,13 +266,17 @@ Las reglas `deny` tienen un límite conocido: son patrones de prefijo. Se detect
 bloqueado y se añadieron `Bash(git -C * commit *)` y `Bash(git -C * push *)`. Otras formas, como
 `sh -c "git commit"`, no se han probado. Son una capa más, no una garantía.
 
-> **Figura 5.** *Captura pendiente:* `.claude/settings.json` y el rechazo de un `git commit` del agente. Muestra
-> que la persona hace siempre el commit.
+![Permisos de .claude/settings.json](evidencias/Claude-settings.png)
 
-![Tests del pre-push en verde](evidencias/pre-push-1.png)
+> **Figura 5.** `.claude/settings.json`: modo plan por defecto y la lista `deny` (commit, push, `git checkout`,
+> `git restore` y lectura de `.env`). Muestra que el agente no puede hacer commit ni push: el commit lo hago
+> siempre yo.
 
-> **Figura 6.** Ejecución del hook pre-push con `npm run verify` en verde. Permite comprobar que el código no se
-> sube sin pasar typecheck, lint y tests.
+![Tests del pre-push en verde](evidencias/pre-push-2.png)
+
+> **Figura 6.** Final de un `git push`: el hook pre-push ejecuta `npm run verify` (167 tests, 0 fallos), escribe
+> "pre-push: todo en verde" y solo entonces sube a `main`. Permite comprobar que el código no se sube sin pasar
+> typecheck, lint y tests.
 
 ![CI en GitHub Actions](evidencias/ci.png)
 
@@ -218,13 +285,13 @@ bloqueado y se añadieron `Bash(git -C * commit *)` y `Bash(git -C * push *)`. O
 
 ### 3.6 Decisiones humanas (human in the loop)
 
-La persona decide, revisa y hace el commit. El agente propone e implementa. Algunas decisiones que cambiaron la
-solución, todas registradas en la bitácora con su fecha:
+Yo decido, reviso y hago el commit. El agente propone e implementa. En la bitácora, que escribe el agente, aparezco
+como "la persona". Algunas de mis decisiones que cambiaron la solución, todas registradas allí con su fecha:
 
-| Decisión de la persona | Efecto |
+| Mi decisión | Efecto |
 |---|---|
 | Ningún dato de cliente pasa por la IA (2026-10-19) | Proyecto demo, fixtures y medición del cliente solo con números |
-| Retirar las ramas del alcance (paso 6) | El agente había implementado `branchNames()` siguiendo el plan. La persona vio que no escalaba y que no lo necesitaba. Se retiró antes del commit |
+| Retirar las ramas del alcance (paso 6) | El agente había implementado `branchNames()` siguiendo el plan. Al revisarlo vi que no escalaba y que no lo necesitaba. Se retiró antes del commit |
 | Con varias PRs vinculadas, la más reciente es la de mayor ID (paso 6) | Regla `taskPullRequest` en el dominio, con tests |
 | Una PR en borrador debe decirse (paso 6) | Nuevo siguiente paso "PR en borrador" |
 | Enlaces a Azure DevOps en el informe (paso 7) | `webUrl` en el dominio y el snapshot. La skill no construye URLs |
@@ -251,16 +318,19 @@ comprueban la recogida contra la API real y el informe que escribe la IA.
 | Código | `npm run verify`: typecheck, lint y 167 tests sin red (reglas del glosario, casos A–Q con el adaptador falso, adaptador real con un lector falso, salvaguardas del seed, verificador y arquitectura) | En verde en local, en el pre-push y en la CI | Figuras 6 y 7 |
 | Arquitectura | `test/architecture.test.ts`: una prueba por regla de capas y un test de control que comprueba que cada regla detecta su incumplimiento | 13 tests en verde | `docs/revisiones/2026-10-22.md` |
 | Recogida real | `npm run collect` sobre la demo: compara cada caso sembrado con `expected.json` usando los IDs de `demo-ids.json` | 27 comprobaciones de A–L, "Todo coincide" (2026-10-23) | Salida de `collect` (figura 8) |
-| Informe de la IA | `npm run verify:brief`: busca cada ID en su sección y cada señal en su línea | Demo: 28 comprobaciones A–L en OK, global 11/11 (2026-10-21). Fixtures: 16/16 en las 3 ejecuciones del eval | `docs/evidencias/eval-a-1-verify.md` |
+| Informe de la IA | `npm run verify:brief`: busca cada ID en su sección y cada señal en su línea | Demo: 28 comprobaciones A–L en OK, global 11/11 (informe del 2026-10-20). Fixtures: 16/16 en las 3 ejecuciones del eval | Demo: bitácora, 2026-10-20 ("Hechos comprobados"). Fixtures: `docs/evidencias/eval-a-1-verify.md` |
 
-Además de estas pruebas automáticas, se probó **a mano** que la herramienta sigue los cambios de la demo. La
-persona desasignó una tarea (WI #8), le enlazó una PR y reabrió y asignó otra cerrada (WI #15). `npm run
+Además de estas pruebas automáticas, probé **a mano** que la herramienta sigue los cambios de la demo.
+Desasigné una tarea (WI #8) y le enlacé una PR, y reabrí otra cerrada y me la asigné (WI #15). `npm run
 list:tasks` y `npm run collect` mostraron cada cambio según el glosario: la tarea desasignada salió de "Mis
 tareas" y la reabierta entró. La comparación con `expected.json` marcó FALLO en esos casos, que es lo correcto
 porque la demo ya no era la del seed. Al dejarlas como estaban, volvió a "Todo coincide".
 
-> **Figura 8.** *Captura pendiente:* salida de `npm run collect` sobre la demo con "Todo coincide". Permite
-> comprobar que la recogida contra la API real da los resultados del contrato (`expected.json`).
+![Salida de npm run collect sobre la demo](evidencias/npm-run-collect.png)
+
+> **Figura 8.** Salida de `npm run collect` sobre la demo (2026-10-23): resumen del snapshot y las 27
+> comprobaciones de A–L en OK. Permite comprobar que la recogida contra la API real da los resultados del contrato
+> (`expected.json`).
 
 ### 4.2 El eval: skill frente a prompt plano
 
@@ -295,8 +365,9 @@ El precio es unas dos veces el coste por informe, porque en el repositorio se ca
 
 ![Tiempo, tokens y coste de las 6 ejecuciones](evidencias/eval-uso.png)
 
-> **Figura 10.** Uso de Claude Code en las 6 ejecuciones del eval, copiado del informe de cada chat. Permite
-> comprobar el tiempo, los tokens y el coste de cada variante.
+> **Figura 10.** Tabla de uso de las 6 ejecuciones del eval (`docs/evidencias/eval-uso.md`). No es una captura de
+> Claude Code: la copié a mano del informe de uso de cada chat. Permite comprobar el tiempo, los tokens y el coste
+> de cada variante.
 
 ### 4.3 Qué está probado, qué está simulado y qué está pendiente
 
@@ -336,8 +407,58 @@ El precio es unas dos veces el coste por informe, porque en el repositorio se ca
 
 ## 5. Justificación de negocio
 
-*Pendiente:* línea base manual (paso 0), uso con la herramienta (paso 9) y cálculo (paso 11). Ya medido: coste y
-tiempo de cada informe (`docs/evidencias/eval-uso.md`).
+La herramienta no busca ahorrar minutos. Busca tener la rutina de la mañana **en un solo sitio**, poder lanzarla
+**sin dedicarle atención** y que cada persona pueda **adaptarla con ayuda de la IA**. Esta sección muestra primero
+ese valor y después compara horas y costes, como pide el enunciado, para que la conclusión se apoye en datos. El
+detalle está en `docs/medicion.md`, con cada dato marcado como medido, dato mío o supuesto.
+
+### 5.1 El valor: centralizar, segundo plano y registro
+
+| Beneficio | A mano (paso 0, en el cliente) | Con la herramienta (paso 9, en la demo) | Tipo |
+|---|---|---|---|
+| Centralizar: sitios consultados | 3 (lista de PRs, la PR, el tablero) | 1 (el informe) | Medido (el 3 lo contó el agente a partir de mi descripción del recorrido) |
+| Foco: dispersión 1–5 | 2,5 | 1 | Percibido |
+| En segundo plano | No: hay que recorrer las pantallas | Sí: se lanza en una reunión o al final de la tarde y solo se dedica atención a leerlo | Percibido |
+| Registro por fecha | No | Sí: un informe por día para ver cómo evoluciona el sprint (en mi equipo, porque `output/` no se versiona) | Percibido |
+
+Además, el arnés permite que el informe cambie sin romperse: cada cambio tiene un camino definido y unos controles
+que lo comprueban (§6.1 y §6.3). Ese uso todavía no está hecho ni medido.
+
+Las mediciones son pocas (2 días a mano y 2 usos con la herramienta), así que describen esos días y no son una
+línea base fiable. En el cliente solo se apuntaron números, sin datos (§2).
+
+### 5.2 Horas y costes sin IA y con IA
+
+**Supuestos:**
+- Mi perfil: desarrollador junior, 12 €/h y 2 usos al día; 21 días laborables al mes.
+- Herramientas: Claude Code con el modelo Claude Opus 5.5 y mi suscripción Pro (20 €/mes). El coste por informe
+  que da Claude Code es un equivalente de API en dólares; lo paso a euros con 1 $ ≈ 0,90 € (supuesto).
+- Construcción: 10–20 h (5 días con commits, a 2–4 h por día según mi estimación; no las apunté).
+
+"Sin IA" es la rutina manual y "con IA" es la herramienta. No estimo cuánto habría costado construir la
+herramienta sin IA: el enunciado no lo exige cuando se compara el uso, y no tengo datos para hacerlo con rigor.
+Tampoco hay una comparación del arnés antes y después, porque no había un arnés previo: lo construí desde cero.
+
+| | Sin IA (a mano) | Con IA (la herramienta) |
+|---|---|---|
+| Minutos por uso (mediana medida) | 1,75 | 1,5 |
+| Tiempo al mes (2 usos × 21 días) | 73,5 min ≈ 14,70 € | 63 min ≈ 12,60 € |
+| Coste de IA al mes | — | 0 € adicional con la suscripción ya pagada; 20 € si fuera solo para esto; ≈ 20,80 € en pago por uso (0,55 $ por informe, figura 10) |
+| Construcción (una vez) | — | 140–260 € (10–20 h × 12 €/h + 1 mes de Pro) |
+
+### 5.3 Por qué el tiempo no es el argumento
+
+El ahorro de tiempo es de **0,25 minutos por uso, unos 2 € al mes**. Por sí solo no paga la construcción (harían
+falta entre 5,6 y 10,3 años). Si la IA se pagara solo para esto, costaría más de lo que ahorra. Hay tres causas:
+- **La rutina manual ya era corta** con el volumen medido: 0–2 PRs y 0–2 tareas al día, entre 1 y 3 minutos.
+- **El informe tarda lo que tarda la IA,** de 1 a 2 minutos.
+- **Con este volumen, el informe sustituye a poco trabajo manual.** Con más PRs y tareas, el tiempo manual crece y
+  el de la herramienta casi no cambia. En pago por uso, la rutina manual tendría que durar unos 4 minutos para
+  cubrir el coste de cada informe (estimado, no medido).
+
+El cálculo reparte toda la construcción entre los informes de hoy. Pero buena parte de esas horas son el arnés,
+pensado para que la herramienta se adapte después (§6.3). Por eso la justificación está en §5.1 y no en el
+tiempo: los beneficios de §5.1 no se han traducido a euros, y las conclusiones no lo suponen.
 
 ## 6. Reutilización y conclusiones
 
@@ -374,14 +495,28 @@ Azure DevOps:
 3. **El arnés cambió cómo trabajó el agente**, pero no lo hizo infalible. Los errores que se repetían dejaron de
    repetirse cuando pasaron a una regla del lint, al modo plan o a un criterio con definición. Las instrucciones
    sueltas no bastaron: `CLAUDE.md` decía "no amplíes el alcance" y el agente lo amplió en varios turnos.
-4. **El beneficio de negocio está por demostrar.** Los 2 días medidos de la rutina manual dan entre 1 y 2,5
-   minutos con poco volumen (`docs/medicion.md`). Con ese volumen, el ahorro de tiempo esperable es pequeño, y el
-   valor está más en centralizar y evitar omisiones. Se cuantifica en §5 con los pasos 9 y 11.
+4. **El valor está en centralizar, no en el tiempo.** La herramienta reduce la rutina de 3 sitios a 1, se puede
+   lanzar en segundo plano y deja un registro por fecha (§5.1). Son beneficios medidos o percibidos, pero no en
+   euros. En tiempo ahorra 0,25 minutos por uso, unos 2 € al mes, y no paga su construcción (§5.3).
 5. **Los límites son de datos, no de diseño.** Lo que falta por comprobar (equipos revisores, estado `Locked` del
    cliente, volumen real) necesita datos que la demo no tiene y que, por la regla de no pasar datos de cliente a
    la IA, no se han usado.
 
-### 6.3 Qué se ha aprendido
+### 6.3 Trabajo futuro: un informe que cada persona adapta
+
+La herramienta no está terminada. Mi idea es que **el informe sea editable**: que cada desarrollador
+elija qué secciones ve, en qué orden y con qué señales, y que lo cambie con ayuda de la IA sin romper nada.
+
+Para eso está pensado el arnés. Un cambio así tiene un camino definido (§6.1): término en el glosario, caso en
+`expected.json`, regla en `src/domain` y línea en la skill. Y sus controles avisan si algo se rompe: tests, lint,
+`verify:brief`, pre-push y CI. Así, alguien que no conoce el código puede pedirle el cambio al agente, y el
+resultado se comprueba con código y no por confianza.
+
+Nada de esto está hecho ni medido: ni el informe editable ni que otra persona haya adaptado la herramienta. Es el
+siguiente paso natural, y la forma de evaluarlo sería medir cuánto tarda alguien nuevo en añadir una señal o
+cambiar el informe con el arnés.
+
+### 6.4 Qué se ha aprendido
 
 - **Una regla que se puede comprobar con código no se deja en una instrucción.** Un `!` corregido en la bitácora
   volvió a aparecer; dejó de hacerlo cuando pasó al lint.

@@ -44,9 +44,9 @@ Reglas de uso:
 - [x] 9. Medición del uso de la herramienta en la demo: 2 usos de los 3 previstos, en `docs/medicion.md`
   (decisión de la persona; límite anotado allí)
 - [x] 10. CI (GitHub Actions), ADR, README final y tag `v1.0`
-- [ ] 11. Cálculo de negocio (medido frente a estimado)
-- [ ] 12. Documento técnico: en curso en `docs/documento-tecnico.md`; §2, §3, §4 y §6 escritos, faltan §1, §5 y
-  las capturas pendientes (figuras 1, 3, 4, 5 y 8)
+- [x] 11. Cálculo de negocio (medido frente a estimado): en `docs/medicion.md` ("Paso 11") y §5 del documento
+- [ ] 12. Documento técnico: en curso en `docs/documento-tecnico.md`; §1–§6 escritos y las 10 figuras enlazadas;
+  falta la revisión final
 - [ ] 13. Vídeo (opcional) y comprobación de accesos
 
 **Paso 7, cerrado (2026-10-20).**
@@ -95,25 +95,20 @@ Reglas de uso:
 
 ## Próximo paso
 
-**Paso 11:** cálculo de negocio en `docs/medicion.md` ("Supuestos y límites") y §5 del documento técnico.
-Faltan datos de la persona: perfil, coste por hora y cuántas veces al día o a la semana usaría el informe.
-Ya medido: tiempo (1,75 min a mano frente a 1,5 con la herramienta), coste por informe (0,25-0,66 $,
-`docs/evidencias/eval-uso.md`) y sitios (3 frente a 1). El beneficio principal es centralizar, no el tiempo.
-Hay que separar el esfuerzo de construcción del coste de uso (lo pide el enunciado §4).
-
 **Paso 12, en curso:** `docs/documento-tecnico.md` (Markdown; la persona lo exporta a PDF al final). Hecho: portada,
-índice, §2, §3, §4 y §6. Siguiente: §1 (con los datos del paso 0 de `docs/medicion.md`); §5 espera a los pasos 9 y
-11, y la conclusión 4 de §6 se revisa con su resultado. Capturas que hace la persona en `docs/evidencias/`:
-`SKILL.md` de `daily-brief` (figura 1), `CLAUDE.md` "Forma de trabajar" y "Criterios" (figura 3), una revisión de
-`revisor-tfm` (figura 4), `.claude/settings.json` con un `git commit` denegado (figura 5) y la salida de
-`npm run collect` sobre la demo con "Todo coincide" (figura 8). Pendiente de la persona: su nombre completo en la
-portada.
+índice, §1–§6 y las 10 figuras. Siguiente: la persona lee el documento entero, y `revisor-tfm` lo revisa antes de
+la entrega (`CLAUDE.md`). Después: exportar a PDF, el paso 13 (acceso del profesor al repositorio y vídeo
+opcional) y el tag `v1.1`.
 
-**Seguir por:** la persona elige el siguiente paso; no sigue con el 8b por ahora. El 8b ([`docs/plan.md`](plan.md)): `npm run brief` = `npm run collect` +
-`claude -p` con la skill `daily-brief` + guardado en `output/brief-AAAA-MM-DD.md`. Primero hay que comprobar que la
-skill funciona en modo no interactivo y qué permisos necesita; las reglas `deny` siguen aplicando. El "hecho si" pide
-ejecutarlo sobre la demo, y eso lo hace la persona: el agente no puede ejecutar `collect` contra la demo. Con
-`-- --fixtures` sí puede probarlo él. La persona comprueba en Actions que la CI de `eec1b6c` (`v1.0`) sale en verde.
+**Seguir por (entrega):** las correcciones de la revisión del 2026-10-23 están aplicadas. Falta lo que hace la persona:
+1. Comprobar en Actions que la CI de `eec1b6c` (`v1.0`) sale en verde.
+2. Hacer el commit de los documentos, las 7 capturas nuevas y `docs/revisiones/2026-10-23.md`.
+3. Exportar `docs/documento-tecnico.md` a PDF y contar las páginas. Si pasa de unas 15, recortar.
+4. Crear el tag `v1.1` (el documento y el README ya lo nombran).
+5. Paso 13: comprobar que el profesor accede al repositorio; el vídeo es opcional.
+6. Volver a pasar `revisor-tfm` sobre `v1.1`.
+
+Los opcionales 8b y 8c no se hacen antes de la entrega.
 
 **Decisiones pendientes**
 - Si se versiona un informe de la skill sobre fixtures (p. ej. `scripts/lib/tests/data/brief-fixtures.md`) como
@@ -906,6 +901,38 @@ Detectados, sin corregir; ninguno rompe los checks.
   - Cambios de contexto, interrupciones y omisiones: "sin datos".
   - "En segundo plano" y "Registro" pasan a "Beneficios además del tiempo" como percibidos. El tiempo atento no
     se midió por separado.
+- Paso 11. Datos de la persona: desarrollador junior, 12 €/h, 2 usos al día y suscripción Pro. Decisiones de la
+  persona ante las preguntas del agente:
+  - Horas de construcción: que las estime el agente y las marque como estimadas. El agente da 25–40 h (5 días con
+    commits en `git log`, a 5–8 h por día).
+  - Cambio 1 $ ≈ 0,90 €, como supuesto.
+  - Supuestos del agente: 21 días laborables al mes y Pro a 20 $/mes (precio de referencia, a comprobar).
+- Resultado (`docs/medicion.md` y §5 del documento técnico): el ahorro de tiempo es de 2,10 € al mes y no amortiza
+  la construcción (≈ 318–498 €). El valor está en centralizar, en el segundo plano y en el registro, que no se
+  pasan a euros. Se dice así en §5.4 y en la conclusión 4 de §6, que se reescribe con este resultado.
+- Corrección de la persona a las horas: 2–4 h por día, no 5–8. Construcción = 10–20 h, ≈ 138–258 € con Pro, y
+  se amortizaría en 5–10 años solo con el ahorro de tiempo (antes, 318–498 € y más de 10 años). Añade que la
+  herramienta no está completa: la idea es que el informe sea editable, y el arnés existe para que cualquiera
+  pueda adaptar la herramienta con ayuda de la IA. Se recoge en:
+  - `docs/medicion.md` ("Supuestos y límites");
+  - §5.4 del documento, "Qué no recoge el cálculo": el coste del arnés no es solo de los informes de hoy;
+  - §6.3 del documento, nuevo "Trabajo futuro", marcado como no hecho ni medido. Aprendizajes pasa a §6.4.
+- La persona pidió no poner el enfoque de ahorro, porque es imposible. El agente avisó de que la comparación de
+  horas y costes la exige el enunciado (§3.5 y §4: "si no muestran el ahorro esperado, explícalo") y que quitarla
+  dejaría un hueco. La persona eligió reenfocar §5 en tres partes:
+  - 5.1, el valor: centralizar, foco, segundo plano y registro, con su tipo (medido o percibido);
+  - 5.2, horas y costes sin IA y con IA, en una sola tabla;
+  - 5.3, por qué el tiempo no es el argumento.
+
+  La conclusión 4 de §6 empieza ahora por el valor. Descartado: quitar la comparación.
+- El documento técnico pasa a primera persona. La persona es quien firma el documento del TFM, así que "la
+  idea de la persona" no puede aparecer allí. Se cambian las 12 menciones que hablaban del autor (§2, §3.2, §3.5, §3.6, §4.1,
+  §5 y §6.3). Se mantienen las genéricas: el papel "Persona" en la tabla de fases y "cada persona" como usuario. §3.6
+  explica que en la bitácora, que escribe el agente, el autor aparece como "la persona". La bitácora,
+  `docs/medicion.md` y `docs/eval.md` siguen como estaban.
+- A petición de la persona, `docs/medicion.md` (16 menciones) y `docs/eval.md` (3) pasan también a primera
+  persona. Las genéricas ("nombres de personas", "editable por cada persona") se quedan. La bitácora sigue en
+  tercera persona, como pide su formato.
 
 **Hechos comprobados**
 - Prueba de la persona sobre la demo: tocó WI #8 (C) y WI #15 (J) y volvió a dejarlos como estaban. `npm run
@@ -916,3 +943,48 @@ Detectados, sin corregir; ninguno rompe los checks.
   revisión y WI #7, #9, #10 y #11 estancadas). Son ciertos: los datos se sembraron el 19 y ya superan los 3 días.
   `expected.json` describe la demo del día del seed, así que `verify:brief` sobre la demo deja de pasar con los
   días; con fixtures no pasa. La persona lo da por normal.
+- Capturas de las figuras 1, 3, 4, 5 y 8, hechas por la persona con otros nombres. El agente las abrió antes de
+  enlazarlas (`docs/evidencias/`):
+  - `skill-daily-brief-reglas.png` y `skill-daily-brief-plantilla.png` (figura 1);
+  - `CLAUDE-forma-de-trabajar.png` y `CLAUDE-criterios.png` (figura 3);
+  - `TFM-tabla-hallazgos.png` (figura 4, "Tabla del TFM" de la revisión del 2026-10-22);
+  - `Claude-settings.png` (figura 5);
+  - `npm-run-collect.png` (figura 8).
+
+  Dos no muestran lo que decía su pie, y se cambia el pie, no la captura: la figura 5 no tiene el rechazo de un
+  `git commit` (solo `settings.json`), y en la 8 la línea "Todo coincide." queda fuera del recorte (se ven las 27
+  OK). El pie de la figura 4 aclara que es la foto del 22 de octubre.
+- §1 del documento técnico, en primera persona y con los datos del paso 0 (tabla por día):
+  - la necesidad: las tres preguntas con la información repartida, y señales que nadie calcula;
+  - a quién afecta: equipos con daily y procesos personalizados;
+  - cómo se resuelve hoy: el recorrido manual medido;
+  - qué muestra la medición: el problema no es el tiempo, sino la dispersión, las distracciones, saltárselo y no
+    tener registro;
+  - la restricción de no pasar datos del cliente a la IA.
+
+  La frase "trabajo como desarrollador en un proyecto de cliente" sale de la bitácora del 2026-10-19 y del paso 0;
+  la persona la revisa. La portada ya tiene el nombre completo (lo puso la persona).
+- Revisión de `revisor-tfm` antes de la entrega (`docs/revisiones/2026-10-23.md`). La persona pidió aplicar las
+  acciones 1–4 y dio el precio de Pro: 20 €/mes, no 20 $.
+  - Cifras:
+    - la verificación de la demo con 28 OK y 11/11 es del informe del 20, no del 21, y su evidencia es la
+      bitácora, no `eval-a-1-verify.md` (§4.1);
+    - "menos de 2 minutos" pasa a "entre 1 y 3" (§5.3);
+    - 21 días al mes en todo: el año es 12 meses, 25,20 € (antes, 220 días y 22 €);
+    - amortización de 5,6 a 10,3 años.
+  - Con Pro a 20 €: construcción 140–260 €, IA dedicada 20 €/mes y punto de equilibrio con Pro de 2,4 min. El
+    cambio 1 $ ≈ 0,90 € queda solo para el coste de API.
+  - Texto:
+    - mezcla de personas en §4.1;
+    - "volúmenes parecidos" en `medicion.md`;
+    - "Sitios" marcado como medido, con la nota de que el 3 lo contó el agente.
+  - Documento:
+    - versión `v1.1` en la portada;
+    - modelo Claude Opus 5.5 en §3.4 y §5.2 (el que consta en `eval-uso.md`);
+    - frase en §5.2 sobre la lectura del enunciado: no se estima construir sin IA, y no hay arnés previo con el
+      que comparar;
+    - figura 6 con `pre-push-2.png`;
+    - pie de la figura 10 aclarando que es una tabla copiada a mano.
+  - README: `v1.1`, enlaces al documento y a `medicion.md` (Aportación, Límites, Estructura), y Límites al día.
+  - Bitácora: Próximo paso sin el precio de Pro, y "Seguir por" con la lista de entrega.
+  - Sin hacer: la longitud (hay que exportar a PDF) y lo que depende de la persona.

@@ -3,7 +3,8 @@
 Paso 8 de [`docs/plan.md`](plan.md). Pregunta: **¿la skill da un informe más correcto que pedírselo a la IA sin
 más?** Se mide con el verificador (`npm run verify:brief`), con el mismo snapshot y chats nuevos e independientes.
 
-Estado: **hecho** (2026-10-21). Ejecuciones de la persona; verificación, recuento a mano y análisis del agente.
+Estado: **hecho** (2026-10-21). Las ejecuciones las hice yo; la verificación, el recuento a mano y el análisis,
+el agente.
 
 ## Qué se compara
 
@@ -62,8 +63,8 @@ Snapshot de fixtures generado el 2026-10-21 a las 11:31 UTC (`npm run collect --
 - **Global a mano**: el recuento del agente leyendo cada informe entero, con el ID en cualquier formato (`!13`,
   `#105`, `tarea 105`, `PR 13`, o el número solo en una tabla de tareas). Ningún informe nombra un ID que no esté en
   el snapshot (`PR 7` sí está: es la PR de `WI #107`).
-- **Tiempo, tokens y coste**: del informe de uso de Claude Code de cada chat ("Wall", "Session" y "Cost"), que la
-  persona copió a mano ([`evidencias/eval-uso.md`](evidencias/eval-uso.md)). "0m" se escribe "< 1 min".
+- **Tiempo, tokens y coste**: del informe de uso de Claude Code de cada chat ("Wall", "Session" y "Cost"), que copié a
+  mano ([`evidencias/eval-uso.md`](evidencias/eval-uso.md)). "0m" se escribe "< 1 min".
 - En (b), "Sugerencias sin hecho" sale 0 porque el verificador no encuentra la sección Sugerencias, no porque se
   cumpla.
 
@@ -136,6 +137,6 @@ es unas dos veces el coste por informe.
   de snapshot.json". Las tres variantes de (a) cargaron la skill.
 - En (a), la sesión propuso primero el modo plan (`"defaultMode": "plan"` en `.claude/settings.json`). Eso suma
   tiempo y tokens que la skill sola no gastaría.
-- Ningún modelo escribió archivos: la persona copió cada informe y los datos de uso a mano. Los informes b se
-  hicieron con los a ya fuera de la carpeta (confirmado por la persona).
+- Ningún modelo escribió archivos: copié a mano cada informe y los datos de uso. Los informes b los hice con los a
+  ya fuera de la carpeta.
 - b-2 marca 30 tokens de salida para un informe de unos 3 KB. Se anota tal cual; no se ha averiguado por qué.

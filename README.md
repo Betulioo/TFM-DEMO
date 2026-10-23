@@ -8,7 +8,8 @@ Responde a tres preguntas al empezar el día:
 3. ¿Qué riesgos tiene la iteración (tareas estancadas o bloqueadas, PRs envejecidas y PRs propias bloqueadas)?
 
 Es el caso práctico de un TFM ([enunciado](docs/enunciado-tfm.md)). La versión entregada se identifica con el tag
-`v1.0`. Todo se ha probado sobre un proyecto demo de Azure DevOps y sobre fixtures; ningún dato de cliente pasa por la IA.
+`v1.1` (el código es el de `v1.0`; `v1.1` añade el [documento técnico](docs/documento-tecnico.md) y sus
+evidencias). Todo se ha probado sobre un proyecto demo de Azure DevOps y sobre fixtures; ningún dato de cliente pasa por la IA.
 
 ## Cómo funciona
 
@@ -99,7 +100,7 @@ secretos ni red. `verify:brief` no va en ella porque necesita un informe escrito
 | Síntesis | `.claude/skills/daily-brief/SKILL.md` |
 | Verificación | `scripts/verify-brief.ts`, `scripts/lib/brief-check.ts`, `fixtures/expected.json` |
 | Arnés de desarrollo | `CLAUDE.md`, skills de `.claude/skills/` (`iniciar-sesion`, `testing`, `tests-semanticos`, `reflect`, `revisar-tfm`), agente `revisor-tfm`, `eslint.config.js`, `test/architecture.test.ts`, `.githooks/pre-push`, CI |
-| Documentación | `docs/plan.md`, `docs/bitacora.md` (decisiones y evidencias), `docs/glosario.md`, `docs/eval.md`, `docs/adr/` |
+| Documentación | `docs/documento-tecnico.md` (el documento del TFM), `docs/plan.md`, `docs/bitacora.md` (decisiones y evidencias), `docs/glosario.md`, `docs/eval.md`, `docs/medicion.md` (medición y cálculo de negocio), `docs/adr/` |
 
 ## Reutilización en otros proyectos
 
@@ -121,8 +122,10 @@ secretos ni red. `verify:brief` no va en ella porque necesita un informe escrito
 - Sin comprobar con datos reales: PRs con un equipo como revisor, paginación con muchos equipos o repositorios, y
   si `Locked` es "en curso" en el proceso del cliente. Detalle en [`docs/bitacora.md`](docs/bitacora.md)
   (Problemas abiertos).
-- El informe se genera desde Claude Code de forma interactiva. Pendiente: la medición de tiempos y el cálculo de
-  negocio (pasos 9 y 11 de [`docs/plan.md`](docs/plan.md)).
+- El informe se genera desde Claude Code de forma interactiva.
+- Medición con pocos datos: 2 días de rutina manual y 2 usos de la herramienta. El ahorro de tiempo es pequeño;
+  el valor está en centralizar ([`docs/medicion.md`](docs/medicion.md) y §5 del
+  [documento técnico](docs/documento-tecnico.md)).
 
 ## Estructura
 
@@ -133,7 +136,7 @@ test/               Checks transversales (arquitectura, que npm test vea todos l
 fixtures/           Casos esperados (expected.json) e IDs del proyecto demo (demo-ids.json)
 .claude/            Skills y agente de trabajo; daily-brief es la skill del informe
 .github/workflows/  CI: typecheck, lint, tests y recogida con fixtures
-docs/               Plan, bitácora, glosario, eval y enunciado del TFM
+docs/               Documento técnico, plan, bitácora, glosario, eval, medición y enunciado del TFM
 docs/adr/           Decisiones de arquitectura (ADR)
 docs/evidencias/    Capturas para el documento del TFM
 output/             Salidas generadas (no se versiona)
