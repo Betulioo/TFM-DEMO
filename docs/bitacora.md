@@ -888,6 +888,13 @@ Detectados, sin corregir; ninguno rompe los checks.
     (`eval-uso.png`).
   - La conclusión 4 de §6 dice que el beneficio está por demostrar y que, con el volumen del paso 0, el ahorro de
     tiempo esperable es pequeño; se revisa con los pasos 9 y 11.
+- La skill `iniciar-sesion` lee solo lo vigente de la bitácora. La persona lo pidió porque la bitácora tiene 900
+  líneas y la skill la leía entera en cada sesión. Ahora lee hasta `## Registro` (formato, Estado, Próximo paso y
+  Problemas abiertos, unas 165 líneas) y, del Registro, solo la última entrada. Las anteriores se buscan con
+  `grep` cuando el Próximo paso o la persona remiten a ellas.
+  - Descartado partir la bitácora y llevar el Registro antiguo a otro archivo: obliga a cambiar enlaces (`CLAUDE.md`,
+    `revisar-tfm`, documento técnico) y choca con "el Registro no se poda ni se reescribe".
+  - `revisar-tfm` sigue leyendo la bitácora entera: comprueba que refleja el estado real y necesita el historial.
 
 **Hechos comprobados**
 - Prueba de la persona sobre la demo: tocó WI #8 (C) y WI #15 (J) y volvió a dejarlos como estaban. `npm run
