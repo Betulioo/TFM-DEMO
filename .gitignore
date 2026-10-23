@@ -4,6 +4,7 @@ dist/
 # Credenciales: nunca se suben
 .env
 .env.*
+.envDemo
 !.env.example
 
 # Salidas generadas (pueden contener datos reales del cliente)

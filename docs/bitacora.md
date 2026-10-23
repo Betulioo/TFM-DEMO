@@ -28,7 +28,8 @@ Reglas de uso:
 
 ## Estado
 
-- [ ] 0. Medir la rutina manual en el cliente (tiempos y volúmenes, sin datos)
+- [x] 0. Medir la rutina manual en el cliente (tiempos y volúmenes, sin datos): 2 días de los 5 previstos, en
+  `docs/medicion.md` (decisión de la persona; límite anotado allí)
 - [x] 1. Estructura del repo, `CLAUDE.md`, README esqueleto
 - [x] 2. Organización demo en Azure DevOps, tokens y `check:conn`
 - [x] 3. Glosario (`docs/glosario.md`), casos sembrados (`fixtures/expected.json`) y seed
@@ -43,7 +44,8 @@ Reglas de uso:
 - [ ] 9. Medición del uso de la herramienta en la demo
 - [x] 10. CI (GitHub Actions), ADR, README final y tag `v1.0`
 - [ ] 11. Cálculo de negocio (medido frente a estimado)
-- [ ] 12. Documento técnico
+- [ ] 12. Documento técnico: en curso en `docs/documento-tecnico.md`; §2 y §3 escritos, faltan §1, §4, §5, §6 y
+  las capturas pendientes (figuras 1, 3, 4 y 5)
 - [ ] 13. Vídeo (opcional) y comprobación de accesos
 
 **Paso 7, cerrado (2026-10-20).**
@@ -92,12 +94,23 @@ Reglas de uso:
 
 ## Próximo paso
 
-**Seguir por:** el paso 8b ([`docs/plan.md`](plan.md)), en una sesión nueva: `npm run brief` = `npm run collect` +
+**Paso 9:** la persona cronometra 3 usos completos sobre la demo (`npm run collect`, "hazme el informe diario",
+leer el informe y decidir) y apunta las mismas columnas del paso 0 en `docs/medicion.md` (sección "Paso 9"). Con
+eso se completa "Beneficios además del tiempo" y se puede hacer el paso 11 (supuestos en "Supuestos y límites").
+
+**Paso 12, en curso:** `docs/documento-tecnico.md` (Markdown; la persona lo exporta a PDF al final). Hecho: portada,
+índice, §2 y §3. Siguiente: §4 (material en README "Verificación", `docs/eval.md` y "Errores y correcciones") y §6
+(README "Reutilización" y "Límites", Aprendizajes). §1 ya tiene los datos del paso 0; §5 espera a los pasos 9 y
+11. Capturas que hace la
+persona en `docs/evidencias/`: `SKILL.md` de `daily-brief` (figura 1), `CLAUDE.md` "Forma de trabajar" y
+"Criterios" (figura 3), una revisión de `revisor-tfm` (figura 4) y `.claude/settings.json` con un `git commit`
+denegado (figura 5). Pendiente de la persona: su nombre completo en la portada.
+
+**Seguir por:** la persona elige el siguiente paso; no sigue con el 8b por ahora. El 8b ([`docs/plan.md`](plan.md)): `npm run brief` = `npm run collect` +
 `claude -p` con la skill `daily-brief` + guardado en `output/brief-AAAA-MM-DD.md`. Primero hay que comprobar que la
 skill funciona en modo no interactivo y qué permisos necesita; las reglas `deny` siguen aplicando. El "hecho si" pide
 ejecutarlo sobre la demo, y eso lo hace la persona: el agente no puede ejecutar `collect` contra la demo. Con
-`-- --fixtures` sí puede probarlo él. Después, el paso 9, que necesita el paso 0 (lo mide la persona).
-Antes, la persona comprueba en Actions que la CI de `eec1b6c` (`v1.0`) sale en verde.
+`-- --fixtures` sí puede probarlo él. La persona comprueba en Actions que la CI de `eec1b6c` (`v1.0`) sale en verde.
 
 **Decisiones pendientes**
 - Si se versiona un informe de la skill sobre fixtures (p. ej. `scripts/lib/tests/data/brief-fixtures.md`) como
@@ -131,7 +144,6 @@ Detectados, sin corregir; ninguno rompe los checks.
   `NO_HTTP` en `eslint.config.js`). La garantía principal de solo lectura sigue siendo que el cliente solo tiene
   `get`. (Movido desde Aprendizajes del 2026-10-19; dudoso: Problemas abiertos o Aprendizajes.)
 - `azdo-source.ts` convierte `status`, `vote` y `category` de la API con `as`, sin validar el valor.
-- El paso 0 (medir la rutina manual en el cliente) sigue pendiente y lo hace la persona.
 - PRs del equipo sin comprobar con datos reales: que `searchCriteria.reviewerId={teamId}` devuelva las PRs con el
   equipo como revisor, y que el revisor lleve el mismo `id` que `teams?$mine=true`. En la demo ninguna PR tiene un
   equipo como revisor.
@@ -819,6 +831,20 @@ Detectados, sin corregir; ninguno rompe los checks.
 - Node mínimo 20.19 en vez de 20.12 (decisión de la persona entre subir el mínimo o usar Node 22 solo en la CI):
   ESLint 10 y `@eslint/js` declaran `^20.19.0 || ^22.13.0 || >=24`, así que con 20.12 `npm run lint` no está
   garantizado.
+- Tras cerrar el paso 10, la persona no sigue con el 8b y pide una plantilla para el paso 0 en `docs/medicion.md`
+  (archivo que fija `docs/plan.md`, paso 9). Lo dice así: "el tiempo varía, las ventajas de esto no es solo
+  tiempo, si no tenerlo centralizado y con menos distracciones". En consecuencia:
+  - Varias mediciones (al menos 5 días laborables, uno tras un fin de semana) y resumen con mínimo, mediana y
+    máximo; la mediana para que un día atípico no domine. El número de días es propuesta del agente.
+  - Centralización = sitios consultados; distracciones = cambios de contexto (aparte, las interrupciones
+    externas, que no dependen de la herramienta); además, omisiones descubiertas después. Dispersión 1–5,
+    opcional y marcada como percibida. Indicadores propuestos por el agente, aprobados en el plan de la sesión.
+  - La tabla del paso 9 lleva las mismas columnas, para comparar lo mismo.
+- Documento técnico (paso 12), decisiones de la persona: en Markdown en `docs/documento-tecnico.md`, versionado, y
+  exportado a PDF al final; se empieza por §2 y §3, que ya tienen material, mientras dura el paso 0. Estructura
+  propuesta por el agente: las 6 secciones del enunciado, con unas 5 páginas para §3. Las capturas se citan como
+  figuras numeradas, con qué muestran y qué permiten comprobar (lo pide el enunciado); las que faltan quedan
+  marcadas como "Captura pendiente".
 
 **Hechos comprobados**
 - SHAs de las acciones con `git ls-remote`: `actions/checkout` v6.1.0 = `d23441a…`, `actions/setup-node`
@@ -838,3 +864,29 @@ Detectados, sin corregir; ninguno rompe los checks.
 - El tag `v1.0` se creó antes del commit del README y quedó en `305c777`. `git log --decorate` lo mostró; como no se
   había subido, se borró en local y se volvió a crear sobre `eec1b6c`. Cambia: el agente da el commit y el tag en
   orden, y comprueba con `git log --decorate` a qué commit apunta el tag antes del push.
+
+### 2026-10-23
+
+**Decisiones**
+- Paso 0 con 2 días (22 y 23 de octubre) en vez de 5: la persona solo puede hacer dos. Se cierra así, y el límite
+  queda en `docs/medicion.md` ("Supuestos y límites"): no es una línea base fiable y ningún día es después de un
+  fin de semana.
+- Cómo se pasaron las notas de la persona a la tabla (respuestas suyas a las preguntas del agente):
+  - En las filas de PRs apuntó dos números por día. El primero son PRs propias (las que ha creado) y va a Notas; el
+    segundo es la columna.
+  - 1 cambio de contexto cada día.
+  - 0 omisiones: lo de llegar a la daily sin revisar las PRs pasa a veces, pero no en los días medidos.
+  - Interrupciones: "sin datos".
+  - Minutos «2-3»: cuentan como 2,5 en el resumen.
+- Sitios = 3 por día (lista de PRs, la PR, el tablero), contados por el agente a partir de la descripción de la
+  persona (dudoso: 3 o 4 si "busco mi tarea" abre el work item).
+
+**Hechos comprobados**
+- Prueba de la persona sobre la demo: tocó WI #8 (C) y WI #15 (J) y volvió a dejarlos como estaban. `npm run
+  list:tasks` y `npm run collect` reflejaron cada cambio según el glosario y acabaron en "Todo coincide" (27
+  comprobaciones). `BLOCKED_TAG` en su `.env` es ahora `BLOQUEADA` y el snapshot lo recoge.
+- Informe de la skill sobre esa demo (`output/brief-2026-10-23.md`) con `npm run verify:brief`: 28 casos A–L en
+  OK, Sugerencias OK y global 11/11. Sale FALLO en Riesgos: 5 mal clasificados (PR #6 envejecida pendiente de mi
+  revisión y WI #7, #9, #10 y #11 estancadas). Son ciertos: los datos se sembraron el 19 y ya superan los 3 días.
+  `expected.json` describe la demo del día del seed, así que `verify:brief` sobre la demo deja de pasar con los
+  días; con fixtures no pasa. La persona lo da por normal.
