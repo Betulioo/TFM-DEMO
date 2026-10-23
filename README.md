@@ -11,6 +11,63 @@ Es el caso práctico de un TFM ([enunciado](docs/enunciado-tfm.md)). La versión
 `v1.2` (el código es el de `v1.0`; `v1.2` añade el [documento técnico](docs/documento-tecnico.md) y sus
 evidencias). Todo se ha probado sobre un proyecto demo de Azure DevOps y sobre fixtures; ningún dato de cliente pasa por la IA.
 
+## Para evaluar el TFM: empieza aquí
+
+- **Documento técnico:** [`docs/documento-tecnico.md`](docs/documento-tecnico.md) (unas 15 páginas, con las
+  evidencias en [`docs/evidencias/`](docs/evidencias/)).
+- **Versión entregada:** tag `v1.2`.
+
+### Probarlo en 5 pasos, sin Azure DevOps ni tokens
+
+La herramienta se prueba entera con datos ficticios (17 casos, A–Q, en `fixtures/expected.json`). No hace falta
+cuenta de Azure DevOps, token ni `.env`. Solo se necesita **Node.js ≥ 20.19** y, para el paso 4, **Claude Code**.
+
+1. Descargar la versión entregada:
+   ```bash
+   git clone --branch v1.2 https://github.com/Betulioo/TFM-DEMO.git && cd TFM-DEMO
+   ```
+   Git avisa de que está en "detached HEAD": es lo normal al descargar un tag.
+2. Instalar y pasar los checks (typecheck, lint y tests, sin red):
+   ```bash
+   npm install && npm run verify
+   ```
+   Debe terminar con `tests 167`, `pass 167` y `fail 0`.
+3. Recoger los datos con el adaptador falso (sin IA):
+   ```bash
+   npm run collect -- --fixtures
+   ```
+   Escribe `output/snapshot.json` y muestra `Mis tareas: 10`, `PRs pendientes de mi revisión: 2`,
+   `PRs pendientes del equipo: 1` y `Mis PRs: 3`.
+4. Generar el informe con la IA: abrir Claude Code en la carpeta (`claude`) y escribir **"hazme el informe
+   diario"**. La skill `daily-brief` lee solo el snapshot y escribe `output/brief-AAAA-MM-DD.md`. Claude Code
+   propone primero un plan (el repositorio usa el modo plan): hay que aprobarlo.
+5. Comprobar el informe de la IA contra los casos esperados:
+   ```bash
+   npm run verify:brief -- --fixtures
+   ```
+   Debe terminar con `Todo coincide.` y `aciertos 16/16`, sin omisiones ni inventados.
+
+El paso 4 tiene que hacerse el mismo día (UTC) que el paso 3: la skill se niega con un snapshot de otro día.
+
+### Por qué no contra Azure DevOps
+
+El informe es personal: sale del usuario del token ("mis tareas", "PRs pendientes de mi revisión"). Con otro
+usuario, la demo daría un informe casi vacío, y el token del autor no se comparte. La ejecución contra la API real
+está en el documento técnico (§4.1 y figura 8), y la CI ([Actions](https://github.com/Betulioo/TFM-DEMO/actions))
+ejecuta los pasos 2 y 3 en cada push.
+
+### Qué mirar
+
+| Qué | Dónde |
+|---|---|
+| El problema, la solución, la verificación y el negocio | [Documento técnico](docs/documento-tecnico.md) |
+| La IA en el producto | [`.claude/skills/daily-brief/SKILL.md`](.claude/skills/daily-brief/SKILL.md) |
+| La IA en el desarrollo (el arnés) | [`CLAUDE.md`](CLAUDE.md), [`.claude/`](.claude/), [`docs/bitacora.md`](docs/bitacora.md) y [`docs/revisiones/`](docs/revisiones/) |
+| Skill frente a prompt plano | [`docs/eval.md`](docs/eval.md) |
+| Medición y cálculo de negocio | [`docs/medicion.md`](docs/medicion.md) |
+
+El resto del README es la documentación de uso completa, también contra un Azure DevOps propio.
+
 ## Cómo funciona
 
 | Fase | Quién | Qué hace |

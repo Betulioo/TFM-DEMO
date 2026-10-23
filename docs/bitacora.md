@@ -109,7 +109,7 @@ opcional) y el tag `v1.1`.
 4. Hecho: tag `v1.1` en `ab4b52e`, subido a `origin`. El PDF de `v1.1` salía en más de 24 páginas y el documento
    se ha recortado después (ver Registro). El nuevo PDF sale en unas 15 páginas (lo comprobó la persona), así que
    la entrega pasa a `v1.2`; la portada y el README ya lo dicen.
-5. Hacer commit y push, crear `v1.2`, comprobar que apunta al último commit y subirlo.
+5. Hecho: commit `89b4f34` en `main` y tag `v1.2` en ese commit, los dos en `origin` (`git ls-remote`).
 6. Paso 13: comprobar que el profesor accede al repositorio; el vídeo es opcional.
 7. Volver a pasar `revisor-tfm` sobre `v1.2`.
 
@@ -1017,3 +1017,27 @@ Detectados, sin corregir; ninguno rompe los checks.
   - El número de páginas no se ha comprobado: lo comprueba la persona al exportar de nuevo.
 - Resultado: unas 15 páginas, según la persona. La entrega pasa a `v1.2` (portada y README cambiados), y `v1.1`
   queda en `origin` como la versión anterior al recorte.
+
+**Decisiones (README para quien evalúa)**
+- La persona pidió que el README empiece por los pasos del profesor. Se añade, antes de "Cómo funciona", la
+  sección "Para evaluar el TFM: empieza aquí":
+  - enlaces al documento técnico y al tag `v1.2`;
+  - 5 pasos con fixtures, sin Azure DevOps, token ni `.env`, cada uno con su resultado esperado;
+  - por qué no contra Azure DevOps (el informe es personal y el token no se comparte);
+  - una tabla "Qué mirar".
+
+  Recomendado por el agente: probarlo con fixtures y dejar Azure DevOps real para el documento y el vídeo
+  opcional, en vez de invitar al profesor a la demo.
+
+**Hechos comprobados (README)**
+- Pasos 1–3 en un clon limpio de `v1.2` (`git clone --branch v1.2` en el scratchpad del agente, sin `.env`):
+  `npm run verify` con 167 tests en verde, y `npm run collect -- --fixtures` con "Mis tareas: 10", "PRs
+  pendientes de mi revisión: 2", "PRs pendientes del equipo: 1" y "Mis PRs: 3". El clon se borró después.
+- Los pasos 4 y 5 (informe de la IA y `verify:brief -- --fixtures`) no se han repetido. Su resultado esperado
+  ("Todo coincide.", global 16/16) es el de `docs/evidencias/eval-a-1-verify.md`.
+- Observación: en el repositorio de la persona, `collect -- --fixtures` usa su `.env` (`BLOCKED_TAG=BLOQUEADA`),
+  así que el caso P (etiqueta `Blocked`) no saldría bloqueado y `verify:brief -- --fixtures` fallaría en P.
+  Sin `.env`, como lo prueba quien evalúa, se usan los valores del glosario. Para probar fixtures en local, hay
+  que quitar `BLOCKED_TAG` del `.env` o dejarlo en `Blocked`. Anotado aquí; no se cambia el código.
+- Para la prueba de `collect -- --fixtures` en el repositorio se guardó una copia de `output/snapshot.json` y se
+  restauró después (`cmp` sin diferencias).
